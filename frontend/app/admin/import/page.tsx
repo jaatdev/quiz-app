@@ -19,7 +19,7 @@ export default function BulkImportPage() {
   const [importType, setImportType] = useState<'json' | 'csv'>('json');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,12 +40,12 @@ export default function BulkImportPage() {
         // CSV parsing
         const lines = text.split('\n');
         const headers = lines[0].split(',').map(h => h.trim());
-        const questions = [];
+        const questions: Record<string, string>[] = [];
         
         for (let i = 1; i < Math.min(4, lines.length); i++) {
           if (lines[i].trim()) {
             const values = lines[i].split(',').map(v => v.trim());
-            const question: any = {};
+            const question: Record<string, string> = {};
             headers.forEach((header, index) => {
               question[header] = values[index];
             });
@@ -80,7 +80,7 @@ export default function BulkImportPage() {
         for (let i = 1; i < lines.length; i++) {
           if (lines[i].trim()) {
             const values = parseCSVLine(lines[i]);
-            const question: any = {};
+            const question: Record<string, unknown> = {};
             
             headers.forEach((header, index) => {
               if (header === 'options') {
@@ -101,7 +101,7 @@ export default function BulkImportPage() {
       }
 
       // Validate and transform questions
-      const validQuestions = questions.map((q: any) => ({
+      const validQuestions = questions.map((q: Record<string, unknown>) => ({
         text: q.text || q.question,
         options: q.options || [
           { id: 'a', text: q.optionA || '' },
@@ -113,7 +113,7 @@ export default function BulkImportPage() {
         explanation: q.explanation || '',
         difficulty: q.difficulty || 'medium',
         topicId: q.topicId,
-      })).filter((q: any) => q.text && q.topicId);
+      })).filter((q: { text: unknown; topicId: unknown }) => q.text && q.topicId);
 
       const response = await fetch('http://localhost:5001/api/admin/questions/bulk', {
         method: 'POST',
