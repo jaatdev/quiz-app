@@ -61,3 +61,56 @@ body {
     animation: slide-up 0.3s ease-out;
   }
 }
+
+/* Global text color improvements for better visibility */
+@layer base {
+  /* Ensure input and textarea text is dark and readable */
+  input,
+  textarea,
+  select {
+    color: rgb(17 24 39); /* text-gray-900 */
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(75 85 99); /* text-gray-600 */
+  }
+  
+  /* Ensure labels are readable */
+  label {
+    color: rgb(31 41 55); /* text-gray-800 */
+  }
+  
+  /* Card titles should be dark */
+  h1, h2, h3, h4, h5, h6 {
+    color: rgb(17 24 39); /* text-gray-900 */
+  }
+}
+
+/* Admin panel specific improvements */
+.admin-panel .stat-label {
+  color: rgb(31 41 55); /* text-gray-800 */
+  font-weight: 500;
+}
+
+.admin-panel .stat-value {
+  color: rgb(17 24 39); /* text-gray-900 */
+  font-weight: 700;
+}
+
+.admin-panel .form-input {
+  color: rgb(17 24 39); /* text-gray-900 */
+}
+
+.admin-panel .form-input::placeholder {
+  color: rgb(75 85 99); /* text-gray-600 */
+}
+
+.admin-panel .table-header {
+  color: rgb(31 41 55); /* text-gray-800 */
+  font-weight: 600;
+}
+
+.admin-panel .table-cell {
+  color: rgb(31 41 55); /* text-gray-800 */
+}

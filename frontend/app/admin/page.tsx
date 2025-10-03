@@ -80,7 +80,7 @@ export default function AdminDashboard() {
   if (!stats) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">Failed to load dashboard data</p>
+        <p className="text-gray-700">Failed to load dashboard data</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage your quiz platform</p>
+        <p className="text-gray-700">Manage your quiz platform</p>
       </div>
 
       {/* Stats Grid */}
@@ -98,8 +98,8 @@ export default function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold">{stats.totalUsers}</p>
+                <p className="text-sm text-gray-700 font-medium">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
               </div>
               <Users className="w-8 h-8 text-blue-500" />
             </div>
@@ -110,8 +110,8 @@ export default function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Quizzes</p>
-                <p className="text-2xl font-bold">{stats.totalQuizzes}</p>
+                <p className="text-sm text-gray-700 font-medium">Total Quizzes</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalQuizzes}</p>
               </div>
               <Trophy className="w-8 h-8 text-green-500" />
             </div>
@@ -122,8 +122,8 @@ export default function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Questions</p>
-                <p className="text-2xl font-bold">{stats.totalQuestions}</p>
+                <p className="text-sm text-gray-700 font-medium">Questions</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalQuestions}</p>
               </div>
               <FileText className="w-8 h-8 text-purple-500" />
             </div>
@@ -134,8 +134,8 @@ export default function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Subjects</p>
-                <p className="text-2xl font-bold">{stats.totalSubjects}</p>
+                <p className="text-sm text-gray-700 font-medium">Subjects</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalSubjects}</p>
               </div>
               <BookOpen className="w-8 h-8 text-orange-500" />
             </div>
@@ -146,8 +146,8 @@ export default function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Topics</p>
-                <p className="text-2xl font-bold">{stats.totalTopics}</p>
+                <p className="text-sm text-gray-700 font-medium">Topics</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalTopics}</p>
               </div>
               <Activity className="w-8 h-8 text-pink-500" />
             </div>
@@ -168,15 +168,15 @@ export default function AdminDashboard() {
                   <div key={usr.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">{usr.name || 'Anonymous'}</p>
-                      <p className="text-sm text-gray-600">{usr.email}</p>
+                      <p className="text-sm text-gray-700">{usr.email}</p>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-700">
                       {format(new Date(usr.createdAt), 'MMM d, yyyy')}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No recent users</p>
+                <p className="text-gray-700 text-center py-4">No recent users</p>
               )}
             </div>
           </CardContent>
@@ -193,20 +193,20 @@ export default function AdminDashboard() {
                   <div key={quiz.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900">{quiz.user.name || 'Anonymous'}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-700">
                         {quiz.topic.subject.name} - {quiz.topic.name}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{quiz.percentage.toFixed(0)}%</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-gray-900">{quiz.percentage.toFixed(0)}%</p>
+                      <p className="text-sm text-gray-700">
                         {format(new Date(quiz.completedAt), 'MMM d')}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">No recent quizzes</p>
+                <p className="text-gray-700 text-center py-4">No recent quizzes</p>
               )}
             </div>
           </CardContent>

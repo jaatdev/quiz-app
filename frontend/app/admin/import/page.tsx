@@ -275,12 +275,12 @@ export default function BulkImportPage() {
         </CardHeader>
         <CardContent>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-600" />
             <label className="cursor-pointer">
               <span className="text-blue-600 hover:text-blue-700 font-medium">
                 Click to upload
               </span>
-              <span className="text-gray-600"> or drag and drop</span>
+              <span className="text-gray-700"> or drag and drop</span>
               <input
                 type="file"
                 accept={importType === 'json' ? '.json' : '.csv'}
@@ -288,15 +288,15 @@ export default function BulkImportPage() {
                 className="hidden"
               />
             </label>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-600 mt-2">
               {importType === 'json' ? 'JSON files only' : 'CSV files only'}
             </p>
             {selectedFile && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-medium text-gray-800">
                   Selected: {selectedFile.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-700">
                   Size: {(selectedFile.size / 1024).toFixed(2)} KB
                 </p>
               </div>

@@ -123,7 +123,7 @@ export default function SubjectManagementPage() {
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-5 h-5 text-blue-600" />
                   <CardTitle>{subject.name}</CardTitle>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-700">
                     {subject.topics.length} topics
                   </span>
                 </div>
@@ -156,7 +156,7 @@ export default function SubjectManagementPage() {
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4 text-gray-500" />
+                      <FileText className="w-4 h-4 text-gray-600" />
                       <span className="font-medium text-gray-900">{topic.name}</span>
                       <span className="text-sm text-gray-500">
                         {topic._count?.questions || 0} questions
