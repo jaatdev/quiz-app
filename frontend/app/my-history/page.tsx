@@ -50,7 +50,7 @@ export default function MyHistoryPage() {
   const { data: history, isLoading } = useQuery<QuizAttempt[]>({
     queryKey: ['user-history', user?.id],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:5000/api/user/history/${user?.id}`);
+      const response = await fetch(`http://localhost:5001/api/user/history/${user?.id}`);
       if (!response.ok) throw new Error('Failed to fetch history');
       return response.json();
     },
