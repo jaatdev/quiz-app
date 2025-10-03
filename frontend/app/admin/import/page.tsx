@@ -315,10 +315,10 @@ export default function BulkImportPage() {
             <div className="space-y-4">
               {previewData.map((q, index) => (
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                  <p className="font-medium text-gray-900">{q.text || q.question}</p>
+                  <p className="font-medium text-gray-900">{String(q.text || q.question || 'No text')}</p>
                   <p className="text-sm text-gray-600 mt-1">
-                    Difficulty: {q.difficulty || 'medium'} | 
-                    Topic ID: {q.topicId || 'Not specified'}
+                    Difficulty: {String(q.difficulty || 'medium')} | 
+                    Topic ID: {String(q.topicId || 'Not specified')}
                   </p>
                 </div>
               ))}
