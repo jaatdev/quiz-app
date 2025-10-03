@@ -1,1005 +1,2007 @@
-# 🎓 QuizMaster Pro - Advanced Learning Platform# 🎓 QuizMaster Pro
+<div align="center"># 🎓 QuizMaster Pro - Advanced Learning Platform# 🎓 QuizMaster Pro
 
 
 
-A modern, production-ready quiz application featuring comprehensive admin panel, real-time leaderboards, achievement system, advanced analytics, and seamless user experience. Built with Next.js 15, Express, PostgreSQL (Neon), and Clerk authentication.A modern, full-stack quiz application built with Next.js, Express, PostgreSQL, and Clerk authentication.
+# 🎓 QuizMaster Pro
 
 
 
-![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black) ![React](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Prisma](https://img.shields.io/badge/Prisma-6.1.0-green) ![Clerk](https://img.shields.io/badge/Clerk-Auth-purple) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791)![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black)
-
-![React](https://img.shields.io/badge/React-19-blue)
-
----![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-
-![Prisma](https://img.shields.io/badge/Prisma-ORM-green)
-
-## 🌟 Features Overview![Clerk](https://img.shields.io/badge/Clerk-Auth-purple)
+### *Advanced Learning Platform with Real-time Analytics & Gamification*A modern, production-ready quiz application featuring comprehensive admin panel, real-time leaderboards, achievement system, advanced analytics, and seamless user experience. Built with Next.js 15, Express, PostgreSQL (Neon), and Clerk authentication.A modern, full-stack quiz application built with Next.js, Express, PostgreSQL, and Clerk authentication.
 
 
 
-### 🎯 **Tier 1: Core Quiz System**## ✨ Features
+[![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 
-- ✅ **Multi-Topic Quiz Platform** - Organized subjects and topics with hierarchical structure
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 
-- ✅ **Difficulty Levels** - Easy, Medium, Hard, Expert with progressive unlock system### 🎯 Core Features
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black) ![React](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Prisma](https://img.shields.io/badge/Prisma-6.1.0-green) ![Clerk](https://img.shields.io/badge/Clerk-Auth-purple) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791)![Next.js](https://img.shields.io/badge/Next.js-15.5.4-black)
 
-- ✅ **Timed Quizzes** - Configurable countdown timer with visual feedback- **Multiple Quiz Topics** - Wide range of subjects and topics
+[![Prisma](https://img.shields.io/badge/Prisma-6.1.0-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
 
-- ✅ **Instant Results** - Real-time scoring with detailed performance breakdown- **Difficulty Levels** - Easy, Medium, Hard, Expert with unlock system
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)![React](https://img.shields.io/badge/React-19-blue)
 
-- ✅ **Review Mode** - Comprehensive answer review with explanations- **Timed Quizzes** - 10-minute countdown timer per quiz
 
-- ✅ **Responsive Design** - Mobile-first, works seamlessly on all devices- **Instant Results** - Immediate feedback with detailed scoring
 
-- ✅ **Dark Mode Ready** - Beautiful UI with theme support- **Review Mode** - Review all questions with correct answers
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)---![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 
-- ✅ **Keyboard & Touch Navigation** - Arrow keys and swipe gestures
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
+
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/jaatdev/quiz-app/graphs/commit-activity)![Prisma](https://img.shields.io/badge/Prisma-ORM-green)
+
+
+
+**A production-ready, full-stack quiz platform with admin dashboard, achievements, leaderboards, and AI-powered insights.**## 🌟 Features Overview![Clerk](https://img.shields.io/badge/Clerk-Auth-purple)
+
+
+
+[🚀 Quick Start](#-quick-start) • [📖 Features](#-features) • [💻 Tech Stack](#-tech-stack) • [📸 Screenshots](#-screenshots) • [🤝 Contributing](#-contributing)
+
+
+
+---### 🎯 **Tier 1: Core Quiz System**## ✨ Features
+
+
+
+</div>- ✅ **Multi-Topic Quiz Platform** - Organized subjects and topics with hierarchical structure
+
+
+
+## 📋 Table of Contents- ✅ **Difficulty Levels** - Easy, Medium, Hard, Expert with progressive unlock system### 🎯 Core Features
+
+
+
+- [✨ Features](#-features)- ✅ **Timed Quizzes** - Configurable countdown timer with visual feedback- **Multiple Quiz Topics** - Wide range of subjects and topics
+
+- [🏗️ Architecture](#️-architecture)
+
+- [💻 Tech Stack](#-tech-stack)- ✅ **Instant Results** - Real-time scoring with detailed performance breakdown- **Difficulty Levels** - Easy, Medium, Hard, Expert with unlock system
+
+- [🚀 Quick Start](#-quick-start)
+
+- [🔧 Configuration](#-configuration)- ✅ **Review Mode** - Comprehensive answer review with explanations- **Timed Quizzes** - 10-minute countdown timer per quiz
+
+- [📊 Project Structure](#-project-structure)
+
+- [🎮 Usage Guide](#-usage-guide)- ✅ **Responsive Design** - Mobile-first, works seamlessly on all devices- **Instant Results** - Immediate feedback with detailed scoring
+
+- [📡 API Reference](#-api-reference)
+
+- [🚢 Deployment](#-deployment)- ✅ **Dark Mode Ready** - Beautiful UI with theme support- **Review Mode** - Review all questions with correct answers
+
+- [🧪 Testing](#-testing)
+
+- [🤝 Contributing](#-contributing)- ✅ **Keyboard & Touch Navigation** - Arrow keys and swipe gestures
+
+- [📝 License](#-license)
 
 ### 📊 Analytics & Progress
 
+---
+
 ### 🏆 **Tier 2: Advanced Features**- **Statistics Dashboard** - Comprehensive performance metrics
+
+## ✨ Features
 
 - ✅ **Global Leaderboard** - Time-based rankings (Daily, Weekly, Monthly, All-time)- **Quiz History** - Complete record of all attempts with CRUD operations
 
+<div align="center">
+
 - ✅ **Achievement System** - 14+ achievement types with unlock conditions- **Leaderboard** - Competitive rankings and scores
+
+### 🎯 Tier 1: Core Quiz System
 
   - First Quiz, Perfect Score, Speed Demon, Bookworm, On Fire- **Progress Tracking** - Monitor improvement over time
 
+</div>
+
   - Century, Scholar, Expert, Master, Accuracy, Improving- **Performance Charts** - Visual representation of results
 
-  - Quick Learner, Night Owl, Early Bird
+<table>
+
+<tr>  - Quick Learner, Night Owl, Early Bird
+
+<td width="50%">
 
 - ✅ **Comprehensive Admin Panel**### 🎨 User Experience
 
-  - 👥 User Management (view, search, role assignment)- **Responsive Design** - Works on desktop, tablet, and mobile
+#### 📚 Quiz Management
 
-  - ❓ Question Management (CRUD operations)- **Dark Mode Ready** - Prepared for theme switching
+- ✅ Multi-topic quiz organization  - 👥 User Management (view, search, role assignment)- **Responsive Design** - Works on desktop, tablet, and mobile
 
-  - 📚 Subject/Topic Management- **Loading States** - Smooth submission with visual feedback
+- ✅ Hierarchical subject structure
 
-  - 📤 Bulk Import (JSON/CSV support)- **Search & Filter** - Find topics quickly
+- ✅ 4 difficulty levels (Easy → Expert)  - ❓ Question Management (CRUD operations)- **Dark Mode Ready** - Prepared for theme switching
+
+- ✅ Progressive unlock system
+
+- ✅ Timed quizzes with countdown  - 📚 Subject/Topic Management- **Loading States** - Smooth submission with visual feedback
+
+
+
+</td>  - 📤 Bulk Import (JSON/CSV support)- **Search & Filter** - Find topics quickly
+
+<td width="50%">
 
   - 📊 Real-time Statistics Dashboard- **Keyboard Navigation** - Arrow keys for question navigation
 
-- ✅ **User Profiles** - Detailed stats, achievements, and progress tracking- **Swipe Gestures** - Mobile-friendly touch controls
+#### 🎨 User Experience
 
-- ✅ **Quiz History** - Complete attempt history with advanced filtering
+- ✅ Instant results & feedback- ✅ **User Profiles** - Detailed stats, achievements, and progress tracking- **Swipe Gestures** - Mobile-friendly touch controls
 
-- ✅ **PDF Export** - Export results and statistics as professional PDFs### 🔐 Authentication (Phase 1)
+- ✅ Comprehensive review mode
 
-- ✅ **Clerk Authentication** - Secure auth with Email, Google, GitHub- **Clerk Integration** - Secure authentication system
+- ✅ Mobile-responsive design- ✅ **Quiz History** - Complete attempt history with advanced filtering
 
-- **Email Sign-up** - Primary authentication method
+- ✅ Dark mode support
 
-### 📊 **Tier 3: Analytics & Insights**- **Social Login** - Google, GitHub (optional)
+- ✅ Keyboard & swipe navigation- ✅ **PDF Export** - Export results and statistics as professional PDFs### 🔐 Authentication (Phase 1)
 
-- ✅ **Advanced Statistics Dashboard**- **User Profiles** - Avatar and user management
 
-  - Subject-wise performance analysis- **Protected Routes** - Secure user data (coming in Phase 2)
 
-  - Difficulty-level breakdowns
+</td>- ✅ **Clerk Authentication** - Secure auth with Email, Google, GitHub- **Clerk Integration** - Secure authentication system
 
-  - Time-based trends (daily, weekly, monthly)---
+</tr>
 
-  - Accuracy rate tracking with visual charts
+</table>- **Email Sign-up** - Primary authentication method
 
-  - Improvement metrics and streaks## 🚀 Tech Stack
 
-- ✅ **Visual Analytics**
+
+<div align="center">### 📊 **Tier 3: Analytics & Insights**- **Social Login** - Google, GitHub (optional)
+
+
+
+### 🏆 Tier 2: Advanced Features- ✅ **Advanced Statistics Dashboard**- **User Profiles** - Avatar and user management
+
+
+
+</div>  - Subject-wise performance analysis- **Protected Routes** - Secure user data (coming in Phase 2)
+
+
+
+<table>  - Difficulty-level breakdowns
+
+<tr>
+
+<td width="33%">  - Time-based trends (daily, weekly, monthly)---
+
+
+
+#### 🏅 Gamification  - Accuracy rate tracking with visual charts
+
+- ✅ 14 unique achievements
+
+- ✅ Global leaderboard  - Improvement metrics and streaks## 🚀 Tech Stack
+
+- ✅ Daily/Weekly/Monthly ranks
+
+- ✅ Achievement showcase- ✅ **Visual Analytics**
+
+- ✅ Point system
 
   - Progress charts and performance graphs### Frontend
 
-  - Interactive dashboards- **Framework**: Next.js 15.5.4 (App Router, Turbopack)
+</td>
 
-  - Topic mastery indicators- **Language**: TypeScript 5
+<td width="33%">  - Interactive dashboards- **Framework**: Next.js 15.5.4 (App Router, Turbopack)
 
-  - Comparative performance analysis- **UI Library**: React 19
 
-- ✅ **Smart Insights**- **Styling**: Tailwind CSS
+
+#### 👑 Admin Panel  - Topic mastery indicators- **Language**: TypeScript 5
+
+- ✅ User management
+
+- ✅ Question CRUD  - Comparative performance analysis- **UI Library**: React 19
+
+- ✅ Bulk import (JSON/CSV)
+
+- ✅ Subject/Topic mgmt- ✅ **Smart Insights**- **Styling**: Tailwind CSS
+
+- ✅ Real-time statistics
 
   - Personalized quiz recommendations- **State Management**: Zustand
 
-  - Weak area identification- **Data Fetching**: TanStack Query (React Query)
+</td>
 
-  - Performance trend predictions- **Authentication**: Clerk
+<td width="33%">  - Weak area identification- **Data Fetching**: TanStack Query (React Query)
 
-  - Study time optimization- **Icons**: Lucide React
 
-- **HTTP Client**: Axios
+
+#### 📈 Data & Export  - Performance trend predictions- **Authentication**: Clerk
+
+- ✅ Quiz history
+
+- ✅ PDF export  - Study time optimization- **Icons**: Lucide React
+
+- ✅ User profiles
+
+- ✅ Performance tracking- **HTTP Client**: Axios
+
+- ✅ Search & filters
 
 ---
 
-### Backend
+</td>
+
+</tr>### Backend
+
+</table>
 
 ## 🛠️ Tech Stack- **Runtime**: Node.js
 
+<div align="center">
+
 - **Framework**: Express.js
+
+### 📊 Tier 3: Analytics & Insights
 
 ### **Frontend**- **Language**: TypeScript
 
+</div>
+
 | Technology | Version | Purpose |- **ORM**: Prisma
 
-|------------|---------|---------|- **Database**: PostgreSQL (Neon)
+<table>
+
+<tr>|------------|---------|---------|- **Database**: PostgreSQL (Neon)
+
+<td width="50%">
 
 | Next.js | 15.5.4 | React framework with App Router |- **Validation**: Zod
 
-| React | 19 | UI library |- **CORS**: Enabled for local development
+#### 📉 Advanced Analytics
 
-| TypeScript | 5.0 | Type safety |
+- ✅ Multi-dimensional statistics| React | 19 | UI library |- **CORS**: Enabled for local development
 
-| Tailwind CSS | 3.4 | Styling |### Development Tools
+- ✅ Subject-wise performance
 
-| shadcn/ui | Latest | UI components |- **Package Manager**: npm
+- ✅ Difficulty analysis| TypeScript | 5.0 | Type safety |
+
+- ✅ Time-based trends
+
+- ✅ Accuracy tracking| Tailwind CSS | 3.4 | Styling |### Development Tools
+
+
+
+</td>| shadcn/ui | Latest | UI components |- **Package Manager**: npm
+
+<td width="50%">
 
 | Radix UI | Latest | Accessible primitives |- **Version Control**: Git
 
-| TanStack Query | 5.0 | Data fetching & caching |- **Code Quality**: ESLint
+#### 🤖 Smart Features
 
-| Clerk | Latest | Authentication |- **Hot Reload**: Turbopack (frontend), nodemon (backend)
+- ✅ AI-powered insights| TanStack Query | 5.0 | Data fetching & caching |- **Code Quality**: ESLint
 
-| jsPDF | Latest | PDF generation |
+- ✅ Personalized recommendations
 
-| Lucide React | Latest | Icon library |---
+- ✅ Comparative analytics| Clerk | Latest | Authentication |- **Hot Reload**: Turbopack (frontend), nodemon (backend)
 
-| Zustand | 4.0 | State management |
+- ✅ Progress visualization
 
-## 📦 Installation
-
-### **Backend**
-
-| Technology | Version | Purpose |### Prerequisites
-
-|------------|---------|---------|- Node.js 18+ installed
-
-| Node.js | 18+ | Runtime |- PostgreSQL database (or Neon account)
-
-| Express.js | 4.18 | Web framework |- Clerk account (for authentication)
-
-| TypeScript | 5.0 | Type safety |- Git
-
-| Prisma | 6.1.0 | ORM |
-
-| PostgreSQL | 15 | Database |### 1. Clone the Repository
-
-| Zod | 3.0 | Validation |```bash
-
-| Clerk SDK | Latest | Auth verification |git clone https://github.com/jaatdev/quiz-app.git
-
-cd quiz-app
-
-### **DevOps & Hosting**```
-
-| Service | Purpose |
-
-|---------|---------|### 2. Backend Setup
-
-| Vercel | Frontend hosting |
-
-| Railway/Render | Backend hosting |```bash
-
-| Neon | Serverless PostgreSQL |# Navigate to backend
-
-| GitHub | Version control |cd backend
-
-| GitHub Actions | CI/CD (optional) |
-
-# Install dependencies
-
----npm install
+- ✅ Goal tracking| jsPDF | Latest | PDF generation |
 
 
 
-## 📦 Project Structure# Create .env file
+</td>| Lucide React | Latest | Icon library |---
 
-cp .env.example .env
+</tr>
 
-``````
+</table>| Zustand | 4.0 | State management |
 
-quiz-app/
+
+
+---## 📦 Installation
+
+
+
+## 🏗️ Architecture### **Backend**
+
+
+
+<div align="center">| Technology | Version | Purpose |### Prerequisites
+
+
+
+```mermaid|------------|---------|---------|- Node.js 18+ installed
+
+graph TB
+
+    A[User Browser] -->|HTTPS| B[Next.js Frontend]| Node.js | 18+ | Runtime |- PostgreSQL database (or Neon account)
+
+    B -->|API Calls| C[Express Backend]
+
+    C -->|Prisma ORM| D[(PostgreSQL DB)]| Express.js | 4.18 | Web framework |- Clerk account (for authentication)
+
+    B -->|Auth| E[Clerk Service]
+
+    E -->|Webhook| C| TypeScript | 5.0 | Type safety |- Git
+
+    C -->|CRUD| D
+
+    | Prisma | 6.1.0 | ORM |
+
+    style A fill:#61DAFB
+
+    style B fill:#000000| PostgreSQL | 15 | Database |### 1. Clone the Repository
+
+    style C fill:#68A063
+
+    style D fill:#336791| Zod | 3.0 | Validation |```bash
+
+    style E fill:#6C47FF
+
+```| Clerk SDK | Latest | Auth verification |git clone https://github.com/jaatdev/quiz-app.git
+
+
+
+</div>cd quiz-app
+
+
+
+### **Component Overview**### **DevOps & Hosting**```
+
+
+
+| Component | Technology | Purpose | Port || Service | Purpose |
+
+|-----------|-----------|---------|------|
+
+| **Frontend** | Next.js 15 + React 19 | User Interface | 3000 ||---------|---------|### 2. Backend Setup
+
+| **Backend** | Express + TypeScript | API Server | 5001 |
+
+| **Database** | PostgreSQL (Neon) | Data Storage | 5432 || Vercel | Frontend hosting |
+
+| **Auth** | Clerk | Authentication | - |
+
+| **Hosting** | Vercel + Railway | Deployment | - || Railway/Render | Backend hosting |```bash
+
+
+
+---| Neon | Serverless PostgreSQL |# Navigate to backend
+
+
+
+## 💻 Tech Stack| GitHub | Version control |cd backend
+
+
+
+<div align="center">| GitHub Actions | CI/CD (optional) |
+
+
+
+### **Frontend**# Install dependencies
+
+
+
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)---npm install
+
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+
+![React Query](https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)## 📦 Project Structure# Create .env file
+
+
+
+### **Backend**cp .env.example .env
+
+
+
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)``````
+
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)quiz-app/
+
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 
 ├── frontend/                 # Next.js frontend (Port 3000)**Configure `backend/.env`:**
 
+### **Tools & Services**
+
 │   ├── app/```env
 
-│   │   ├── admin/           # Admin PanelDATABASE_URL="your-postgresql-connection-string"
+![Clerk](https://img.shields.io/badge/Clerk-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)
 
-│   │   │   ├── page.tsx                  # DashboardPORT=5001
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)│   │   ├── admin/           # Admin PanelDATABASE_URL="your-postgresql-connection-string"
+
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
+
+![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)│   │   │   ├── page.tsx                  # DashboardPORT=5001
+
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 
 │   │   │   ├── questions/page.tsx        # Question managementNODE_ENV=development
 
+</div>
+
 │   │   │   ├── users/page.tsx            # User management```
 
-│   │   │   ├── subjects/page.tsx         # Subject management
+<details>
 
-│   │   │   ├── import/page.tsx           # Bulk import**Run Prisma migrations:**
+<summary><b>📦 Complete Dependency List</b></summary>│   │   │   ├── subjects/page.tsx         # Subject management
 
-│   │   │   └── settings/page.tsx         # Settings```bash
 
-│   │   ├── dashboard/page.tsx            # User dashboardnpx prisma generate
 
-│   │   ├── quiz/[topicId]/page.tsx       # Quiz interfacenpx prisma db push
+### Frontend Dependencies│   │   │   ├── import/page.tsx           # Bulk import**Run Prisma migrations:**
 
-│   │   ├── leaderboard/page.tsx          # Global rankingsnpx prisma db seed
+```json
 
-│   │   ├── stats/page.tsx                # Advanced analytics```
+{│   │   │   └── settings/page.tsx         # Settings```bash
 
-│   │   ├── history/page.tsx              # Quiz history
+  "next": "15.5.4",
+
+  "react": "19.0.0",│   │   ├── dashboard/page.tsx            # User dashboardnpx prisma generate
+
+  "@clerk/nextjs": "^6.9.3",
+
+  "@tanstack/react-query": "^5.0.0",│   │   ├── quiz/[topicId]/page.tsx       # Quiz interfacenpx prisma db push
+
+  "tailwindcss": "^3.4.0",
+
+  "shadcn/ui": "latest",│   │   ├── leaderboard/page.tsx          # Global rankingsnpx prisma db seed
+
+  "lucide-react": "^0.460.0",
+
+  "jspdf": "^2.5.2",│   │   ├── stats/page.tsx                # Advanced analytics```
+
+  "zustand": "^4.5.0"
+
+}│   │   ├── history/page.tsx              # Quiz history
+
+```
 
 │   │   ├── my-history/page.tsx           # Personal history**Start backend server:**
 
-│   │   ├── user-info/page.tsx            # Profile page```bash
+### Backend Dependencies
 
-│   │   ├── sign-in/[[...sign-in]]/       # Auth pagesnpm run dev
+```json│   │   ├── user-info/page.tsx            # Profile page```bash
 
-│   │   └── sign-up/[[...sign-up]]/```
+{
 
-│   ├── components/Backend runs on: http://localhost:5001
+  "express": "^4.18.2",│   │   ├── sign-in/[[...sign-in]]/       # Auth pagesnpm run dev
 
-│   │   ├── ui/                           # shadcn/ui components
+  "prisma": "^6.1.0",
+
+  "@prisma/client": "^6.1.0",│   │   └── sign-up/[[...sign-up]]/```
+
+  "@clerk/clerk-sdk-node": "^5.0.0",
+
+  "zod": "^3.22.0",│   ├── components/Backend runs on: http://localhost:5001
+
+  "cors": "^2.8.5"
+
+}│   │   ├── ui/                           # shadcn/ui components
+
+```
 
 │   │   ├── admin/                        # Admin components### 3. Frontend Setup
 
+</details>
+
 │   │   ├── quiz/                         # Quiz components
+
+---
 
 │   │   ├── achievements/                 # Achievement displays```bash
 
+## 🚀 Quick Start
+
 │   │   └── stats/                        # Analytics components# Navigate to frontend (from root)
+
+<div align="center">
 
 │   ├── lib/cd frontend
 
+### **Get up and running in 5 minutes!**
+
 │   │   ├── api.ts                        # API client
+
+</div>
 
 │   │   ├── pdf-export.ts                 # PDF generation# Install dependencies
 
+### **📋 Prerequisites**
+
 │   │   └── utils.ts                      # Utilitiesnpm install
 
-│   ├── services/
+```bash
 
-│   │   └── quiz.service.ts               # API services# Create .env.local file
+✅ Node.js 18+ and npm│   ├── services/
 
-│   ├── stores/cp .env.local.example .env.local
+✅ PostgreSQL database (or Neon account)
 
-│   │   └── quiz-store.ts                 # Zustand state```
+✅ Clerk account (free tier)│   │   └── quiz.service.ts               # API services# Create .env.local file
 
-│   └── types/
+✅ Git installed
 
-│       └── index.ts                      # TypeScript types**Configure `frontend/.env.local`:**
+```│   ├── stores/cp .env.local.example .env.local
 
-│```env
 
-├── backend/                  # Express API (Port 5001)NEXT_PUBLIC_API_URL=http://localhost:5001/api
 
-│   ├── src/
+### **1️⃣ Clone Repository**│   │   └── quiz-store.ts                 # Zustand state```
 
-│   │   ├── controllers/# Clerk Authentication (get from dashboard.clerk.com)
 
-│   │   │   └── quiz.controller.ts        # Route handlersNEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 
-│   │   ├── services/CLERK_SECRET_KEY=sk_test_your_key_here
-
-│   │   │   ├── quiz.service.ts           # Quiz logic
-
-│   │   │   ├── user.service.ts           # User logic# Clerk URLs
-
-│   │   │   ├── achievement.service.ts    # Achievement logicNEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-
-│   │   │   └── leaderboard.service.ts    # Leaderboard logicNEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-
-│   │   ├── routes/NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-
-│   │   │   ├── quiz.routes.ts            # Quiz endpointsNEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
-
-│   │   │   ├── user.routes.ts            # User endpoints```
-
-│   │   │   ├── admin.routes.ts           # Admin endpoints
-
-│   │   │   └── index.ts                  # Route aggregator**Start frontend server:**
-
-│   │   ├── middleware/```bash
-
-│   │   │   ├── admin.ts                  # Admin authnpm run dev
-
-│   │   │   └── clerk-webhook.ts          # Clerk webhooks```
-
-│   │   ├── types/Frontend runs on: http://localhost:3000
-
-│   │   │   └── index.ts                  # TypeScript types
-
-│   │   ├── prisma.ts                     # Prisma client---
-
-│   │   └── index.ts                      # Server entry
-
-│   ├── prisma/## 🔧 Configuration
-
-│   │   ├── schema.prisma                 # Database schema
-
-│   │   └── seed.ts                       # Seed data### Clerk Authentication Setup
-
-│   └── scripts/
-
-│       ├── sync-clerk-users.ts           # Sync Clerk to DB1. **Create Clerk Account**
-
-│       ├── make-admin.ts                 # Make user admin   - Go to https://clerk.com
-
-│       ├── list-users.ts                 # List all users   - Sign up for free account
-
-│       └── manual-sync.ts                # Manual sync tool   - Create new application
-
-│
-
-├── docs/                     # Documentation2. **Configure Authentication Methods**
-
-│   ├── API_ENDPOINTS.md                  # API documentation   - Enable **Email** (required)
-
-│   ├── DATABASE_SCHEMA_UPDATE.md         # Schema details   - Enable **Google** (optional)
-
-│   ├── FEATURES.md                       # Feature documentation   - Enable **GitHub** (optional)
-
-│   ├── ARCHITECTURE.md                   # System architecture   - **Disable Phone** (not supported in India)
-
-│   └── CONTRIBUTING.md                   # Contribution guide
-
-│3. **Get API Keys**
-
-├── VERCEL_DEPLOYMENT.md      # Vercel deployment guide   - Copy Publishable Key (starts with `pk_test_`)
-
-├── QUICK_START.md            # Quick start guide   - Copy Secret Key (starts with `sk_test_`)
-
-├── SETUP_COMPLETE.md         # Setup documentation   - Add to `frontend/.env.local`
-
-└── README.md                 # This file
-
-```4. **Configure Redirects**
-
-   - Sign-in URL: `/sign-in`
-
----   - Sign-up URL: `/sign-up`
-
-   - After sign-in: `/`
-
-## 🚀 Quick Start   - After sign-up: `/`
-
-
-
-### **Prerequisites**### Database Setup (Neon)
-
-- ✅ Node.js 18+ and npm
-
-- ✅ PostgreSQL database (Neon recommended)1. **Create Neon Account**
-
-- ✅ Clerk account (free tier available)   - Go to https://neon.tech
-
-- ✅ Git installed   - Create free PostgreSQL database
-
-
-
-### **1. Clone Repository**2. **Get Connection String**
-
-   - Copy connection string from Neon dashboard
-
-```bash   - Add to `backend/.env` as `DATABASE_URL`
+```bash│   └── types/
 
 git clone https://github.com/jaatdev/quiz-app.git
 
-cd quiz-app3. **Run Migrations**
-
-```   ```bash
-
-   cd backend
-
-### **2. Backend Setup**   npx prisma db push
-
-   npx prisma db seed
-
-```bash   ```
-
-# Navigate to backend
-
-cd backend---
-
-
-
-# Install dependencies## 📁 Project Structure
-
-npm install
+cd quiz-app│       └── index.ts                      # TypeScript types**Configure `frontend/.env.local`:**
 
 ```
 
-# Create .env filequiz-app/
+│```env
 
-cat > .env << EOF├── backend/
+### **2️⃣ Backend Setup**
 
-DATABASE_URL="your_postgresql_connection_string"│   ├── prisma/
+├── backend/                  # Express API (Port 5001)NEXT_PUBLIC_API_URL=http://localhost:5001/api
 
-PORT=5001│   │   ├── schema.prisma      # Database schema
+```bash
 
-CLERK_SECRET_KEY="your_clerk_secret_key"│   │   └── seed.ts            # Sample data
-
-CLERK_WEBHOOK_SECRET="your_webhook_secret"│   ├── src/
-
-EOF│   │   ├── controllers/       # Route handlers
-
-│   │   ├── routes/            # API routes
-
-# Generate Prisma client│   │   ├── services/          # Business logic
-
-npx prisma generate│   │   ├── types/             # TypeScript types
-
-│   │   └── index.ts           # Server entry
-
-# Run database migrations│   └── package.json
-
-npx prisma db push│
-
-├── frontend/
-
-# Seed initial data (optional)│   ├── app/
-
-npx prisma db seed│   │   ├── quiz/              # Quiz pages
-
-│   │   ├── stats/             # Statistics dashboard
-
-# Start backend server│   │   ├── history/           # Quiz history
-
-npm run dev│   │   ├── leaderboard/       # Rankings
-
-```│   │   ├── sign-in/           # Auth pages
-
-│   │   ├── sign-up/           # Auth pages
-
-**Backend runs on:** `http://localhost:5001`│   │   ├── layout.tsx         # Root layout
-
-│   │   └── page.tsx           # Homepage
-
-### **3. Frontend Setup**│   ├── components/
-
-│   │   ├── quiz/              # Quiz components
-
-```bash│   │   └── ui/                # Reusable UI
-
-# Navigate to frontend (from root)│   ├── hooks/                 # Custom hooks
-
-cd frontend│   ├── services/              # API calls
-
-│   ├── stores/                # Zustand stores
-
-# Install dependencies│   └── types/                 # TypeScript types
-
-npm install│
-
-├── AUTH_PROGRESS.md           # Authentication docs
-
-# Create .env.local file├── CLERK_PHONE_DISABLE.md     # Phone auth guide
-
-cat > .env.local << EOF├── ROLLBACK_GUIDE.md          # Rollback instructions
-
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your_clerk_publishable_key"└── README.md                  # This file
-
-CLERK_SECRET_KEY="your_clerk_secret_key"```
-
-NEXT_PUBLIC_API_URL="http://localhost:5001"
-
-EOF---
-
-
-
-# Start frontend server## 🎮 Usage
-
-npm run dev
-
-```### Taking a Quiz
-
-
-
-**Frontend runs on:** `http://localhost:3000`1. **Browse Topics**
-
-   - View all subjects on homepage
-
-### **4. Configure Clerk Authentication**   - Use search to find specific topics
-
-   - Filter by subject category
-
-1. Go to https://clerk.com and create account
-
-2. Create new application2. **Select Difficulty**
-
-3. Enable authentication methods:   - Choose: Easy, Medium, Hard, or Expert
-
-   - ✅ Email (required)   - Higher difficulties unlock with points
-
-   - ✅ Google (optional)   - Earn more points for harder quizzes
-
-   - ✅ GitHub (optional)
-
-4. Copy API keys to `.env.local`3. **Complete Quiz**
-
-5. Set redirect URLs:   - Answer multiple-choice questions
-
-   - Sign-in: `/sign-in`   - Use keyboard arrows or buttons to navigate
-
-   - Sign-up: `/sign-up`   - Watch the timer countdown
-
-   - After sign-in: `/dashboard`   - Submit when finished
-
-   - After sign-up: `/user-info`
-
-4. **View Results**
-
-### **5. Make First Admin User**   - See your score and percentage
-
-   - Review correct/incorrect answers
-
-```bash   - Check detailed explanations
-
-cd backend   - Retake or try new topic
-
-npm run make-admin your-email@example.com
-
-```### Viewing Statistics
-
-
-
-### **6. Access the Application**- Click **Stats** in header
-
-- View overall performance metrics
-
-- 🏠 **Homepage**: http://localhost:3000- See topic-wise breakdown
-
-- 📊 **Dashboard**: http://localhost:3000/dashboard- Track improvement over time
-
-- ⚙️ **Admin Panel**: http://localhost:3000/admin- Filter by date range
-
-- 🔐 **Sign In**: http://localhost:3000/sign-in
-
-### Managing History
-
----
-
-- Click **History** in header
-
-## 🔑 Environment Variables- View all quiz attempts
-
-- Search by topic or date
-
-### **Frontend (.env.local)**- Sort by score, date, or topic
-
-- Delete old attempts
-
-```env
-
-# Clerk Authentication### Leaderboard
-
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_***
-
-CLERK_SECRET_KEY=sk_test_***- Click **Leaderboard** in header
-
-- See top performers
-
-# API Configuration- View your ranking
-
-NEXT_PUBLIC_API_URL=http://localhost:5001- Filter by timeframe
-
-- Compete with others
-
-# Clerk URLs (optional, defaults shown)
-
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in---
-
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard## 🔐 Authentication Flow
-
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/user-info
-
-```### Current State (Phase 1 - UI Only)
-
-✅ Clerk authentication integrated  
-
-### **Backend (.env)**✅ Sign-in/Sign-up pages created  
-
-✅ User avatars in header  
-
-```env✅ Email authentication enabled  
-
-# Database⏳ Data still in localStorage (not linked to users)
-
-DATABASE_URL=postgresql://user:password@host:5432/database
-
-### Coming Soon (Phase 2 - Database Integration)
-
-# Server Configuration- [ ] Link quiz results to user accounts
-
-PORT=5001- [ ] Save history to database with userId
-
-NODE_ENV=development- [ ] Real leaderboard with authenticated users
-
-- [ ] User-specific statistics
-
-# Clerk Authentication- [ ] Cross-device data sync
-
-CLERK_SECRET_KEY=sk_test_***
-
-CLERK_WEBHOOK_SECRET=whsec_***---
-
-```
-
-## 🛠️ Development
-
-**Get your Clerk keys from:** https://dashboard.clerk.com
-
-### Run Both Servers
-
----
-
-**Terminal 1 - Backend:**
-
-## 📚 Database Schema```bash
+# Navigate to backend│   ├── src/
 
 cd backend
 
-### **Core Models**npm run dev
+│   │   ├── controllers/# Clerk Authentication (get from dashboard.clerk.com)
+
+# Install dependencies
+
+npm install│   │   │   └── quiz.controller.ts        # Route handlersNEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+
+
+
+# Create environment file│   │   ├── services/CLERK_SECRET_KEY=sk_test_your_key_here
+
+cat > .env << 'EOF'
+
+DATABASE_URL="postgresql://username:password@host:5432/database"│   │   │   ├── quiz.service.ts           # Quiz logic
+
+PORT=5001
+
+CLERK_SECRET_KEY="sk_test_xxxxx"│   │   │   ├── user.service.ts           # User logic# Clerk URLs
+
+CLERK_WEBHOOK_SECRET="whsec_xxxxx"
+
+EOF│   │   │   ├── achievement.service.ts    # Achievement logicNEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+
+
+
+# Generate Prisma client & migrate database│   │   │   └── leaderboard.service.ts    # Leaderboard logicNEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+npx prisma generate
+
+npx prisma db push│   │   ├── routes/NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+
+
+
+# (Optional) Seed sample data│   │   │   ├── quiz.routes.ts            # Quiz endpointsNEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+
+npx prisma db seed
+
+│   │   │   ├── user.routes.ts            # User endpoints```
+
+# Start backend server
+
+npm run dev│   │   │   ├── admin.routes.ts           # Admin endpoints
 
 ```
 
-#### **User**
+│   │   │   └── index.ts                  # Route aggregator**Start frontend server:**
 
-```prisma**Terminal 2 - Frontend:**
+✅ **Backend running at** `http://localhost:5001`
 
-model User {```bash
+│   │   ├── middleware/```bash
 
-  id              String    @id @default(uuid())cd frontend
+### **3️⃣ Frontend Setup**
 
-  clerkId         String    @uniquenpm run dev
+│   │   │   ├── admin.ts                  # Admin authnpm run dev
 
-  email           String    @unique```
+```bash
 
-  name            String?
+# Navigate to frontend (from root)│   │   │   └── clerk-webhook.ts          # Clerk webhooks```
 
-  imageUrl        String?### Database Commands
+cd frontend
 
-  role            UserRole  @default(USER)
+│   │   ├── types/Frontend runs on: http://localhost:3000
 
-  createdAt       DateTime  @default(now())```bash
+# Install dependencies
 
-  quizAttempts    QuizAttempt[]# Generate Prisma client
-
-  achievements    Achievement[]npx prisma generate
-
-  leaderboardEntries LeaderboardEntry[]
-
-}# Push schema changes
-
-```npx prisma db push
+npm install│   │   │   └── index.ts                  # TypeScript types
 
 
 
-#### **Subject & Topic**# Open Prisma Studio
+# Create environment file│   │   ├── prisma.ts                     # Prisma client---
 
-```prismanpx prisma studio
+cat > .env.local << 'EOF'
 
-model Subject {
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_xxxxx"│   │   └── index.ts                      # Server entry
 
-  id          String   @id @default(uuid())# Run seed data
+CLERK_SECRET_KEY="sk_test_xxxxx"
 
-  name        String   @uniquenpx prisma db seed
+NEXT_PUBLIC_API_URL="http://localhost:5001"│   ├── prisma/## 🔧 Configuration
 
-  description String?
+EOF
 
-  topics      Topic[]# Reset database
+│   │   ├── schema.prisma                 # Database schema
 
-}npx prisma migrate reset
+# Start development server
+
+npm run dev│   │   └── seed.ts                       # Seed data### Clerk Authentication Setup
 
 ```
 
-model Topic {
+│   └── scripts/
 
-  id          String    @id @default(uuid())### Git Workflow
+✅ **Frontend running at** `http://localhost:3000`
 
-  name        String
+│       ├── sync-clerk-users.ts           # Sync Clerk to DB1. **Create Clerk Account**
 
-  description String?```bash
+### **4️⃣ Make First Admin**
 
-  subject     Subject   @relation(fields: [subjectId])# Current branch
+│       ├── make-admin.ts                 # Make user admin   - Go to https://clerk.com
 
-  questions   Question[]git branch                    # feature/authentication
+```bash
 
-}
+cd backend│       ├── list-users.ts                 # List all users   - Sign up for free account
 
-```# Safe rollback point
+npm run make-admin your-email@example.com
 
-git checkout v1.0-working     # Restore to pre-auth state
+```│       └── manual-sync.ts                # Manual sync tool   - Create new application
 
-#### **Question & Options**
 
-```prisma# View changes
 
-model Question {git status
+### **🎉 You're Ready!**│
 
-  id               String   @id @default(uuid())git diff
 
-  text             String
 
-  difficulty       Difficulty# Commit changes
+<div align="center">├── docs/                     # Documentation2. **Configure Authentication Methods**
 
-  explanation      String?git add .
 
-  topic            Topic    @relation(fields: [topicId])git commit -m "feat: your message"
 
-  options          Option[]git push origin feature/authentication
+| Service | URL | Description |│   ├── API_ENDPOINTS.md                  # API documentation   - Enable **Email** (required)
 
-  correctAnswerId  String```
+|---------|-----|-------------|
 
-}
+| 🏠 **App** | http://localhost:3000 | Main application |│   ├── DATABASE_SCHEMA_UPDATE.md         # Schema details   - Enable **Google** (optional)
+
+| ⚙️ **Admin** | http://localhost:3000/admin | Admin dashboard |
+
+| 🔐 **Sign In** | http://localhost:3000/sign-in | Authentication |│   ├── FEATURES.md                       # Feature documentation   - Enable **GitHub** (optional)
+
+| 🔌 **API** | http://localhost:5001 | Backend server |
+
+│   ├── ARCHITECTURE.md                   # System architecture   - **Disable Phone** (not supported in India)
+
+</div>
+
+│   └── CONTRIBUTING.md                   # Contribution guide
 
 ---
 
-model Option {
+│3. **Get API Keys**
 
-  id         String   @id @default(uuid())## 🐛 Troubleshooting
+## 🔧 Configuration
 
-  text       String
+├── VERCEL_DEPLOYMENT.md      # Vercel deployment guide   - Copy Publishable Key (starts with `pk_test_`)
 
-  questionId String### Backend Issues
+### **🔐 Clerk Setup** (Authentication)
 
-  question   Question @relation(fields: [questionId])
+├── QUICK_START.md            # Quick start guide   - Copy Secret Key (starts with `sk_test_`)
 
-}**Port 5001 already in use:**
+<details>
 
-``````bash
-
-# Find and kill process on port 5001
-
-#### **QuizAttempt**npx kill-port 5001
-
-```prisma
-
-model QuizAttempt {# Or change port in backend/.env
-
-  id              String   @id @default(uuid())PORT=5002
-
-  userId          String```
-
-  user            User     @relation(fields: [userId])
-
-  topicId         String**Database connection failed:**
-
-  topic           Topic    @relation(fields: [topicId])- Check `DATABASE_URL` in `.env`
-
-  score           Int- Verify Neon database is active
-
-  totalQuestions  Int- Run `npx prisma db push`
-
-  timeSpent       Int
-
-  answers         Json### Frontend Issues
-
-  completed       Boolean
-
-  createdAt       DateTime @default(now())**API calls failing:**
-
-}- Check backend is running on port 5001
-
-```- Verify `NEXT_PUBLIC_API_URL` in `.env.local`
-
-- Check browser console for errors
-
-#### **Achievement**
-
-```prisma**Clerk authentication errors:**
-
-model Achievement {- Verify Clerk keys in `.env.local`
-
-  id          String          @id @default(uuid())- Check Clerk dashboard is configured
-
-  userId      String- Hard refresh browser (Ctrl+Shift+R)
-
-  user        User            @relation(fields: [userId])
-
-  type        AchievementType**Phone authentication showing (India issue):**
-
-  unlockedAt  DateTime        @default(now())- Disable in Clerk Dashboard
-
-  progress    Int             @default(0)- See `CLERK_PHONE_DISABLE.md` for guide
-
-}
-
-```---
+<summary><b>Click to expand Clerk configuration steps</b></summary>├── SETUP_COMPLETE.md         # Setup documentation   - Add to `frontend/.env.local`
 
 
 
-#### **LeaderboardEntry**## 📊 Database Schema
+1. **Create Account**└── README.md                 # This file
 
-```prisma
+   - Visit https://clerk.com
 
-model LeaderboardEntry {### Current Tables
+   - Sign up for free account```4. **Configure Redirects**
 
-  id          String   @id @default(uuid())
+   - Create new application
 
-  userId      String- `Subject` - Quiz subjects (Math, Science, etc.)
+   - Sign-in URL: `/sign-in`
 
-  user        User     @relation(fields: [userId])- `Topic` - Topics within subjects
+2. **Enable Auth Methods**
 
-  score       Int- `Question` - Quiz questions
+   ```---   - Sign-up URL: `/sign-up`
 
-  category    String?- `Option` - Answer options
+   ✅ Email (required)
 
-  timeRange   TimeRange- `QuizResult` - Submitted quiz results
+   ✅ Google OAuth (optional)   - After sign-in: `/`
 
-  createdAt   DateTime @default(now())- `DifficultyLevel` - Difficulty configurations
+   ✅ GitHub OAuth (optional)
 
-  updatedAt   DateTime @updatedAt
+   ❌ Phone (disabled for India)## 🚀 Quick Start   - After sign-up: `/`
 
-}### Coming in Phase 2
+   ```
+
+
+
+3. **Get API Keys**
+
+   - Go to **API Keys** in dashboard### **Prerequisites**### Database Setup (Neon)
+
+   - Copy **Publishable Key** (`pk_test_...`)
+
+   - Copy **Secret Key** (`sk_test_...`)- ✅ Node.js 18+ and npm
+
+   - Add to `.env.local` and `.env`
+
+- ✅ PostgreSQL database (Neon recommended)1. **Create Neon Account**
+
+4. **Configure Webhooks**
+
+   ```- ✅ Clerk account (free tier available)   - Go to https://neon.tech
+
+   Endpoint: https://your-backend.railway.app/api/webhooks/clerk
+
+   Events: user.created, user.updated, user.deleted- ✅ Git installed   - Create free PostgreSQL database
+
+   ```
+
+
+
+5. **Set Redirect URLs**
+
+   ```### **1. Clone Repository**2. **Get Connection String**
+
+   Sign-in: /sign-in
+
+   Sign-up: /sign-up   - Copy connection string from Neon dashboard
+
+   After sign-in: /dashboard
+
+   After sign-up: /user-info```bash   - Add to `backend/.env` as `DATABASE_URL`
+
+   ```
+
+git clone https://github.com/jaatdev/quiz-app.git
+
+</details>
+
+cd quiz-app3. **Run Migrations**
+
+### **🗄️ Database Setup** (Neon PostgreSQL)
+
+```   ```bash
+
+<details>
+
+<summary><b>Click to expand database configuration steps</b></summary>   cd backend
+
+
+
+1. **Create Neon Account**### **2. Backend Setup**   npx prisma db push
+
+   - Visit https://neon.tech
+
+   - Sign up for free account (3 projects free)   npx prisma db seed
+
+
+
+2. **Create Database**```bash   ```
+
+   ```
+
+   Project name: quiz-app# Navigate to backend
+
+   Region: Choose nearest (e.g., US East, EU West)
+
+   PostgreSQL version: 15cd backend---
+
+   ```
+
+
+
+3. **Get Connection String**
+
+   ```bash# Install dependencies## 📁 Project Structure
+
+   # From Neon dashboard, copy connection string
+
+   postgresql://username:password@ep-xxx.region.aws.neon.tech/database?sslmode=requirenpm install
+
+   ```
 
 ```
 
-- `User` - User accounts (linked to Clerk)
+4. **Add to Backend .env**
 
-**Full schema:** See [DATABASE_SCHEMA_UPDATE.md](./DATABASE_SCHEMA_UPDATE.md)- Foreign keys linking results to users
+   ```env# Create .env filequiz-app/
 
-- User preferences and settings
+   DATABASE_URL="your_connection_string_here"
+
+   ```cat > .env << EOF├── backend/
+
+
+
+5. **Run Migrations**DATABASE_URL="your_postgresql_connection_string"│   ├── prisma/
+
+   ```bash
+
+   cd backendPORT=5001│   │   ├── schema.prisma      # Database schema
+
+   npx prisma db push
+
+   npx prisma db seed  # Optional: adds sample dataCLERK_SECRET_KEY="your_clerk_secret_key"│   │   └── seed.ts            # Sample data
+
+   ```
+
+CLERK_WEBHOOK_SECRET="your_webhook_secret"│   ├── src/
+
+</details>
+
+EOF│   │   ├── controllers/       # Route handlers
+
+### **🔑 Environment Variables Reference**
+
+│   │   ├── routes/            # API routes
+
+<details>
+
+<summary><b>Complete environment variables documentation</b></summary># Generate Prisma client│   │   ├── services/          # Business logic
+
+
+
+#### **Frontend (`.env.local`)**npx prisma generate│   │   ├── types/             # TypeScript types
+
+```env
+
+# Clerk Authentication (Required)│   │   └── index.ts           # Server entry
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxx
+
+CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxx# Run database migrations│   └── package.json
+
+
+
+# API Configuration (Required)npx prisma db push│
+
+NEXT_PUBLIC_API_URL=http://localhost:5001
+
+├── frontend/
+
+# Clerk URLs (Optional - defaults shown)
+
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in# Seed initial data (optional)│   ├── app/
+
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboardnpx prisma db seed│   │   ├── quiz/              # Quiz pages
+
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/user-info
+
+```│   │   ├── stats/             # Statistics dashboard
+
+
+
+#### **Backend (`.env`)**# Start backend server│   │   ├── history/           # Quiz history
+
+```env
+
+# Database (Required)npm run dev│   │   ├── leaderboard/       # Rankings
+
+DATABASE_URL=postgresql://user:password@host:5432/db
+
+```│   │   ├── sign-in/           # Auth pages
+
+# Server (Required)
+
+PORT=5001│   │   ├── sign-up/           # Auth pages
+
+NODE_ENV=development
+
+**Backend runs on:** `http://localhost:5001`│   │   ├── layout.tsx         # Root layout
+
+# Clerk (Required)
+
+CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxx│   │   └── page.tsx           # Homepage
+
+CLERK_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
+
+### **3. Frontend Setup**│   ├── components/
+
+# Optional
+
+LOG_LEVEL=info│   │   ├── quiz/              # Quiz components
+
+CORS_ORIGIN=http://localhost:3000
+
+``````bash│   │   └── ui/                # Reusable UI
+
+
+
+</details># Navigate to frontend (from root)│   ├── hooks/                 # Custom hooks
+
+
+
+---cd frontend│   ├── services/              # API calls
+
+
+
+## 📊 Project Structure│   ├── stores/                # Zustand stores
+
+
+
+```# Install dependencies│   └── types/                 # TypeScript types
+
+quiz-app/
+
+│npm install│
+
+├── 📂 frontend/                    # Next.js Application (Port 3000)
+
+│   ├── 📂 app/                    # App Router Pages├── AUTH_PROGRESS.md           # Authentication docs
+
+│   │   ├── 📂 admin/              # 👑 Admin Panel
+
+│   │   │   ├── page.tsx               # Dashboard# Create .env.local file├── CLERK_PHONE_DISABLE.md     # Phone auth guide
+
+│   │   │   ├── questions/             # Question Management
+
+│   │   │   ├── users/                 # User Managementcat > .env.local << EOF├── ROLLBACK_GUIDE.md          # Rollback instructions
+
+│   │   │   ├── subjects/              # Subject Management
+
+│   │   │   ├── import/                # Bulk ImportNEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your_clerk_publishable_key"└── README.md                  # This file
+
+│   │   │   └── settings/              # Settings
+
+│   │   ├── 📂 quiz/[topicId]/     # 🎯 Quiz InterfaceCLERK_SECRET_KEY="your_clerk_secret_key"```
+
+│   │   ├── 📂 dashboard/          # 📊 User Dashboard
+
+│   │   ├── 📂 leaderboard/        # 🏆 RankingsNEXT_PUBLIC_API_URL="http://localhost:5001"
+
+│   │   ├── 📂 stats/              # 📈 Analytics
+
+│   │   ├── 📂 history/            # 📜 Quiz HistoryEOF---
+
+│   │   └── 📂 sign-in|sign-up/    # 🔐 Authentication
+
+│   │
+
+│   ├── 📂 components/             # React Components
+
+│   │   ├── 📂 ui/                 # shadcn/ui Components# Start frontend server## 🎮 Usage
+
+│   │   ├── 📂 admin/              # Admin Components
+
+│   │   ├── 📂 quiz/               # Quiz Componentsnpm run dev
+
+│   │   ├── 📂 achievements/       # Achievement Components
+
+│   │   └── 📂 stats/              # Statistics Components```### Taking a Quiz
+
+│   │
+
+│   ├── 📂 lib/                    # Utilities
+
+│   │   ├── api.ts                     # API Client
+
+│   │   ├── pdf-export.ts              # PDF Generation**Frontend runs on:** `http://localhost:3000`1. **Browse Topics**
+
+│   │   └── utils.ts                   # Helper Functions
+
+│   │   - View all subjects on homepage
+
+│   ├── 📂 services/               # API Services
+
+│   ├── 📂 stores/                 # State Management### **4. Configure Clerk Authentication**   - Use search to find specific topics
+
+│   ├── 📂 types/                  # TypeScript Types
+
+│   └── 📂 styles/                 # Global Styles   - Filter by subject category
+
+│
+
+├── 📂 backend/                     # Express API (Port 5001)1. Go to https://clerk.com and create account
+
+│   ├── 📂 src/
+
+│   │   ├── 📂 controllers/        # Route Handlers2. Create new application2. **Select Difficulty**
+
+│   │   ├── 📂 services/           # Business Logic
+
+│   │   │   ├── quiz.service.ts        # Quiz Operations3. Enable authentication methods:   - Choose: Easy, Medium, Hard, or Expert
+
+│   │   │   ├── user.service.ts        # User Operations
+
+│   │   │   ├── achievement.service.ts # Achievement System   - ✅ Email (required)   - Higher difficulties unlock with points
+
+│   │   │   └── leaderboard.service.ts # Leaderboard Logic
+
+│   │   ├── 📂 routes/             # API Routes   - ✅ Google (optional)   - Earn more points for harder quizzes
+
+│   │   │   ├── quiz.routes.ts         # Quiz Endpoints
+
+│   │   │   ├── user.routes.ts         # User Endpoints   - ✅ GitHub (optional)
+
+│   │   │   └── admin.routes.ts        # Admin Endpoints
+
+│   │   ├── 📂 middleware/         # Middleware4. Copy API keys to `.env.local`3. **Complete Quiz**
+
+│   │   │   ├── admin.ts               # Admin Authorization
+
+│   │   │   └── clerk-webhook.ts       # Clerk Integration5. Set redirect URLs:   - Answer multiple-choice questions
+
+│   │   ├── 📂 types/              # TypeScript Definitions
+
+│   │   ├── prisma.ts              # Prisma Client   - Sign-in: `/sign-in`   - Use keyboard arrows or buttons to navigate
+
+│   │   └── index.ts               # Server Entry Point
+
+│   │   - Sign-up: `/sign-up`   - Watch the timer countdown
+
+│   ├── 📂 prisma/                 # Database
+
+│   │   ├── schema.prisma              # Database Schema   - After sign-in: `/dashboard`   - Submit when finished
+
+│   │   └── seed.ts                    # Seed Data
+
+│   │   - After sign-up: `/user-info`
+
+│   └── 📂 scripts/                # Utility Scripts
+
+│       ├── sync-clerk-users.ts        # Sync Clerk → DB4. **View Results**
+
+│       ├── make-admin.ts              # Assign Admin Role
+
+│       └── list-users.ts              # List All Users### **5. Make First Admin User**   - See your score and percentage
+
+│
+
+├── 📂 docs/                        # Documentation   - Review correct/incorrect answers
+
+│   ├── API_ENDPOINTS.md               # API Reference
+
+│   ├── DATABASE_SCHEMA.md             # Schema Docs```bash   - Check detailed explanations
+
+│   ├── FEATURES.md                    # Feature Docs
+
+│   └── CONTRIBUTING.md                # Contribution Guidecd backend   - Retake or try new topic
+
+│
+
+├── 📄 README.md                    # This Filenpm run make-admin your-email@example.com
+
+├── 📄 VERCEL_DEPLOYMENT.md         # Deployment Guide
+
+└── 📄 LICENSE                      # MIT License```### Viewing Statistics
+
+```
+
+
 
 ---
 
----
+### **6. Access the Application**- Click **Stats** in header
 
 ## 🎮 Usage Guide
 
-## 🚦 Roadmap
+- View overall performance metrics
 
-### **For Users**
+### **👤 For Users**
 
-### ✅ Completed (Tier 1)
+- 🏠 **Homepage**: http://localhost:3000- See topic-wise breakdown
 
-#### **1. Sign Up & Profile Setup**- [x] Core quiz functionality
+<details>
 
-```- [x] Statistics dashboard
+<summary><b>1. Getting Started</b></summary>- 📊 **Dashboard**: http://localhost:3000/dashboard- Track improvement over time
 
-1. Click "Sign In" in header- [x] History management
 
-2. Create account (Email/Google/GitHub)- [x] Leaderboard
 
-3. Complete profile information- [x] Difficulty system
+#### Sign Up- ⚙️ **Admin Panel**: http://localhost:3000/admin- Filter by date range
 
-4. Redirected to user dashboard- [x] Enhanced UI/UX
+1. Click **"Sign In"** button in header
 
-```- [x] Loading states
+2. Choose authentication method:- 🔐 **Sign In**: http://localhost:3000/sign-in
 
-- [x] Text readability improvements
+   - 📧 Email & Password
 
-#### **2. Take a Quiz**
+   - 🔵 Continue with Google### Managing History
 
-```### 🏗️ In Progress (Tier 2 - Phase 1)
+   - ⚫ Continue with GitHub
 
-1. Browse topics on homepage- [x] Clerk authentication UI
+3. Complete profile setup---
 
-2. Select topic and difficulty level- [x] Sign-in/Sign-up pages
+4. Redirected to dashboard
 
-3. Click "Start Quiz"- [x] User profiles in header
+- Click **History** in header
 
-4. Answer questions using:- [ ] Database integration with users
+#### Browse Quizzes
 
-   - Mouse clicks- [ ] User-specific data persistence
+1. View available subjects on homepage## 🔑 Environment Variables- View all quiz attempts
 
-   - Keyboard arrows (←/→)
+2. Use search bar to find topics
 
-   - Touch swipes (mobile)### 🔮 Future Features
+3. Filter by subject category- Search by topic or date
 
-5. Monitor timer in top-right- [ ] Real-time leaderboard updates
+4. Check question count per topic
 
-6. Submit when complete- [ ] Quiz creation interface
+### **Frontend (.env.local)**- Sort by score, date, or topic
 
-```- [ ] Admin dashboard
+</details>
 
-- [ ] Badges and achievements
+- Delete old attempts
 
-#### **3. View Results**- [ ] Study mode
+<details>
 
-```- [ ] Quiz sharing
+<summary><b>2. Taking a Quiz</b></summary>```env
 
-1. See score percentage and breakdown- [ ] Analytics export
 
-2. Review correct/incorrect answers
 
-3. Read detailed explanations---
-
-4. Export as PDF (optional)
-
-5. Retake quiz or try new topic## 📝 License
+#### Start Quiz# Clerk Authentication### Leaderboard
 
 ```
 
+Select Topic → Choose Difficulty → Click "Start Quiz"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_***
+
+```
+
+CLERK_SECRET_KEY=sk_test_***- Click **Leaderboard** in header
+
+#### During Quiz
+
+- ✅ Answer multiple-choice questions- See top performers
+
+- ⌨️ Use arrow keys to navigate (← →)
+
+- 👆 Swipe left/right on mobile# API Configuration- View your ranking
+
+- ⏰ Monitor countdown timer
+
+- 🔄 Change answers before submittingNEXT_PUBLIC_API_URL=http://localhost:5001- Filter by timeframe
+
+
+
+#### Complete Quiz- Compete with others
+
+1. Click **"Submit Quiz"** when done
+
+2. Confirm submission# Clerk URLs (optional, defaults shown)
+
+3. View instant results
+
+4. See score breakdownNEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in---
+
+5. Review all answers
+
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+</details>
+
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard## 🔐 Authentication Flow
+
+<details>
+
+<summary><b>3. Track Your Progress</b></summary>NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/user-info
+
+
+
+#### Dashboard```### Current State (Phase 1 - UI Only)
+
+- 📊 Overall statistics
+
+- 🎯 Recent quiz attempts✅ Clerk authentication integrated  
+
+- 🏆 Achievement progress
+
+- 📈 Performance charts### **Backend (.env)**✅ Sign-in/Sign-up pages created  
+
+- 💡 Recommended topics
+
+✅ User avatars in header  
+
+#### Statistics Page
+
+- Subject-wise performance```env✅ Email authentication enabled  
+
+- Difficulty analysis
+
+- Time-based trends# Database⏳ Data still in localStorage (not linked to users)
+
+- Accuracy tracking
+
+- Improvement metricsDATABASE_URL=postgresql://user:password@host:5432/database
+
+
+
+#### Quiz History### Coming Soon (Phase 2 - Database Integration)
+
+- All attempts listed
+
+- Search by topic/date# Server Configuration- [ ] Link quiz results to user accounts
+
+- Sort by score/date
+
+- Export as PDFPORT=5001- [ ] Save history to database with userId
+
+- Delete attempts
+
+NODE_ENV=development- [ ] Real leaderboard with authenticated users
+
+</details>
+
+- [ ] User-specific statistics
+
+<details>
+
+<summary><b>4. Compete & Achieve</b></summary># Clerk Authentication- [ ] Cross-device data sync
+
+
+
+#### LeaderboardCLERK_SECRET_KEY=sk_test_***
+
+```
+
+Filter by:CLERK_WEBHOOK_SECRET=whsec_***---
+
+🔥 Daily  |  📅 Weekly  |  📆 Monthly  |  ⏰ All-Time
+
+``````
+
+- See your global rank
+
+- View top performers## 🛠️ Development
+
+- Check achievements
+
+- Compare scores**Get your Clerk keys from:** https://dashboard.clerk.com
+
+
+
+#### Unlock Achievements### Run Both Servers
+
+- 🎯 Complete quizzes
+
+- 🏆 Get perfect scores---
+
+- ⚡ Speed challenges
+
+- 📚 Consistency rewards**Terminal 1 - Backend:**
+
+- Total: 14 unique achievements!
+
+## 📚 Database Schema```bash
+
+</details>
+
+cd backend
+
+### **👑 For Admins**
+
+### **Core Models**npm run dev
+
+<details>
+
+<summary><b>1. Accessing Admin Panel</b></summary>```
+
+
+
+#### Make User Admin#### **User**
+
+```bash
+
+cd backend```prisma**Terminal 2 - Frontend:**
+
+npm run make-admin user@example.com
+
+```model User {```bash
+
+
+
+#### Access Panel  id              String    @id @default(uuid())cd frontend
+
+```
+
+Navigate to: http://localhost:3000/admin  clerkId         String    @uniquenpm run dev
+
+```
+
+  email           String    @unique```
+
+#### Dashboard Overview
+
+- 👥 Total users  name            String?
+
+- ❓ Total questions
+
+- 📝 Quiz attempts  imageUrl        String?### Database Commands
+
+- 📊 Daily active users
+
+- 📈 Growth metrics  role            UserRole  @default(USER)
+
+
+
+</details>  createdAt       DateTime  @default(now())```bash
+
+
+
+<details>  quizAttempts    QuizAttempt[]# Generate Prisma client
+
+<summary><b>2. Managing Questions</b></summary>
+
+  achievements    Achievement[]npx prisma generate
+
+#### Create Question
+
+```  leaderboardEntries LeaderboardEntry[]
+
+Admin → Questions → Add Question
+
+}# Push schema changes
+
+Fill form:
+
+├── Question text```npx prisma db push
+
+├── 4 options (A, B, C, D)
+
+├── Correct answer
+
+├── Explanation (optional)
+
+├── Difficulty level#### **Subject & Topic**# Open Prisma Studio
+
+└── Topic assignment
+
+``````prismanpx prisma studio
+
+
+
+#### Bulk Importmodel Subject {
+
+```javascript
+
+// JSON Format  id          String   @id @default(uuid())# Run seed data
+
+[
+
+  {  name        String   @uniquenpx prisma db seed
+
+    "text": "Question text?",
+
+    "options": [  description String?
+
+      {"id": "a", "text": "Option A"},
+
+      {"id": "b", "text": "Option B"},  topics      Topic[]# Reset database
+
+      {"id": "c", "text": "Option C"},
+
+      {"id": "d", "text": "Option D"}}npx prisma migrate reset
+
+    ],
+
+    "correctAnswerId": "a",```
+
+    "explanation": "Explanation here",
+
+    "difficulty": "easy",model Topic {
+
+    "topicId": "topic-uuid"
+
+  }  id          String    @id @default(uuid())### Git Workflow
+
+]
+
+```  name        String
+
+
+
+```csv  description String?```bash
+
+# CSV Format
+
+text,optionA,optionB,optionC,optionD,correctAnswer,explanation,difficulty,topicId  subject     Subject   @relation(fields: [subjectId])# Current branch
+
+What is 2+2?,3,4,5,6,b,Basic addition,easy,topic-uuid
+
+```  questions   Question[]git branch                    # feature/authentication
+
+
+
+</details>}
+
+
+
+<details>```# Safe rollback point
+
+<summary><b>3. Managing Users</b></summary>
+
+git checkout v1.0-working     # Restore to pre-auth state
+
+#### User Management
+
+- 🔍 Search by name/email#### **Question & Options**
+
+- 🔄 Filter by role
+
+- 📅 Sort by date```prisma# View changes
+
+- 👁️ View statistics
+
+- ⚙️ Assign rolesmodel Question {git status
+
+
+
+#### Change User Role  id               String   @id @default(uuid())git diff
+
+```
+
+Find user → Click role dropdown → Select ADMIN/USER → Save  text             String
+
+```
+
+  difficulty       Difficulty# Commit changes
+
+</details>
+
+  explanation      String?git add .
+
+---
+
+  topic            Topic    @relation(fields: [topicId])git commit -m "feat: your message"
+
+## 📡 API Reference
+
+  options          Option[]git push origin feature/authentication
+
+<div align="center">
+
+  correctAnswerId  String```
+
+### **Base URL**
+
+}
+
+**Development:** `http://localhost:5001`  
+
+**Production:** `https://your-api.railway.app`---
+
+
+
+</div>model Option {
+
+
+
+### **🔓 Public Endpoints**  id         String   @id @default(uuid())## 🐛 Troubleshooting
+
+
+
+| Method | Endpoint | Description | Response |  text       String
+
+|--------|----------|-------------|----------|
+
+| `GET` | `/api/subjects` | Get all subjects | `Subject[]` |  questionId String### Backend Issues
+
+| `GET` | `/api/subjects/:id/topics` | Get topics for subject | `Topic[]` |
+
+| `GET` | `/api/topics/:id/questions` | Get questions for topic | `Question[]` |  question   Question @relation(fields: [questionId])
+
+| `POST` | `/api/quiz/submit` | Submit quiz attempt | `QuizResult` |
+
+| `GET` | `/api/leaderboard` | Get leaderboard data | `LeaderboardEntry[]` |}**Port 5001 already in use:**
+
+
+
+### **🔒 Protected Endpoints** (Require Auth)``````bash
+
+
+
+| Method | Endpoint | Description | Headers |# Find and kill process on port 5001
+
+|--------|----------|-------------|---------|
+
+| `GET` | `/api/user/stats` | Get user statistics | `x-clerk-user-id` |#### **QuizAttempt**npx kill-port 5001
+
+| `GET` | `/api/user/history` | Get quiz history | `x-clerk-user-id` |
+
+| `GET` | `/api/user/achievements` | Get achievements | `x-clerk-user-id` |```prisma
+
+| `PUT` | `/api/user/profile` | Update profile | `x-clerk-user-id` |
+
+model QuizAttempt {# Or change port in backend/.env
+
+### **👑 Admin Endpoints** (Require Admin Role)
+
+  id              String   @id @default(uuid())PORT=5002
+
+<details>
+
+<summary><b>View all admin endpoints</b></summary>  userId          String```
+
+
+
+#### Questions  user            User     @relation(fields: [userId])
+
+| Method | Endpoint | Description |
+
+|--------|----------|-------------|  topicId         String**Database connection failed:**
+
+| `GET` | `/api/admin/questions` | List all questions |
+
+| `POST` | `/api/admin/questions` | Create question |  topic           Topic    @relation(fields: [topicId])- Check `DATABASE_URL` in `.env`
+
+| `PUT` | `/api/admin/questions/:id` | Update question |
+
+| `DELETE` | `/api/admin/questions/:id` | Delete question |  score           Int- Verify Neon database is active
+
+| `POST` | `/api/admin/questions/bulk` | Bulk import |
+
+  totalQuestions  Int- Run `npx prisma db push`
+
+#### Users
+
+| Method | Endpoint | Description |  timeSpent       Int
+
+|--------|----------|-------------|
+
+| `GET` | `/api/admin/users` | List all users |  answers         Json### Frontend Issues
+
+| `PUT` | `/api/admin/users/:id/role` | Update user role |
+
+  completed       Boolean
+
+#### Subjects & Topics
+
+| Method | Endpoint | Description |  createdAt       DateTime @default(now())**API calls failing:**
+
+|--------|----------|-------------|
+
+| `GET` | `/api/admin/subjects` | List subjects |}- Check backend is running on port 5001
+
+| `POST` | `/api/admin/subjects` | Create subject |
+
+| `PUT` | `/api/admin/subjects/:id` | Update subject |```- Verify `NEXT_PUBLIC_API_URL` in `.env.local`
+
+| `DELETE` | `/api/admin/subjects/:id` | Delete subject |
+
+| `GET` | `/api/admin/topics` | List topics |- Check browser console for errors
+
+| `POST` | `/api/admin/topics` | Create topic |
+
+#### **Achievement**
+
+</details>
+
+```prisma**Clerk authentication errors:**
+
+**📖 Full API Documentation:** See [API_ENDPOINTS.md](./API_ENDPOINTS.md)
+
+model Achievement {- Verify Clerk keys in `.env.local`
+
+---
+
+  id          String          @id @default(uuid())- Check Clerk dashboard is configured
+
+## 🚢 Deployment
+
+  userId      String- Hard refresh browser (Ctrl+Shift+R)
+
+### **🌐 Frontend Deployment** (Vercel)
+
+  user        User            @relation(fields: [userId])
+
+```bash
+
+# 1. Connect GitHub repo to Vercel  type        AchievementType**Phone authentication showing (India issue):**
+
+# 2. Configure project:
+
+Root Directory: frontend  unlockedAt  DateTime        @default(now())- Disable in Clerk Dashboard
+
+Framework: Next.js
+
+Build Command: npm run build  progress    Int             @default(0)- See `CLERK_PHONE_DISABLE.md` for guide
+
+Output Directory: .next
+
+}
+
+# 3. Add environment variables:
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx```---
+
+CLERK_SECRET_KEY=sk_test_xxx
+
+NEXT_PUBLIC_API_URL=https://your-backend.railway.app
+
+
+
+# 4. Deploy#### **LeaderboardEntry**## 📊 Database Schema
+
+# Vercel auto-deploys on git push
+
+``````prisma
+
+
+
+### **🚂 Backend Deployment** (Railway)model LeaderboardEntry {### Current Tables
+
+
+
+```bash  id          String   @id @default(uuid())
+
+# 1. Create Railway project
+
+# 2. Add PostgreSQL database  userId      String- `Subject` - Quiz subjects (Math, Science, etc.)
+
+# 3. Configure service:
+
+Root Directory: backend  user        User     @relation(fields: [userId])- `Topic` - Topics within subjects
+
+Build Command: npm install && npx prisma generate
+
+Start Command: npm start  score       Int- `Question` - Quiz questions
+
+
+
+# 4. Add environment variables:  category    String?- `Option` - Answer options
+
+DATABASE_URL=(auto-filled)
+
+PORT=5001  timeRange   TimeRange- `QuizResult` - Submitted quiz results
+
+CLERK_SECRET_KEY=sk_test_xxx
+
+CLERK_WEBHOOK_SECRET=whsec_xxx  createdAt   DateTime @default(now())- `DifficultyLevel` - Difficulty configurations
+
+NODE_ENV=production
+
+  updatedAt   DateTime @updatedAt
+
+# 5. Deploy
+
+railway up}### Coming in Phase 2
+
+```
+
+```
+
+**📖 Detailed Guide:** See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+
+- `User` - User accounts (linked to Clerk)
+
+---
+
+**Full schema:** See [DATABASE_SCHEMA_UPDATE.md](./DATABASE_SCHEMA_UPDATE.md)- Foreign keys linking results to users
+
+## 🧪 Testing
+
+- User preferences and settings
+
+```bash
+
+# Frontend tests---
+
+cd frontend
+
+npm run test              # Run tests---
+
+npm run test:watch        # Watch mode
+
+npm run test:coverage     # Coverage report## 🎮 Usage Guide
+
+
+
+# Backend tests## 🚦 Roadmap
+
+cd backend
+
+npm run test### **For Users**
+
+npm run test:watch
+
+npm run test:coverage### ✅ Completed (Tier 1)
+
+
+
+# E2E tests#### **1. Sign Up & Profile Setup**- [x] Core quiz functionality
+
+npm run test:e2e
+
+```- [x] Statistics dashboard
+
+# Build test
+
+npm run build1. Click "Sign In" in header- [x] History management
+
+npm start
+
+```2. Create account (Email/Google/GitHub)- [x] Leaderboard
+
+
+
+---3. Complete profile information- [x] Difficulty system
+
+
+
+## 🤝 Contributing4. Redirected to user dashboard- [x] Enhanced UI/UX
+
+
+
+We love contributions! Here's how you can help:```- [x] Loading states
+
+
+
+<div align="center">- [x] Text readability improvements
+
+
+
+### **Ways to Contribute**#### **2. Take a Quiz**
+
+
+
+[![Report Bug](https://img.shields.io/badge/Report-Bug-red?style=for-the-badge)](https://github.com/jaatdev/quiz-app/issues)```### 🏗️ In Progress (Tier 2 - Phase 1)
+
+[![Request Feature](https://img.shields.io/badge/Request-Feature-blue?style=for-the-badge)](https://github.com/jaatdev/quiz-app/issues)
+
+[![Improve Docs](https://img.shields.io/badge/Improve-Docs-green?style=for-the-badge)](https://github.com/jaatdev/quiz-app/pulls)1. Browse topics on homepage- [x] Clerk authentication UI
+
+[![Write Code](https://img.shields.io/badge/Write-Code-yellow?style=for-the-badge)](https://github.com/jaatdev/quiz-app/pulls)
+
+2. Select topic and difficulty level- [x] Sign-in/Sign-up pages
+
+</div>
+
+3. Click "Start Quiz"- [x] User profiles in header
+
+### **Development Workflow**
+
+4. Answer questions using:- [ ] Database integration with users
+
+```bash
+
+# 1. Fork the repository   - Mouse clicks- [ ] User-specific data persistence
+
+# 2. Clone your fork
+
+git clone https://github.com/YOUR_USERNAME/quiz-app.git   - Keyboard arrows (←/→)
+
+
+
+# 3. Create feature branch   - Touch swipes (mobile)### 🔮 Future Features
+
+git checkout -b feature/AmazingFeature
+
+5. Monitor timer in top-right- [ ] Real-time leaderboard updates
+
+# 4. Make your changes
+
+# 5. Commit your changes6. Submit when complete- [ ] Quiz creation interface
+
+git commit -m 'feat: Add some AmazingFeature'
+
+```- [ ] Admin dashboard
+
+# 6. Push to branch
+
+git push origin feature/AmazingFeature- [ ] Badges and achievements
+
+
+
+# 7. Open Pull Request#### **3. View Results**- [ ] Study mode
+
+```
+
+```- [ ] Quiz sharing
+
+### **Commit Convention**
+
+1. See score percentage and breakdown- [ ] Analytics export
+
+```
+
+feat: Add new feature2. Review correct/incorrect answers
+
+fix: Fix bug
+
+docs: Update documentation3. Read detailed explanations---
+
+style: Format code
+
+refactor: Refactor code4. Export as PDF (optional)
+
+test: Add tests
+
+chore: Update dependencies5. Retake quiz or try new topic## 📝 License
+
+```
+
+```
+
+**📖 Full Guidelines:** See [CONTRIBUTING.md](./docs/CONTRIBUTING.md)
+
 This project is for educational purposes.
+
+---
 
 #### **4. Track Progress**
 
+## 📝 License
+
 ```---
+
+<div align="center">
 
 Dashboard Page:
 
+This project is licensed under the **MIT License**
+
 - Overall statistics## 👥 Contributing
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 - Recent quiz attempts
 
+**Free to use, modify, and distribute!**
+
 - Achievement progressThis is a personal learning project. Feel free to fork and experiment!
+
+</div>
 
 - Recommended topics
 
 ---
 
+---
+
+## 👥 Authors
+
 Stats Page:
+
+<div align="center">
 
 - Subject-wise performance## 🙏 Acknowledgments
 
+### **Kapil Chaudhary**
+
 - Difficulty breakdowns
 
-- Time-based trends- **Clerk** - Authentication platform
+[![GitHub](https://img.shields.io/badge/GitHub-@jaatdev-181717?style=for-the-badge&logo=github)](https://github.com/jaatdev)
 
-- Accuracy charts- **Neon** - Serverless PostgreSQL
+[![Email](https://img.shields.io/badge/Email-Contact-EA4335?style=for-the-badge&logo=gmail&logoColor=white)](mailto:kapilchuadhrysmarty@gmail.com)- Time-based trends- **Clerk** - Authentication platform
 
-- **Vercel** - Next.js creators
 
-History Page:- **Prisma** - Database ORM
 
-- All quiz attempts
+</div>- Accuracy charts- **Neon** - Serverless PostgreSQL
 
-- Search and filter---
 
-- Sort by date/score
 
-- Delete attempts## 📧 Support
+---- **Vercel** - Next.js creators
 
-```
+
+
+## 🙏 AcknowledgmentsHistory Page:- **Prisma** - Database ORM
+
+
+
+<div align="center">- All quiz attempts
+
+
+
+Special thanks to these amazing projects:- Search and filter---
+
+
+
+[![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)- Sort by date/score
+
+[![Clerk](https://img.shields.io/badge/Clerk-6C47FF?style=for-the-badge&logo=clerk&logoColor=white)](https://clerk.dev/)
+
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)- Delete attempts## 📧 Support
+
+[![Neon](https://img.shields.io/badge/Neon-00E699?style=for-the-badge)](https://neon.tech/)
+
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)```
+
+[![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/)
 
 For issues or questions:
 
+</div>
+
 #### **5. Compete on Leaderboard**- Check `ROLLBACK_GUIDE.md` for rollback instructions
+
+---
 
 ```- Review `AUTH_PROGRESS.md` for authentication status
 
+## 📞 Support
+
 1. Navigate to Leaderboard- See `CLERK_PHONE_DISABLE.md` for phone auth removal
+
+<div align="center">
 
 2. View your global rank
 
+### **Need Help?**
+
 3. Filter by time range:---
 
-   - Daily (last 24 hours)
+[![Documentation](https://img.shields.io/badge/Read-Documentation-blue?style=for-the-badge)](./docs)
+
+[![Issues](https://img.shields.io/badge/Open-Issue-red?style=for-the-badge)](https://github.com/jaatdev/quiz-app/issues)   - Daily (last 24 hours)
+
+[![Discussions](https://img.shields.io/badge/Start-Discussion-green?style=for-the-badge)](https://github.com/jaatdev/quiz-app/discussions)
 
    - Weekly (last 7 days)**Built with ❤️ for learning**
 
+**Email:** kapilchuadhrysmarty@gmail.com
+
    - Monthly (last 30 days)
+
+</div>
 
    - All-timeLast Updated: October 3, 2025
 
+---
+
 4. See top performers' achievements
+
+## ⭐ Show Your Support```
+
+
+
+<div align="center">#### **6. Unlock Achievements**
+
 ```
 
-#### **6. Unlock Achievements**
-```
-Automatic unlocks based on:
+**If you find this project helpful, please give it a star!**Automatic unlocks based on:
+
 - Quiz completions
-- Perfect scores
-- Speed records
+
+[![GitHub stars](https://img.shields.io/github/stars/jaatdev/quiz-app?style=social)](https://github.com/jaatdev/quiz-app/stargazers)- Perfect scores
+
+[![GitHub forks](https://img.shields.io/github/forks/jaatdev/quiz-app?style=social)](https://github.com/jaatdev/quiz-app/network/members)- Speed records
+
 - Accuracy streaks
-- Time-based challenges
 
-View in:
+**Made with ❤️ for the developer community**- Time-based challenges
+
+
+
+---View in:
+
 - Profile page
-- Dashboard
-- User info page
-```
 
-### **For Admins**
+### 📊 Project Stats- Dashboard
+
+- User info page
+
+![GitHub repo size](https://img.shields.io/github/repo-size/jaatdev/quiz-app?style=for-the-badge)```
+
+![GitHub language count](https://img.shields.io/github/languages/count/jaatdev/quiz-app?style=for-the-badge)
+
+![GitHub top language](https://img.shields.io/github/languages/top/jaatdev/quiz-app?style=for-the-badge)### **For Admins**
+
+![GitHub last commit](https://img.shields.io/github/last-commit/jaatdev/quiz-app?style=for-the-badge)
 
 #### **1. Access Admin Panel**
-```bash
+
+---```bash
+
 # Make user admin
-cd backend
+
+**🎓 QuizMaster Pro** - *Empowering Learning Through Interactive Assessments*cd backend
+
 npm run make-admin user-email@example.com
 
+**Built with cutting-edge technology** • **Production Ready** • **Open Source**
+
 # Navigate to admin panel
-http://localhost:3000/admin
+
+</div>http://localhost:3000/admin
+
 ```
 
 #### **2. Manage Questions**
