@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 import { quizService } from '@/services/quiz.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { UserButton } from '@/components/ui/user-button';
 import { Loading } from '@/components/ui/loading';
 import { Error } from '@/components/ui/error';
 import { StatsCard } from '@/components/ui/stats-card';
@@ -18,7 +18,6 @@ import {
 
 export default function HomePage() {
   const router = useRouter();
-  const { isSignedIn, user } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -123,11 +122,6 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <Brain className="w-8 h-8 text-blue-600" />
               <h1 className="text-2xl font-bold text-gray-900">QuizMaster Pro</h1>
-              {isSignedIn && user && (
-                <span className="hidden md:inline-block text-sm text-gray-600">
-                  Welcome, {user.firstName || 'User'}!
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -157,22 +151,8 @@ export default function HomePage() {
                 Leaderboard
               </Button>
               
-              {/* Auth Buttons */}
-              {isSignedIn ? (
-                <UserButton 
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-10 h-10"
-                    }
-                  }}
-                />
-              ) : (
-                <SignInButton mode="modal">
-                  <Button variant="default" className="font-bold">
-                    Sign In
-                  </Button>
-                </SignInButton>
-              )}
+              {/* User Authentication */}
+              <UserButton />
             </div>
           </div>
         </div>
