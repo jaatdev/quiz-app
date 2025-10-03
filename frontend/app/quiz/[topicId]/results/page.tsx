@@ -49,6 +49,7 @@ export default function EnhancedResultsPage() {
         percentage: lastResult.percentage,
         timestamp: Date.now(),
         timeSpent: lastResult.timeSpent,
+        difficulty: currentSession.difficulty || 'medium',
       };
       
       const updatedHistory = [newEntry, ...history].slice(0, 50);

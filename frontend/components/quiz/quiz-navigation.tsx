@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Flag, SkipForward } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag, SkipForward, Loader2 } from 'lucide-react';
 
 interface QuizNavigationProps {
   currentQuestion: number;
@@ -13,6 +13,7 @@ interface QuizNavigationProps {
   onFinish: () => void;
   isLastQuestion: boolean;
   isFirstQuestion: boolean;
+  isSubmitting?: boolean;
 }
 
 export function QuizNavigation({
@@ -25,13 +26,14 @@ export function QuizNavigation({
   onFinish,
   isLastQuestion,
   isFirstQuestion,
+  isSubmitting = false,
 }: QuizNavigationProps) {
   return (
     <div className="flex items-center justify-between p-6 bg-white border-t">
       <Button
         variant="outline"
         onClick={onPrevious}
-        disabled={isFirstQuestion}
+        disabled={isFirstQuestion || isSubmitting}
         className="flex items-center gap-2"
       >
         <ChevronLeft className="w-4 h-4" />
@@ -43,6 +45,7 @@ export function QuizNavigation({
           <Button
             variant="ghost"
             onClick={onSkip}
+            disabled={isSubmitting}
             className="flex items-center gap-2"
           >
             <SkipForward className="w-4 h-4" />
@@ -54,14 +57,25 @@ export function QuizNavigation({
       {isLastQuestion ? (
         <Button
           onClick={onFinish}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 min-w-[140px]"
         >
-          <Flag className="w-4 h-4" />
-          Finish Quiz
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Flag className="w-4 h-4" />
+              Finish Quiz
+            </>
+          )}
         </Button>
       ) : (
         <Button
           onClick={onNext}
+          disabled={isSubmitting}
           className="flex items-center gap-2"
         >
           Next

@@ -6,6 +6,7 @@ interface QuizSession {
   topicId: string;
   topicName: string;
   subjectName: string;
+  difficulty?: string;
   questions: Question[];
   startTime: number;
   duration: number;

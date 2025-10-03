@@ -31,6 +31,7 @@ export default function QuizPage() {
   const topicId = params.topicId as string;
   const topicName = searchParams.get('topic') || 'Quiz';
   const subjectName = searchParams.get('subject') || '';
+  const difficulty = searchParams.get('difficulty') || 'medium';
 
   // Zustand store
   const { saveResult, startSession: setQuizSession } = useQuizStore();
@@ -55,12 +56,13 @@ export default function QuizPage() {
         topicId,
         topicName,
         subjectName,
+        difficulty,
         questions: session.questions,
         startTime: startTime,
         duration: QUIZ_DURATION,
       });
     }
-  }, [session, topicId, topicName, subjectName, startTime, setQuizSession]);
+  }, [session, topicId, topicName, subjectName, difficulty, startTime, setQuizSession]);
 
   // Submit quiz mutation
   const submitMutation = useMutation({
@@ -113,7 +115,7 @@ export default function QuizPage() {
 
   // Handle quiz completion
   const handleFinish = useCallback(() => {
-    if (!session) return;
+    if (!session || submitMutation.isPending) return;
 
     const timeSpent = Math.floor((Date.now() - startTime) / 1000);
     const submission: QuizSubmission = {
@@ -261,6 +263,7 @@ export default function QuizPage() {
               onFinish={handleFinish}
               isLastQuestion={currentQuestionIndex === session.questions.length - 1}
               isFirstQuestion={currentQuestionIndex === 0}
+              isSubmitting={submitMutation.isPending}
             />
           </div>
         </div>
@@ -277,6 +280,26 @@ export default function QuizPage() {
         onCancel={() => setShowExitDialog(false)}
         variant="warning"
       />
+
+      {/* Submitting Overlay */}
+      {submitMutation.isPending && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md mx-4 text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Submitting Your Quiz</h3>
+            <p className="text-gray-700 font-medium">
+              Please wait while we calculate your results...
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-1">
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
