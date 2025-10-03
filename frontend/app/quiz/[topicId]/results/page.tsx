@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@clerk/nextjs';
 import { useQuizStore } from '@/stores/quiz-store';
 import { quizService } from '@/services/quiz.service';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { ScoreDisplay } from '@/components/quiz/score-display';
 import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2 } from 'lucide-react';
 import { calculateGrade } from '@/lib/utils';
-import { generateQuizResultPDF, generateSimpleQuizPDF } from '@/lib/pdf-export';
+import { generateProfessionalPDF } from '@/lib/pdf-generator';
 
 // Simple UUID generator for browser
 function generateId() {
@@ -19,6 +20,7 @@ function generateId() {
 export default function EnhancedResultsPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useUser();
   const topicId = params.topicId as string;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -90,47 +92,50 @@ export default function EnhancedResultsPage() {
     setPdfError(null);
     
     try {
-      console.log('Creating PDF data...');
+      console.log('Creating professional PDF...');
       
-      // Prepare detailed questions for PDF
-      const questionsForPDF = reviewQuestions?.map((reviewQ) => {
-        const userAnswerId = answers.get(reviewQ.id);
+      // Prepare questions data for PDF
+      const questionsData = currentSession.questions.map((q, index) => {
+        const reviewQ = reviewQuestions?.find(rq => rq.id === q.id);
+        const userAnswer = answers.get(q.id);
+        const isCorrect = userAnswer === reviewQ?.correctAnswerId;
+        
         return {
-          id: reviewQ.id,
-          text: reviewQ.text,
-          options: reviewQ.options,
-          correctAnswerId: reviewQ.correctAnswerId,
-          userAnswerId: userAnswerId,
-          explanation: reviewQ.explanation,
+          questionNumber: index + 1,
+          questionText: q.text,
+          options: q.options,
+          userAnswer: userAnswer || 'Not Answered',
+          correctAnswer: reviewQ?.correctAnswerId || '',
+          isCorrect,
+          explanation: reviewQ?.explanation,
         };
       });
 
-      const pdfData = {
+      await generateProfessionalPDF({
+        // User Info
+        userName: user?.fullName || user?.firstName || 'Anonymous',
+        userEmail: user?.primaryEmailAddress?.emailAddress || 'N/A',
+        userImage: user?.imageUrl,
+        
+        // Quiz Info
         topicName: currentSession.topicName,
         subjectName: currentSession.subjectName,
+        difficulty: currentSession.difficulty || 'medium',
+        
+        // Results
         score: lastResult.score,
         totalQuestions: lastResult.totalQuestions,
         correctAnswers: lastResult.correctAnswers,
+        incorrectAnswers: lastResult.totalQuestions - lastResult.correctAnswers,
         percentage: lastResult.percentage,
         timeSpent: lastResult.timeSpent,
-        date: new Date(),
-        questions: questionsForPDF, // Include detailed questions
-      };
-
-      console.log('PDF Data:', pdfData);
-
-      // Try the HTML-based PDF first
-      try {
-        console.log('Trying HTML PDF...');
-        await generateQuizResultPDF(pdfData);
-        console.log('HTML PDF generated successfully!');
-      } catch (htmlError) {
-        console.log('HTML PDF failed, trying simple PDF...', htmlError);
-        // Fallback to simple PDF if HTML version fails
-        generateSimpleQuizPDF(pdfData);
-        console.log('Simple PDF generated successfully!');
-      }
+        completedAt: new Date(),
+        
+        // Questions
+        questions: questionsData,
+      });
       
+      console.log('Professional PDF generated successfully!');
       setPdfError(null);
     } catch (error) {
       console.error('PDF generation failed:', error);
