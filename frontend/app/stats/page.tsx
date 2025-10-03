@@ -275,7 +275,7 @@ export default function StatsPage() {
               <BarChart3 className="w-8 h-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Statistics Dashboard</h1>
-                <p className="text-sm text-gray-600">Track your learning progress</p>
+                <p className="text-sm text-gray-700">Track your learning progress</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ export default function StatsPage() {
           <CardContent className="pt-6">
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-600" />
+                <Filter className="w-4 h-4 text-gray-700" />
                 <span className="text-sm font-medium">Filters:</span>
               </div>
               
@@ -337,7 +337,7 @@ export default function StatsPage() {
                 ))}
               </select>
               
-              <div className="ml-auto text-sm text-gray-600 font-bold">
+              <div className="ml-auto text-sm text-gray-700 font-bold">
                 Showing {filteredHistory.length} of {history.length} quizzes
               </div>
             </div>
@@ -350,7 +350,7 @@ export default function StatsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 font-bold">Total Quizzes</p>
+                  <p className="text-xs text-gray-700 font-bold">Total Quizzes</p>
                   <p className="text-2xl font-bold">{stats.totalQuizzes}</p>
                 </div>
                 <Target className="w-8 h-8 text-blue-500" />
@@ -362,7 +362,7 @@ export default function StatsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 font-bold">Avg Score</p>
+                  <p className="text-xs text-gray-700 font-bold">Avg Score</p>
                   <p className="text-2xl font-bold">{stats.averageScore.toFixed(1)}%</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-green-500" />
@@ -374,7 +374,7 @@ export default function StatsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 font-bold">Best Score</p>
+                  <p className="text-xs text-gray-700 font-bold">Best Score</p>
                   <p className="text-2xl font-bold">{stats.bestScore.toFixed(1)}%</p>
                 </div>
                 <Trophy className="w-8 h-8 text-yellow-500" />
@@ -386,7 +386,7 @@ export default function StatsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 font-bold">Streak</p>
+                  <p className="text-xs text-gray-700 font-bold">Streak</p>
                   <p className="text-2xl font-bold">{stats.streakDays}d</p>
                 </div>
                 <Calendar className="w-8 h-8 text-purple-500" />
@@ -398,7 +398,7 @@ export default function StatsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 font-bold">Total Time</p>
+                  <p className="text-xs text-gray-700 font-bold">Total Time</p>
                   <p className="text-2xl font-bold">
                     {Math.floor(stats.totalTime / 3600)}h
                   </p>
@@ -412,7 +412,7 @@ export default function StatsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600 font-bold">Improvement</p>
+                  <p className="text-xs text-gray-700 font-bold">Improvement</p>
                   <p className={`text-2xl font-bold ${stats.improvement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {stats.improvement >= 0 ? '+' : ''}{stats.improvement.toFixed(1)}%
                   </p>
@@ -435,15 +435,15 @@ export default function StatsPage() {
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Favorite Subject</p>
+                  <p className="text-sm text-gray-700 font-bold">Favorite Subject</p>
                   <p className="font-bold text-lg">{stats.favoriteSubject}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Strongest Topic</p>
+                  <p className="text-sm text-gray-700 font-bold">Strongest Topic</p>
                   <p className="font-bold text-lg text-green-600">{stats.strongestTopic}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Needs Improvement</p>
+                  <p className="text-sm text-gray-700 font-bold">Needs Improvement</p>
                   <p className="font-bold text-lg text-orange-600">{stats.weakestTopic}</p>
                 </div>
               </div>
@@ -460,15 +460,15 @@ export default function StatsPage() {
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Questions Answered</p>
+                  <p className="text-sm text-gray-700 font-bold">Questions Answered</p>
                   <p className="font-bold text-lg">{stats.totalQuestions}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Correct Answers</p>
+                  <p className="text-sm text-gray-700 font-bold">Correct Answers</p>
                   <p className="font-bold text-lg text-green-600">{stats.correctAnswers}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Avg Time/Question</p>
+                  <p className="text-sm text-gray-700 font-bold">Avg Time/Question</p>
                   <p className="font-bold text-lg">{stats.averageTimePerQuestion.toFixed(1)}s</p>
                 </div>
               </div>
@@ -485,7 +485,7 @@ export default function StatsPage() {
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Next Goal</p>
+                  <p className="text-sm text-gray-700 font-bold">Next Goal</p>
                   <p className="font-bold text-lg">Reach 85% Average</p>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                     <div 
@@ -495,7 +495,7 @@ export default function StatsPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-bold">Quizzes to Next Level</p>
+                  <p className="text-sm text-gray-700 font-bold">Quizzes to Next Level</p>
                   <p className="font-bold text-lg">{Math.max(0, 50 - stats.totalQuizzes)}</p>
                 </div>
               </div>
@@ -516,7 +516,7 @@ export default function StatsPage() {
                   <div key={day.fullDate} className="flex items-center gap-3">
                     <div className="w-16 text-sm">
                       <div className="font-medium">{day.date}</div>
-                      <div className="text-xs text-gray-500">{day.fullDate}</div>
+                      <div className="text-xs text-gray-700">{day.fullDate}</div>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -531,7 +531,7 @@ export default function StatsPage() {
                           </div>
                         </div>
                         {day.avgScore > 0 && (
-                          <span className="text-sm text-gray-600 font-bold w-12 text-right">
+                          <span className="text-sm text-gray-700 font-bold w-12 text-right">
                             {day.avgScore.toFixed(0)}%
                           </span>
                         )}
@@ -556,7 +556,7 @@ export default function StatsPage() {
                       <span className="text-sm font-medium truncate flex-1">
                         {index + 1}. {topic.topic}
                       </span>
-                      <span className="text-xs text-gray-600 font-bold ml-2">
+                      <span className="text-xs text-gray-700 font-bold ml-2">
                         {topic.attempts} attempts
                       </span>
                     </div>
@@ -578,7 +578,7 @@ export default function StatsPage() {
                 {topicPerformance.length === 0 && (
                   <div className="text-center py-8">
                     <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 font-bold">No quiz data yet</p>
+                    <p className="text-gray-700 font-bold">No quiz data yet</p>
                   </div>
                 )}
               </div>

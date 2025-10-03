@@ -24,6 +24,7 @@ model User {
   updatedAt     DateTime      @updatedAt
   
   quizAttempts  QuizAttempt[]
+  achievements  Achievement[]
 }
 
 model Subject {
@@ -82,4 +83,19 @@ model QuizAttempt {
   @@index([userId])
   @@index([topicId])
   @@index([completedAt])
+}
+
+// Achievement model - tracks user achievements and milestones
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // first_quiz, perfect_score, streak_7, speed_demon, subject_master
+  title       String
+  description String
+  icon        String
+  unlockedAt  DateTime @default(now())
+  
+  @@unique([userId, type])
+  @@index([userId])
 }

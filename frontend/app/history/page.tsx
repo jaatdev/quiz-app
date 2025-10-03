@@ -169,7 +169,7 @@ export default function HistoryPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Quiz History</h1>
-              <p className="text-sm text-gray-600">Manage your quiz attempts</p>
+              <p className="text-sm text-gray-700">Manage your quiz attempts</p>
             </div>
             <Button onClick={() => router.push('/')} variant="outline">
               <Home className="w-4 h-4 mr-2" />
@@ -259,7 +259,7 @@ export default function HistoryPage() {
             </div>
             
             {/* Summary Stats */}
-            <div className="flex gap-4 mt-4 text-sm text-gray-600 font-bold">
+            <div className="flex gap-4 mt-4 text-sm text-gray-700 font-bold">
               <span>Total: {filteredHistory.length} quizzes</span>
               <span>•</span>
               <span>Selected: {selectedItems.size}</span>
@@ -313,7 +313,7 @@ export default function HistoryPage() {
                         </td>
                         <td className="p-4">
                           <div className="font-bold">{format(item.timestamp, 'MMM d, yyyy')}</div>
-                          <div className="text-xs text-gray-500 font-bold">
+                          <div className="text-xs text-gray-700 font-bold">
                             {format(item.timestamp, 'h:mm a')}
                           </div>
                         </td>
@@ -321,7 +321,7 @@ export default function HistoryPage() {
                         <td className="p-4 font-bold">{item.topicName}</td>
                         <td className="p-4">
                           <div className="font-bold">{(item.percentage || 0).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-500 font-bold">
+                          <div className="text-xs text-gray-700 font-bold">
                             {item.correctAnswers || 0}/{item.totalQuestions || 0}
                           </div>
                         </td>
@@ -356,7 +356,7 @@ export default function HistoryPage() {
               {paginatedHistory.length === 0 && (
                 <div className="text-center py-12">
                   <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-bold">
+                  <p className="text-gray-700 font-bold">
                     {searchTerm ? 'No quizzes found matching your search' : 'No quiz history yet'}
                   </p>
                 </div>

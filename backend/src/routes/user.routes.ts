@@ -1,10 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { UserService } from '../services/user.service';
+import { LeaderboardService } from '../services/leaderboard.service';
+import { AchievementService } from '../services/achievement.service';
 
 const router = Router();
 const prisma = new PrismaClient();
 const userService = new UserService(prisma);
+const leaderboardService = new LeaderboardService(prisma);
+const achievementService = new AchievementService(prisma);
 
 // Sync user from Clerk
 router.post('/sync', async (req: Request, res: Response) => {
@@ -83,6 +87,50 @@ router.get('/stats/:clerkId', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching stats:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Get global leaderboard
+router.get('/leaderboard', async (req: Request, res: Response) => {
+  try {
+    const period = req.query.period as 'weekly' | 'monthly' | 'allTime' || 'allTime';
+    const leaderboard = await leaderboardService.getGlobalLeaderboard(period);
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// Get subject leaderboard
+router.get('/leaderboard/:subject', async (req: Request, res: Response) => {
+  try {
+    const { subject } = req.params;
+    const period = req.query.period as 'weekly' | 'monthly' | 'allTime' || 'allTime';
+    const leaderboard = await leaderboardService.getSubjectLeaderboard(subject, period);
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Error fetching subject leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// Get user achievements
+router.get('/achievements/:clerkId', async (req: Request, res: Response) => {
+  try {
+    const { clerkId } = req.params;
+    
+    // Get user by clerkId
+    const user = await userService.getUserByClerkId(clerkId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const achievements = await achievementService.getUserAchievements(user.id);
+    res.json(achievements);
+  } catch (error) {
+    console.error('Error fetching achievements:', error);
+    res.status(500).json({ error: 'Failed to fetch achievements' });
   }
 });
 
