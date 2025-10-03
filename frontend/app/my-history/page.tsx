@@ -8,8 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { 
-  Clock, Home, Search, Filter, Eye,
-  ChevronLeft, ChevronRight, Calendar
+  Clock, Home, Search, ChevronLeft, ChevronRight, Calendar
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateGrade } from '@/lib/utils';
@@ -149,7 +148,7 @@ export default function MyHistoryPage() {
               
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'date' | 'score' | 'subject')}
                 className="px-3 py-2 border rounded-lg"
               >
                 <option value="date">Sort by Date</option>

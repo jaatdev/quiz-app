@@ -80,7 +80,7 @@ export default function WelcomePage() {
         </p>
 
         <p className="text-gray-600 mb-8">
-          Let's set up your profile and start your learning journey.
+                        Your profile has been synced. Let&apos;s start your learning journey!
         </p>
 
         <div className="space-y-4">

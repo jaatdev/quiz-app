@@ -8,7 +8,6 @@ import {
   Trophy, Medal, Crown, TrendingUp, TrendingDown, 
   Home, Filter, User
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface LeaderboardUser {
   id: string;
