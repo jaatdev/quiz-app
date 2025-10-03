@@ -15,6 +15,7 @@ export default function SignInPage() {
               card: "shadow-xl"
             }
           }}
+          signUpUrl="/sign-up"
         />
       </div>
     </div>
