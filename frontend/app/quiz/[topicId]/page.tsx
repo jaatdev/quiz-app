@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useUser } from '@clerk/nextjs';
 import { quizService } from '@/services/quiz.service';
 import { useQuizStore } from '@/stores/quiz-store';
 import { 
@@ -27,6 +28,7 @@ export default function QuizPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useUser();
   
   const topicId = params.topicId as string;
   const topicName = searchParams.get('topic') || 'Quiz';
@@ -66,7 +68,36 @@ export default function QuizPage() {
 
   // Submit quiz mutation
   const submitMutation = useMutation({
-    mutationFn: (submission: QuizSubmission) => quizService.submitQuiz(submission),
+    mutationFn: async (submission: QuizSubmission) => {
+      const result = await quizService.submitQuiz(submission);
+      
+      // If user is logged in, save to database
+      if (user) {
+        try {
+          await fetch('http://localhost:5001/api/user/quiz-attempt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              clerkId: user.id,
+              topicId: submission.topicId,
+              score: result.score,
+              totalQuestions: result.totalQuestions,
+              correctAnswers: result.correctAnswers,
+              percentage: (result.correctAnswers / result.totalQuestions) * 100,
+              timeSpent: submission.timeSpent,
+              difficulty: difficulty,
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to save to database:', error);
+          // Continue anyway - don't block the user experience
+        }
+      }
+      
+      return result;
+    },
     onSuccess: (result) => {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
       

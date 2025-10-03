@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { quizService } from '@/services/quiz.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, isLoaded } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -71,6 +73,20 @@ export default function HomePage() {
   }, [subjects, selectedSubject, searchTerm]);
 
   const handleStartQuiz = (topicId: string, topicName: string, subjectName: string) => {
+    // Check if user is logged in
+    if (!isLoaded) {
+      // Wait for auth to load
+      return;
+    }
+
+    if (!user) {
+      // Redirect to sign-in with return URL
+      const returnUrl = `/quiz/${topicId}?topic=${encodeURIComponent(topicName)}&subject=${encodeURIComponent(subjectName)}`;
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
+    // If logged in, proceed with difficulty selection
     setSelectedTopic({ topicId, topicName, subjectName });
     setShowDifficultyDialog(true);
   };
