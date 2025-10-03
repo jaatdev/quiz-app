@@ -320,9 +320,9 @@ export default function HistoryPage() {
                         <td className="p-4 font-bold">{item.subjectName}</td>
                         <td className="p-4 font-bold">{item.topicName}</td>
                         <td className="p-4">
-                          <div className="font-bold">{item.percentage.toFixed(1)}%</div>
+                          <div className="font-bold">{(item.percentage || 0).toFixed(1)}%</div>
                           <div className="text-xs text-gray-500 font-bold">
-                            {item.correctAnswers}/{item.totalQuestions}
+                            {item.correctAnswers || 0}/{item.totalQuestions || 0}
                           </div>
                         </td>
                         <td className="p-4">

@@ -93,23 +93,44 @@ export default function EnhancedResultsPage() {
     
     try {
       console.log('Creating professional PDF...');
+      console.log('Review Questions:', reviewQuestions);
+      console.log('User Answers:', Array.from(answers.entries()));
       
       // Prepare questions data for PDF
       const questionsData = currentSession.questions.map((q, index) => {
         const reviewQ = reviewQuestions?.find(rq => rq.id === q.id);
         const userAnswer = answers.get(q.id);
-        const isCorrect = userAnswer === reviewQ?.correctAnswerId;
+        const correctAnswerId = reviewQ?.correctAnswerId;
+        
+        // Check if answer is correct - handle undefined/null cases
+        const isCorrect = userAnswer && correctAnswerId && userAnswer === correctAnswerId;
+        
+        console.log(`Question ${index + 1}:`, {
+          questionId: q.id,
+          userAnswer: userAnswer || 'NOT ANSWERED',
+          correctAnswerId: correctAnswerId || 'UNKNOWN',
+          isCorrect,
+          reviewQFound: !!reviewQ,
+          options: q.options.map(o => ({ id: o.id, text: o.text.substring(0, 30) }))
+        });
         
         return {
           questionNumber: index + 1,
           questionText: q.text,
           options: q.options,
-          userAnswer: userAnswer || 'Not Answered',
-          correctAnswer: reviewQ?.correctAnswerId || '',
-          isCorrect,
+          userAnswer: userAnswer || 'not-answered',
+          correctAnswer: correctAnswerId || '',
+          isCorrect: isCorrect || false, // Ensure it's always a boolean
           explanation: reviewQ?.explanation,
         };
       });
+
+      console.log('Questions Data for PDF:', questionsData.map(q => ({
+        num: q.questionNumber,
+        userAns: q.userAnswer,
+        correctAns: q.correctAnswer,
+        isCorrect: q.isCorrect
+      })));
 
       await generateProfessionalPDF({
         // User Info

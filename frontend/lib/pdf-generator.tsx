@@ -313,12 +313,22 @@ export async function generateProfessionalPDF(data: QuizResultData) {
       question.options.forEach((option) => {
         const isUserAnswer = option.id === question.userAnswer;
         const isCorrectAnswer = option.id === question.correctAnswer;
+        const wasNotAnswered = question.userAnswer === 'not-answered';
+        
+        // Debug logging
+        console.log(`  Option ${option.id}:`, {
+          isUserAnswer,
+          isCorrectAnswer,
+          userAnswer: question.userAnswer,
+          correctAnswer: question.correctAnswer,
+          wasNotAnswered
+        });
         
         // Option background
         if (isCorrectAnswer) {
           pdf.setFillColor(successColor[0], successColor[1], successColor[2], 30);
           pdf.roundedRect(margin + 3, yPos - 4, contentWidth - 6, 7, 1, 1, 'F');
-        } else if (isUserAnswer && !isCorrectAnswer) {
+        } else if (isUserAnswer && !isCorrectAnswer && !wasNotAnswered) {
           pdf.setFillColor(errorColor[0], errorColor[1], errorColor[2], 30);
           pdf.roundedRect(margin + 3, yPos - 4, contentWidth - 6, 7, 1, 1, 'F');
         }
@@ -331,7 +341,7 @@ export async function generateProfessionalPDF(data: QuizResultData) {
           pdf.setTextColor(successColor[0], successColor[1], successColor[2]);
           pdf.setFont('helvetica', 'bold');
           optionPrefix = `✓ ${optionPrefix}`;
-        } else if (isUserAnswer && !isCorrectAnswer) {
+        } else if (isUserAnswer && !isCorrectAnswer && !wasNotAnswered) {
           pdf.setTextColor(errorColor[0], errorColor[1], errorColor[2]);
           pdf.setFont('helvetica', 'bold');
           optionPrefix = `✗ ${optionPrefix}`;
