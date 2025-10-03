@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { API_URL } from '@/lib/config';
 
 interface UserData {
   id: string;
@@ -41,7 +42,7 @@ export default function UserManagementPage() {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:5001/api/admin/users', {
+      const response = await fetch('${API_URL}/admin/users', {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -62,7 +63,7 @@ export default function UserManagementPage() {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     
     try {
-      const response = await fetch(`http://localhost:5001/api/admin/users/${userId}/role`, {
+      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -277,3 +278,4 @@ export default function UserManagementPage() {
     </div>
   );
 }
+

@@ -8,6 +8,7 @@ import { Loading } from '@/components/ui/loading';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { QuestionForm } from '@/components/admin/question-form';
 import { cn } from '@/lib/utils';
+import { API_URL } from '@/lib/config';
 
 interface Question {
   id: string;
@@ -41,7 +42,7 @@ export default function QuestionManagement() {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:5001/api/admin/questions', {
+      const response = await fetch(`${API_URL}/admin/questions`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -62,7 +63,7 @@ export default function QuestionManagement() {
     if (!confirm('Are you sure you want to delete this question?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5001/api/admin/questions/${id}`, {
+      const response = await fetch(`${API_URL}/admin/questions/${id}`, {
         method: 'DELETE',
         headers: {
           'x-clerk-user-id': user!.id,

@@ -9,6 +9,7 @@ import {
   Activity 
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { API_URL } from '@/lib/config';
 
 interface AdminStats {
   totalUsers: number;
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:5001/api/admin/stats', {
+      const response = await fetch(`${API_URL}/admin/stats`, {
         headers: {
           'x-clerk-user-id': user.id,
         },

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Upload, FileJson, FileText, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { API_URL } from '@/lib/config';
 
 interface ImportResult {
   success: boolean;
@@ -115,7 +116,7 @@ export default function BulkImportPage() {
         topicId: q.topicId,
       })).filter((q: { text: unknown; topicId: unknown }) => q.text && q.topicId);
 
-      const response = await fetch('http://localhost:5001/api/admin/questions/bulk', {
+      const response = await fetch('${API_URL}/admin/questions/bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -378,3 +379,4 @@ export default function BulkImportPage() {
     </div>
   );
 }
+

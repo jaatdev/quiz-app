@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { Plus, Edit, Trash2, BookOpen, FileText, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { API_URL } from '@/lib/config';
 
 interface Subject {
   id: string;
@@ -40,7 +41,7 @@ export default function SubjectManagementPage() {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:5001/api/admin/subjects', {
+      const response = await fetch('${API_URL}/admin/subjects', {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -61,7 +62,7 @@ export default function SubjectManagementPage() {
     if (!confirm('Are you sure? This will delete all topics and questions under this subject.')) return;
 
     try {
-      const response = await fetch(`http://localhost:5001/api/admin/subjects/${id}`, {
+      const response = await fetch(`${API_URL}/admin/subjects/${id}`, {
         method: 'DELETE',
         headers: {
           'x-clerk-user-id': user!.id,
@@ -80,7 +81,7 @@ export default function SubjectManagementPage() {
     if (!confirm('Are you sure? This will delete all questions under this topic.')) return;
 
     try {
-      const response = await fetch(`http://localhost:5001/api/admin/topics/${id}`, {
+      const response = await fetch(`${API_URL}/admin/topics/${id}`, {
         method: 'DELETE',
         headers: {
           'x-clerk-user-id': user!.id,
@@ -251,8 +252,8 @@ function SubjectForm({ subject, onClose, onSave }: any) {
 
     try {
       const url = subject
-        ? `http://localhost:5001/api/admin/subjects/${subject.id}`
-        : 'http://localhost:5001/api/admin/subjects';
+        ? `${API_URL}/admin/subjects/${subject.id}`
+        : '${API_URL}/admin/subjects';
       
       const method = subject ? 'PUT' : 'POST';
 
@@ -328,8 +329,8 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
 
     try {
       const url = topic
-        ? `http://localhost:5001/api/admin/topics/${topic.id}`
-        : 'http://localhost:5001/api/admin/topics';
+        ? `${API_URL}/admin/topics/${topic.id}`
+        : '${API_URL}/admin/topics';
       
       const method = topic ? 'PUT' : 'POST';
 
@@ -392,3 +393,4 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
     </div>
   );
 }
+
