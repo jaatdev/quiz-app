@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { API_URL } from '@/lib/config';
 
 export default function AdminLayout({
   children,
@@ -33,7 +34,7 @@ export default function AdminLayout({
     }
 
     try {
-      const response = await fetch(`http://localhost:5001/api/admin/stats`, {
+      const response = await fetch(`${API_URL}/admin/stats`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
