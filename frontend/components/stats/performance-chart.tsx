@@ -7,12 +7,14 @@ interface PerformanceData {
   date: string;
   score: number;
   quizzes: number;
+  [key: string]: string | number; // Index signature for Recharts compatibility
 }
 
 interface SubjectData {
   name: string;
   value: number;
   percentage: number;
+  [key: string]: string | number; // Index signature for Recharts compatibility
 }
 
 interface PerformanceChartProps {
