@@ -101,42 +101,108 @@ export default function BulkImportPage() {
         }
       }
 
-      // Validate and transform questions
-      const validQuestions = questions.map((q: Record<string, unknown>) => ({
-        text: q.text || q.question,
-        options: q.options || [
-          { id: 'a', text: q.optionA || '' },
-          { id: 'b', text: q.optionB || '' },
-          { id: 'c', text: q.optionC || '' },
-          { id: 'd', text: q.optionD || '' },
-        ],
-        correctAnswerId: q.correctAnswerId || q.correctAnswer || 'a',
-        explanation: q.explanation || '',
-        difficulty: q.difficulty || 'medium',
-        topicId: q.topicId,
-      })).filter((q: { text: unknown; topicId: unknown }) => q.text && q.topicId);
+      const getString = (value: unknown) => (typeof value === 'string' ? value : '');
+      const fallbackOptionIds = ['a', 'b', 'c', 'd'];
+      const allowedDifficulties = new Set(['easy', 'medium', 'hard']);
 
-  const response = await fetch(`${API_URL}/admin/questions/bulk`, {
+      type NormalizedQuestion = Record<string, unknown>;
+      const normalizedQuestions: NormalizedQuestion[] = [];
+
+      for (const rawQuestion of questions as Array<Record<string, unknown>>) {
+        const q = rawQuestion as Record<string, unknown> & { [key: string]: unknown };
+
+        const textCandidate = getString(q.text ?? q.question);
+        const text = textCandidate.trim();
+        if (!text) continue;
+
+        const rawOptions: Array<Record<string, unknown>> = Array.isArray(q.options)
+          ? (q.options as Array<Record<string, unknown>>)
+          : fallbackOptionIds.map((id) => ({
+              id,
+              text: getString(q[`option${id.toUpperCase()}`])
+            }));
+
+        const options = rawOptions
+          .map((option, index) => {
+            const idValue = getString(option.id);
+            const textValue = getString(option.text).trim();
+            return {
+              id: idValue ? idValue.toLowerCase() : fallbackOptionIds[index] ?? `option${index + 1}`,
+              text: textValue,
+            };
+          })
+          .filter((option) => option.text.length > 0);
+
+        if (!options.length) continue;
+
+        const correctAnswerCandidate = getString(q.correctAnswerId ?? q.correctAnswer).trim().toLowerCase();
+        if (!correctAnswerCandidate) continue;
+        if (!options.some((option) => option.id === correctAnswerCandidate)) continue;
+
+        const subjectName = getString(q.subjectName ?? q.subject).trim();
+        const topicName = getString(q.topicName ?? q.topic).trim();
+        const topicId = getString(q.topicId).trim();
+
+        if (!topicId && !topicName && !subjectName) continue;
+
+        const difficultyCandidate = getString(q.difficulty).toLowerCase();
+        const difficulty = allowedDifficulties.has(difficultyCandidate)
+          ? difficultyCandidate
+          : 'medium';
+
+        const explanation = getString(q.explanation).trim();
+
+        const normalized: NormalizedQuestion = {
+          text,
+          options,
+          correctAnswerId: correctAnswerCandidate,
+          explanation,
+          difficulty,
+        };
+
+        if (topicId) normalized.topicId = topicId;
+        if (subjectName) normalized.subjectName = subjectName;
+        if (topicName) normalized.topicName = topicName;
+
+        normalizedQuestions.push(normalized);
+      }
+
+      if (!normalizedQuestions.length) {
+        setResult({
+          success: false,
+          message: 'No valid questions found. Make sure each entry has text, options, correctAnswerId, and either topicId or subject/topic names.',
+        });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/admin/questions/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-clerk-user-id': user.id,
         },
-        body: JSON.stringify({ questions: validQuestions }),
+        body: JSON.stringify({ questions: normalizedQuestions }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
       
       if (response.ok) {
         setResult({
           success: true,
-          created: data.created,
-          message: data.message || `Successfully imported ${data.created} questions`,
+          created: data?.created,
+          message:
+            data?.message ||
+            `Successfully imported ${data?.created ?? normalizedQuestions.length} questions`,
         });
       } else {
         setResult({
           success: false,
-          message: data.error || 'Import failed',
+          message: data?.error || 'Import failed',
         });
       }
     } catch (error) {
@@ -176,16 +242,30 @@ export default function BulkImportPage() {
     if (importType === 'json') {
       const template = [
         {
-          text: "What is React?",
+          text: "Which planet is known as the 'Red Planet'?",
           options: [
-            { id: "a", text: "A JavaScript library for building user interfaces" },
-            { id: "b", text: "A database" },
-            { id: "c", text: "A CSS framework" },
-            { id: "d", text: "A testing tool" }
+            { id: "a", text: "Jupiter" },
+            { id: "b", text: "Mars" },
+            { id: "c", text: "Venus" },
+            { id: "d", text: "Saturn" }
           ],
-          correctAnswerId: "a",
-          explanation: "React is a JavaScript library developed by Facebook for building user interfaces.",
+          correctAnswerId: "b",
+          explanation: "Mars is often called the Red Planet because of its iron oxide rich surface.",
           difficulty: "easy",
+          subjectName: "General Knowledge",
+          topicName: "Planets"
+        },
+        {
+          text: "Who painted the 'Mona Lisa'?",
+          options: [
+            { id: "a", text: "Vincent van Gogh" },
+            { id: "b", text: "Pablo Picasso" },
+            { id: "c", text: "Leonardo da Vinci" },
+            { id: "d", text: "Claude Monet" }
+          ],
+          correctAnswerId: "c",
+          explanation: "The Mona Lisa was painted by Leonardo da Vinci during the Renaissance.",
+          difficulty: "medium",
           topicId: "YOUR_TOPIC_ID_HERE"
         }
       ];
@@ -197,8 +277,9 @@ export default function BulkImportPage() {
       a.download = 'quiz-template.json';
       a.click();
     } else {
-      const csv = `text,optionA,optionB,optionC,optionD,correctAnswerId,explanation,difficulty,topicId
-"What is React?","A JavaScript library","A database","A CSS framework","A testing tool","a","React is a JavaScript library","easy","YOUR_TOPIC_ID_HERE"`;
+      const csv = `text,optionA,optionB,optionC,optionD,correctAnswerId,explanation,difficulty,subjectName,topicName,topicId
+"Which planet is known as the 'Red Planet'?","Jupiter","Mars","Venus","Saturn","b","Mars is called the Red Planet because of its appearance.","easy","General Knowledge","Planets",
+"Who painted the 'Mona Lisa'?","Vincent van Gogh","Pablo Picasso","Leonardo da Vinci","Claude Monet","c","A Renaissance masterpiece housed in the Louvre.","medium",,,"YOUR_TOPIC_ID_HERE"`;
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -220,7 +301,10 @@ export default function BulkImportPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Select Import Format</CardTitle>
-          <CardDescription>Choose the format of your import file</CardDescription>
+          <CardDescription>
+            Choose the format of your import file. Each question must include text, options,
+            a correct answer, and either a topic ID or subject/topic names.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 gap-4">
@@ -272,7 +356,11 @@ export default function BulkImportPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Upload File</CardTitle>
-          <CardDescription>Select your {importType.toUpperCase()} file containing questions</CardDescription>
+          <CardDescription>
+            Select your {importType.toUpperCase()} file containing questions. Provide either a
+            <code className="px-1">topicId</code> or <code className="px-1">subjectName</code> plus
+            <code className="px-1">topicName</code> for each row.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
@@ -290,7 +378,9 @@ export default function BulkImportPage() {
               />
             </label>
             <p className="text-sm text-gray-600 mt-2">
-              {importType === 'json' ? 'JSON files only' : 'CSV files only'}
+              {importType === 'json'
+                ? 'JSON files only (supports subjectName/topicName or topicId)'
+                : 'CSV files only (include subjectName/topicName columns or topicId)'}
             </p>
             {selectedFile && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
@@ -318,8 +408,9 @@ export default function BulkImportPage() {
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
                   <p className="font-medium text-gray-900">{String(q.text || q.question || 'No text')}</p>
                   <p className="text-sm text-gray-600 mt-1">
-                    Difficulty: {String(q.difficulty || 'medium')} | 
-                    Topic ID: {String(q.topicId || 'Not specified')}
+                    Subject: {String(q.subjectName || q.subject || 'Not specified')} |
+                    {' '}Topic: {String(q.topicName || q.topic || q.topicId || 'Not specified')} |
+                    {' '}Difficulty: {String(q.difficulty || 'medium')}
                   </p>
                 </div>
               ))}

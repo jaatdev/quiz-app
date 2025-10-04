@@ -245,10 +245,16 @@ function SubjectForm({ subject, onClose, onSave }: any) {
   const { user } = useUser();
   const [name, setName] = useState(subject?.name || '');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!subjectId) {
+      setErrorMessage('Select a subject before saving the topic.');
+      return;
+    }
     setLoading(true);
+    setErrorMessage(null);
 
     try {
       const url = subject
@@ -268,9 +274,18 @@ function SubjectForm({ subject, onClose, onSave }: any) {
 
       if (response.ok) {
         onSave();
+      } else {
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+        setErrorMessage(data?.error || 'Failed to save subject');
       }
     } catch (error) {
       console.error('Failed to save subject:', error);
+      setErrorMessage('Failed to save subject');
     } finally {
       setLoading(false);
     }
@@ -290,6 +305,9 @@ function SubjectForm({ subject, onClose, onSave }: any) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
+            {errorMessage && (
+              <p className="mb-3 text-sm text-red-600">{errorMessage}</p>
+            )}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Subject Name
@@ -322,10 +340,16 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
   const { user } = useUser();
   const [name, setName] = useState(topic?.name || '');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!subjectId) {
+      setErrorMessage('Select a subject before saving the topic.');
+      return;
+    }
     setLoading(true);
+    setErrorMessage(null);
 
     try {
       const url = topic
@@ -345,9 +369,18 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
 
       if (response.ok) {
         onSave();
+      } else {
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+        setErrorMessage(data?.error || 'Failed to save topic');
       }
     } catch (error) {
       console.error('Failed to save topic:', error);
+      setErrorMessage('Failed to save topic');
     } finally {
       setLoading(false);
     }
@@ -367,6 +400,9 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
+            {errorMessage && (
+              <p className="mb-3 text-sm text-red-600">{errorMessage}</p>
+            )}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Topic Name
