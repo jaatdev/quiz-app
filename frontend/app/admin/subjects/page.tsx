@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
-import { Plus, Edit, Trash2, BookOpen, FileText, X } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
 
@@ -32,6 +32,27 @@ export default function SubjectManagementPage() {
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ variant: 'success' | 'error'; message: string } | null>(null);
+  const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (variant: 'success' | 'error', message: string) => {
+    if (toastTimeout.current) {
+      clearTimeout(toastTimeout.current);
+    }
+    setToast({ variant, message });
+    toastTimeout.current = setTimeout(() => {
+      setToast(null);
+      toastTimeout.current = null;
+    }, 4000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeout.current) {
+        clearTimeout(toastTimeout.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetchSubjects();
@@ -70,10 +91,20 @@ export default function SubjectManagementPage() {
       });
 
       if (response.ok) {
-        setSubjects(subjects.filter(s => s.id !== id));
+        setSubjects(prev => prev.filter(s => s.id !== id));
+        showToast('success', 'Subject deleted successfully.');
+      } else {
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+        showToast('error', data?.error || 'Failed to delete subject.');
       }
     } catch (error) {
       console.error('Failed to delete subject:', error);
+      showToast('error', 'Failed to delete subject.');
     }
   };
 
@@ -89,10 +120,20 @@ export default function SubjectManagementPage() {
       });
 
       if (response.ok) {
-        fetchSubjects();
+        await fetchSubjects();
+        showToast('success', 'Topic deleted successfully.');
+      } else {
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+        showToast('error', data?.error || 'Failed to delete topic.');
       }
     } catch (error) {
       console.error('Failed to delete topic:', error);
+      showToast('error', 'Failed to delete topic.');
     }
   };
 
@@ -102,6 +143,36 @@ export default function SubjectManagementPage() {
 
   return (
     <div>
+      {toast && (
+        <div
+          className={cn(
+            'fixed top-6 right-6 z-50 flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-all',
+            toast.variant === 'success'
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          )}
+        >
+          {toast.variant === 'success' ? (
+            <CheckCircle className="mt-0.5 h-5 w-5" />
+          ) : (
+            <AlertCircle className="mt-0.5 h-5 w-5" />
+          )}
+          <div className="flex-1 text-sm font-medium">{toast.message}</div>
+          <button
+            onClick={() => {
+              if (toastTimeout.current) {
+                clearTimeout(toastTimeout.current);
+                toastTimeout.current = null;
+              }
+              setToast(null);
+            }}
+            className="rounded-md p-1 text-sm text-current transition hover:bg-white/60"
+            aria-label="Dismiss notification"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Subject & Topic Management</h1>
         <p className="text-gray-600">Organize your quiz content structure</p>
