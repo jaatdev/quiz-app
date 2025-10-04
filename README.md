@@ -42,7 +42,14 @@
 
 
 
-</div>[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
+</div>
+
+## 🆕 Recent Updates
+
+- ✅ Extended toast notifications across dashboard, leaderboard, stats, my-history, and user-info pages for consistent user feedback.
+- ✅ Documented toast usage conventions and release tagging steps below.
+
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
 
 
 
@@ -3685,6 +3692,36 @@ Special thanks to these amazing open-source projects:
 - **[Railway](https://railway.app/)** - Backend Hosting
 - **[TanStack Query](https://tanstack.com/query)** - Data Fetching
 - **[Lucide](https://lucide.dev/)** - Icon Library
+
+---
+
+## 🔔 Toast Notifications
+
+Consistent, non-blocking feedback is provided by the shared [`ToastProvider`](frontend/providers/toast-provider.tsx) that is already wired up in the root layout. When adding new UI flows, follow these practices:
+
+- Import the hook with `const { showToast } = useToast();` from `@/providers/toast-provider` inside client components.
+- Prefer structured messages: `showToast({ title: 'Sync complete', description: 'Clerk user data is up to date.', variant: 'success' });`.
+- Guard against duplicate toasts inside effects by combining dependency checks or refs (see `leaderboard/page.tsx` and `stats/page.tsx` for examples).
+- Surface actionable error states (`variant: 'error'`) and informational states (`variant: 'info'` or `variant: 'warning'`) instead of relying on console logs.
+- All variants support an optional `description` for secondary detail; omit `duration` to use the 4s default, or override when longer context is needed.
+
+When extending the toast system, keep accessibility in mind: the provider announces messages via `aria-live="polite"`, so provide concise copy and avoid flooding the queue.
+
+---
+
+## 🔖 Release Workflow
+
+Use the following checklist to cut a tagged release after landing feature work:
+
+1. Re-install dependencies if package manifests changed (`npm install` in both `backend` and `frontend`).
+2. Run production builds: `npm run build` inside `backend/` and `frontend/`; confirm the output is clean.
+3. Execute targeted tests or smoke checks as needed (for example, `npm run test` in either workspace).
+4. Stage and commit changes with a descriptive message, e.g. `git commit -am "feat: extend toast coverage"`.
+5. Create an annotated tag such as `git tag -a v1.7.0 -m "Toast feedback coverage"`.
+6. Push commits and tags: `git push origin main` followed by `git push origin v1.7.0` (or `git push origin --tags`).
+7. Publish release notes in GitHub (optional) that summarize the toasts update, testing evidence, and any migrations.
+
+These steps keep the deployment history auditable and align with the docs linked in [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
 
 ---
 

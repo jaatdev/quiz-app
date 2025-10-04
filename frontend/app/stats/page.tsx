@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   Brain, Zap, Award, BookOpen
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import { useToast } from '@/providers/toast-provider';
 
 interface QuizAttempt {
   id: string;
@@ -31,6 +32,8 @@ export default function StatsPage() {
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const { showToast } = useToast();
+  const emptyToastRef = useRef(false);
 
   useEffect(() => {
     loadHistory();
@@ -42,11 +45,26 @@ export default function StatsPage() {
       try {
         const parsed = JSON.parse(stored);
         setHistory(Array.isArray(parsed) ? parsed : []);
-      } catch {
+      } catch (error) {
+        console.error('Failed to parse quiz history for stats:', error);
         setHistory([]);
+        showToast({ variant: 'error', title: 'Failed to load saved stats.' });
       }
+    } else {
+      setHistory([]);
     }
   };
+
+  useEffect(() => {
+    if (history.length === 0 && !emptyToastRef.current) {
+      emptyToastRef.current = true;
+      showToast({
+        variant: 'info',
+        title: 'No quiz data yet.',
+        description: 'Complete quizzes to populate your stats dashboard.',
+      });
+    }
+  }, [history.length, showToast]);
 
   // Advanced filtering
   const getFilteredHistory = () => {
@@ -251,15 +269,26 @@ export default function StatsPage() {
   };
 
   const exportStats = () => {
-    const dataStr = JSON.stringify(filteredHistory, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `quiz-stats-${format(new Date(), 'yyyy-MM-dd')}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    try {
+      const dataStr = JSON.stringify(filteredHistory, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `quiz-stats-${format(new Date(), 'yyyy-MM-dd')}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+
+      showToast({
+        variant: 'success',
+        title: 'Stats exported.',
+        description: `${filteredHistory.length} record${filteredHistory.length === 1 ? '' : 's'} saved to JSON.`,
+      });
+    } catch (error) {
+      console.error('Failed to export stats:', error);
+      showToast({ variant: 'error', title: 'Failed to export stats.' });
+    }
   };
 
   const last7DaysData = getLast7DaysData();

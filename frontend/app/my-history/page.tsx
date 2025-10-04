@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateGrade } from '@/lib/utils';
+import { useToast } from '@/providers/toast-provider';
 
 interface QuizAttempt {
   id: string;
@@ -38,6 +39,7 @@ export default function MyHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'subject'>('date');
   const itemsPerPage = 10;
+  const { showToast } = useToast();
 
   // Redirect if not logged in
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function MyHistoryPage() {
   }, [user, isLoaded, router]);
 
   // Fetch quiz history from database
-  const { data: history, isLoading } = useQuery<QuizAttempt[]>({
+  const { data: history, isLoading, isError, error } = useQuery<QuizAttempt[]>({
     queryKey: ['user-history', user?.id],
     queryFn: async () => {
       const response = await fetch(`http://localhost:5001/api/user/history/${user?.id}`);
@@ -56,6 +58,13 @@ export default function MyHistoryPage() {
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    if (isError) {
+      console.error('Failed to fetch user history:', error);
+      showToast({ variant: 'error', title: 'Unable to load quiz history.' });
+    }
+  }, [isError, error, showToast]);
 
   // Filter and sort history
   const getFilteredHistory = () => {

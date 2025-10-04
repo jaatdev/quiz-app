@@ -5,15 +5,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import { useToast } from '@/providers/toast-provider';
 
 export default function UserInfoPage() {
   const { user, isLoaded } = useUser();
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { showToast } = useToast();
 
-  const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+  const copyToClipboard = async (text: string, field: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+      showToast({
+        variant: 'success',
+        title: `${label} copied!`,
+        description: 'Paste it anywhere you need it.',
+      });
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      showToast({ variant: 'error', title: 'Failed to copy to clipboard.' });
+    }
   };
 
   if (!isLoaded) {
@@ -59,7 +71,7 @@ export default function UserInfoPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(user.id, 'id')}
+                  onClick={() => copyToClipboard(user.id, 'id', 'User ID')}
                 >
                   {copiedField === 'id' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -77,7 +89,7 @@ export default function UserInfoPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(user.primaryEmailAddress?.emailAddress || '', 'email')}
+                  onClick={() => copyToClipboard(user.primaryEmailAddress?.emailAddress || '', 'email', 'Email address')}
                 >
                   {copiedField === 'email' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -95,7 +107,7 @@ export default function UserInfoPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(user.fullName || user.firstName || '', 'name')}
+                  onClick={() => copyToClipboard(user.fullName || user.firstName || '', 'name', 'Name')}
                 >
                   {copiedField === 'name' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
@@ -121,7 +133,7 @@ export default function UserInfoPage() {
                 variant="outline"
                 size="sm"
                 className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(syncCommand, 'command')}
+                onClick={() => copyToClipboard(syncCommand, 'command', 'Sync command')}
               >
                 {copiedField === 'command' ? (
                   <>

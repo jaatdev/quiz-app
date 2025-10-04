@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatTime, calculateGrade } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
+import { useToast } from '@/providers/toast-provider';
 
 interface QuizAttempt {
   id: string;
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<QuizAttempt[]>([]);
   const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadHistory();
@@ -37,7 +39,16 @@ export default function DashboardPage() {
   const loadHistory = () => {
     const stored = localStorage.getItem('quiz-history');
     if (stored) {
-      setHistory(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        setHistory(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error('Failed to parse quiz history:', error);
+        setHistory([]);
+        showToast({ variant: 'error', title: 'Failed to load saved history.' });
+      }
+    } else {
+      setHistory([]);
     }
   };
 
@@ -177,9 +188,22 @@ export default function DashboardPage() {
   });
 
   const clearHistory = () => {
+    if (history.length === 0) {
+      showToast({
+        variant: 'info',
+        title: 'No history to clear.',
+      });
+      return;
+    }
+
     if (confirm('Are you sure you want to clear all history?')) {
       localStorage.removeItem('quiz-history');
       setHistory([]);
+      showToast({
+        variant: 'success',
+        title: 'History cleared.',
+        description: 'All local quiz progress has been removed.',
+      });
     }
   };
 

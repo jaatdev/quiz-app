@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import {
   Trophy, Medal, Crown, TrendingUp, TrendingDown, 
   Home, Filter, User
 } from 'lucide-react';
+import { useToast } from '@/providers/toast-provider';
 
 interface LeaderboardUser {
   id: string;
@@ -38,6 +39,8 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'all'>('all');
   const [currentUserId] = useState('current-user'); // In real app, get from auth
+  const { showToast } = useToast();
+  const hasShownEmptyToastRef = useRef(false);
 
   useEffect(() => {
     loadLeaderboard();
@@ -46,8 +49,24 @@ export default function LeaderboardPage() {
   const loadLeaderboard = () => {
     // Load quiz history for current user
     const stored = localStorage.getItem('quiz-history');
-    
-    const history: QuizAttempt[] = stored ? JSON.parse(stored) : [];
+    let history: QuizAttempt[] = [];
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        history = Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.error('Failed to parse quiz history for leaderboard:', error);
+        showToast({ variant: 'error', title: 'Failed to load local leaderboard data.' });
+      }
+    }
+    if (history.length === 0 && !hasShownEmptyToastRef.current) {
+      hasShownEmptyToastRef.current = true;
+      showToast({
+        variant: 'info',
+        title: 'No quiz history yet.',
+        description: 'Take a quiz to see yourself on the leaderboard.',
+      });
+    }
     
     // Filter by time
     let filtered = [...history];
@@ -95,6 +114,14 @@ export default function LeaderboardPage() {
       user.rank = index + 1;
       user.previousRank = user.rank + Math.floor(Math.random() * 3) - 1; // Random rank change
     });
+
+    if (history.length > 0 && filtered.length === 0) {
+      showToast({
+        variant: 'info',
+        title: 'No attempts in this range.',
+        description: 'Try a wider filter to see more leaderboard data.',
+      });
+    }
 
     setLeaderboard(allUsers);
   };
