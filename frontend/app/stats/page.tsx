@@ -325,59 +325,71 @@ export default function StatsPage() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-700" />
-                <span className="text-sm font-medium">Filters:</span>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Filter className="w-4 h-4" />
+                <span className="text-sm font-semibold">Filters</span>
               </div>
-              
-              <select
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value as any)}
-                className="px-3 py-1.5 border rounded-lg text-sm font-bold"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">Last 7 Days</option>
-                <option value="month">Last 30 Days</option>
-              </select>
-              
-              <select
-                value={subjectFilter}
-                onChange={(e) => setSubjectFilter(e.target.value)}
-                className="px-3 py-1.5 border rounded-lg text-sm font-bold"
-              >
-                <option value="all">All Subjects</option>
-                {subjects.map(subject => (
-                  <option key={subject} value={subject}>{subject}</option>
-                ))}
-              </select>
-              
-              <select
-                value={difficultyFilter}
-                onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="px-3 py-1.5 border rounded-lg text-sm font-bold"
-              >
-                <option value="all">All Difficulties</option>
-                {difficulties.map(diff => (
-                  <option key={diff} value={diff}>
-                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                  </option>
-                ))}
-              </select>
-              
-              <div className="ml-auto text-sm text-gray-700 font-bold">
-                Showing {filteredHistory.length} of {history.length} quizzes
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <label className="flex flex-col text-sm font-medium text-gray-700 gap-1">
+                  <span className="text-xs uppercase tracking-wide text-gray-500">Time Range</span>
+                  <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value as any)}
+                    className="px-3 py-2 border rounded-lg text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col text-sm font-medium text-gray-700 gap-1">
+                  <span className="text-xs uppercase tracking-wide text-gray-500">Subject</span>
+                  <select
+                    value={subjectFilter}
+                    onChange={(e) => setSubjectFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Subjects</option>
+                    {subjects.map(subject => (
+                      <option key={subject} value={subject}>{subject}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col text-sm font-medium text-gray-700 gap-1">
+                  <span className="text-xs uppercase tracking-wide text-gray-500">Difficulty</span>
+                  <select
+                    value={difficultyFilter}
+                    onChange={(e) => setDifficultyFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Difficulties</option>
+                    {difficulties.map(diff => (
+                      <option key={diff} value={diff}>
+                        {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="flex flex-col justify-center rounded-lg bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700">
+                  <span className="text-xs uppercase tracking-wide text-gray-500">Visible Records</span>
+                  <span>Showing {filteredHistory.length} of {history.length}</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
           <Card className="border-2">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-700 font-bold">Total Quizzes</p>
                   <p className="text-2xl font-bold">{stats.totalQuizzes}</p>
@@ -389,7 +401,7 @@ export default function StatsPage() {
 
           <Card className="border-2">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-700 font-bold">Avg Score</p>
                   <p className="text-2xl font-bold">{stats.averageScore.toFixed(1)}%</p>
@@ -401,7 +413,7 @@ export default function StatsPage() {
 
           <Card className="border-2">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-700 font-bold">Best Score</p>
                   <p className="text-2xl font-bold">{stats.bestScore.toFixed(1)}%</p>
@@ -413,7 +425,7 @@ export default function StatsPage() {
 
           <Card className="border-2">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-700 font-bold">Streak</p>
                   <p className="text-2xl font-bold">{stats.streakDays}d</p>
@@ -425,7 +437,7 @@ export default function StatsPage() {
 
           <Card className="border-2">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-700 font-bold">Total Time</p>
                   <p className="text-2xl font-bold">
@@ -439,7 +451,7 @@ export default function StatsPage() {
 
           <Card className="border-2">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs text-gray-700 font-bold">Improvement</p>
                   <p className={`text-2xl font-bold ${stats.improvement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -542,27 +554,33 @@ export default function StatsPage() {
             <CardContent>
               <div className="space-y-3">
                 {last7DaysData.map((day) => (
-                  <div key={day.fullDate} className="flex items-center gap-3">
-                    <div className="w-16 text-sm">
-                      <div className="font-medium">{day.date}</div>
-                      <div className="text-xs text-gray-700">{day.fullDate}</div>
+                  <div key={day.fullDate} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="flex items-baseline gap-2 min-w-[5rem]">
+                      <div className="font-semibold text-sm text-gray-900">{day.date}</div>
+                      <div className="text-xs text-gray-600">{day.fullDate}</div>
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
-                          <div
-                            className="absolute left-0 top-0 h-full bg-blue-500 flex items-center justify-end pr-2"
-                            style={{ width: `${Math.min(day.count * 20, 100)}%` }}
-                          >
-                            {day.count > 0 && (
-                              <span className="text-xs text-white font-medium">{day.count}</span>
-                            )}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
+                            <div
+                              className="absolute left-0 top-0 h-full bg-blue-500 flex items-center justify-end pr-2 transition-all"
+                              style={{ width: `${Math.min(day.count * 20, 100)}%` }}
+                            >
+                              {day.count > 0 && (
+                                <span className="text-xs text-white font-semibold">{day.count}</span>
+                              )}
+                            </div>
                           </div>
+                          <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
+                            Attempts
+                          </span>
                         </div>
                         {day.avgScore > 0 && (
-                          <span className="text-sm text-gray-700 font-bold w-12 text-right">
-                            {day.avgScore.toFixed(0)}%
-                          </span>
+                          <div className="flex items-center justify-between text-xs font-semibold text-gray-700">
+                            <span>Average Score</span>
+                            <span>{day.avgScore.toFixed(0)}%</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -581,15 +599,15 @@ export default function StatsPage() {
               <div className="space-y-3">
                 {topicPerformance.slice(0, 7).map((topic, index) => (
                   <div key={topic.topic}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium truncate flex-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-1">
+                      <span className="text-sm font-medium flex-1 pr-2 break-words leading-snug">
                         {index + 1}. {topic.topic}
                       </span>
-                      <span className="text-xs text-gray-700 font-bold ml-2">
-                        {topic.attempts} attempts
+                      <span className="text-xs text-gray-700 font-semibold">
+                        {topic.attempts} {topic.attempts === 1 ? 'attempt' : 'attempts'}
                       </span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <div className="flex-1">
                         <div className="bg-gray-200 rounded-full h-4 relative overflow-hidden">
                           <div
@@ -598,7 +616,7 @@ export default function StatsPage() {
                           />
                         </div>
                       </div>
-                      <span className="text-xs font-medium w-12 text-right">
+                      <span className="text-xs font-semibold w-12 text-right">
                         {topic.average.toFixed(0)}%
                       </span>
                     </div>
