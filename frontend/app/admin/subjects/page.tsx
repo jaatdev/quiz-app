@@ -41,7 +41,7 @@ export default function SubjectManagementPage() {
     if (!user) return;
 
     try {
-      const response = await fetch('${API_URL}/admin/subjects', {
+  const response = await fetch(`${API_URL}/admin/subjects`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -253,7 +253,7 @@ function SubjectForm({ subject, onClose, onSave }: any) {
     try {
       const url = subject
         ? `${API_URL}/admin/subjects/${subject.id}`
-        : '${API_URL}/admin/subjects';
+  : `${API_URL}/admin/subjects`;
       
       const method = subject ? 'PUT' : 'POST';
 
@@ -330,7 +330,7 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
     try {
       const url = topic
         ? `${API_URL}/admin/topics/${topic.id}`
-        : '${API_URL}/admin/topics';
+  : `${API_URL}/admin/topics`;
       
       const method = topic ? 'PUT' : 'POST';
 

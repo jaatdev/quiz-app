@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { API_URL } from '@/lib/config';
 
 interface QuestionFormProps {
   question?: {
@@ -66,7 +67,7 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
     if (!user) return;
     
     try {
-      const response = await fetch('http://localhost:5001/api/admin/topics', {
+  const response = await fetch(`${API_URL}/admin/topics`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -86,8 +87,8 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
 
     try {
       const url = question
-        ? `http://localhost:5001/api/admin/questions/${question.id}`
-        : 'http://localhost:5001/api/admin/questions';
+  ? `${API_URL}/admin/questions/${question.id}`
+  : `${API_URL}/admin/questions`;
       
       const method = question ? 'PUT' : 'POST';
 

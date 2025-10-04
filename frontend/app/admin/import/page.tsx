@@ -116,7 +116,7 @@ export default function BulkImportPage() {
         topicId: q.topicId,
       })).filter((q: { text: unknown; topicId: unknown }) => q.text && q.topicId);
 
-      const response = await fetch('${API_URL}/admin/questions/bulk', {
+  const response = await fetch(`${API_URL}/admin/questions/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

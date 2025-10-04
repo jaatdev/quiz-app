@@ -42,7 +42,7 @@ export default function UserManagementPage() {
     if (!user) return;
 
     try {
-      const response = await fetch('${API_URL}/admin/users', {
+  const response = await fetch(`${API_URL}/admin/users`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
