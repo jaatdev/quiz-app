@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileJson, FileText, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
+import { useToast } from '@/providers/toast-provider';
 
 type ImportMode = 'override' | 'perRow';
 
@@ -28,6 +29,7 @@ interface ImportResult {
 
 export default function BulkImportPage() {
   const { user } = useUser();
+  const { showToast } = useToast();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importType, setImportType] = useState<'json' | 'csv'>('json');
@@ -51,12 +53,18 @@ export default function BulkImportPage() {
         const response = await fetch(`${API_URL}/admin/subjects`, {
           headers: { 'x-clerk-user-id': user.id },
         });
+        const data = await response.json().catch(() => null);
         if (response.ok) {
-          const data = await response.json();
           setSubjects(data || []);
+        } else {
+          showToast({
+            variant: 'error',
+            title: data?.error || 'Failed to fetch subjects.',
+          });
         }
       } catch (error) {
         console.error('Failed to fetch subjects:', error);
+        showToast({ variant: 'error', title: 'Failed to fetch subjects.' });
       }
     })();
   }, [user]);
@@ -98,6 +106,11 @@ export default function BulkImportPage() {
     } catch (error) {
       console.error('Failed to preview file:', error);
       setPreviewData([]);
+      showToast({
+        variant: 'error',
+        title: 'Failed to preview file.',
+        description: 'Check the file format and try again.',
+      });
     }
   };
 
@@ -241,19 +254,27 @@ export default function BulkImportPage() {
         throw new Error(data?.error || 'Import failed');
       }
 
+      const successMessage = data?.message || `Imported ${data?.created ?? records.length} questions`;
       setResult({
         success: true,
         created: data?.created,
-        message: data?.message || `Imported ${data?.created ?? records.length} questions`,
+        message: successMessage,
       });
       setSelectedFile(null);
       setPreviewData([]);
+      showToast({
+        variant: 'success',
+        title: 'Import complete.',
+        description: successMessage,
+      });
     } catch (error: any) {
       console.error('Import error:', error);
+      const message = error?.message || 'Failed to import questions';
       setResult({
         success: false,
-        message: error?.message || 'Failed to import questions',
+        message,
       });
+      showToast({ variant: 'error', title: message });
     } finally {
       setImporting(false);
     }

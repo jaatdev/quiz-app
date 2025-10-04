@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { QuestionForm } from '@/components/admin/question-form';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
+import { useToast } from '@/providers/toast-provider';
 
 interface Question {
   id: string;
@@ -33,6 +34,7 @@ export default function QuestionManagement() {
   const [showForm, setShowForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchQuestions();
@@ -51,9 +53,19 @@ export default function QuestionManagement() {
       if (response.ok) {
         const data = await response.json();
         setQuestions(data);
+      } else {
+        let message = 'Failed to fetch questions.';
+        try {
+          const data = await response.json();
+          message = data?.error || message;
+        } catch {
+          // ignore JSON parse errors
+        }
+        showToast({ variant: 'error', title: message });
       }
     } catch (error) {
       console.error('Failed to fetch questions:', error);
+      showToast({ variant: 'error', title: 'Failed to fetch questions.' });
     } finally {
       setLoading(false);
     }
@@ -72,9 +84,20 @@ export default function QuestionManagement() {
 
       if (response.ok) {
         setQuestions(questions.filter(q => q.id !== id));
+        showToast({ variant: 'success', title: 'Question deleted successfully.' });
+      } else {
+        let message = 'Failed to delete question.';
+        try {
+          const data = await response.json();
+          message = data?.error || message;
+        } catch {
+          // ignore JSON parse errors
+        }
+        showToast({ variant: 'error', title: message });
       }
     } catch (error) {
       console.error('Failed to delete question:', error);
+      showToast({ variant: 'error', title: 'Failed to delete question.' });
     }
   };
 

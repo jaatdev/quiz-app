@@ -11,6 +11,7 @@ import { ScoreDisplay } from '@/components/quiz/score-display';
 import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2 } from 'lucide-react';
 import { calculateGrade } from '@/lib/utils';
 import { generateProfessionalPDF } from '@/lib/pdf-generator';
+import { useToast } from '@/providers/toast-provider';
 
 // Simple UUID generator for browser
 function generateId() {
@@ -21,6 +22,7 @@ export default function EnhancedResultsPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useUser();
+  const { showToast } = useToast();
   const topicId = params.topicId as string;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -158,9 +160,15 @@ export default function EnhancedResultsPage() {
       
       console.log('Professional PDF generated successfully!');
       setPdfError(null);
+      showToast({
+        variant: 'success',
+        title: 'PDF ready.',
+        description: 'Your detailed quiz report is downloading.',
+      });
     } catch (error) {
       console.error('PDF generation failed:', error);
       setPdfError('Failed to generate PDF. Please try again.');
+      showToast({ variant: 'error', title: 'Failed to generate PDF.' });
     } finally {
       setIsGeneratingPDF(false);
     }

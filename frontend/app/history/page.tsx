@@ -11,6 +11,7 @@ import {
 import { format } from 'date-fns';
 import { calculateGrade } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { useToast } from '@/providers/toast-provider';
 
 interface QuizAttempt {
   id: string;
@@ -28,6 +29,7 @@ interface QuizAttempt {
 
 export default function HistoryPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [history, setHistory] = useState<QuizAttempt[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<QuizAttempt[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +57,7 @@ export default function HistoryPage() {
         setHistory(Array.isArray(parsed) ? parsed : []);
       } catch {
         setHistory([]);
+        showToast({ variant: 'error', title: 'Failed to load saved history.' });
       }
     }
   };
@@ -112,11 +115,19 @@ export default function HistoryPage() {
   };
 
   const handleDeleteSelected = () => {
+    const removedCount = selectedItems.size;
     const remaining = history.filter(item => !selectedItems.has(item.id));
     localStorage.setItem('quiz-history', JSON.stringify(remaining));
     setHistory(remaining);
     setSelectedItems(new Set());
     setShowDeleteDialog(false);
+    if (removedCount > 0) {
+      showToast({
+        variant: 'success',
+        title: 'History deleted.',
+        description: `${removedCount} item${removedCount === 1 ? '' : 's'} removed from your history.`,
+      });
+    }
   };
 
   const handleExportSelected = () => {
@@ -133,6 +144,12 @@ export default function HistoryPage() {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+
+    showToast({
+      variant: 'success',
+      title: 'Export ready.',
+      description: `${toExport.length} record${toExport.length === 1 ? '' : 's'} prepared for download.`,
+    });
   };
 
   const handleImportHistory = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,12 +163,25 @@ export default function HistoryPage() {
         if (Array.isArray(imported)) {
           const merged = [...history, ...imported];
           const unique = Array.from(new Map(merged.map(item => [item.id, item])).values());
+          const addedCount = unique.length - history.length;
           localStorage.setItem('quiz-history', JSON.stringify(unique));
           setHistory(unique);
+          showToast({
+            variant: 'success',
+            title: 'History imported.',
+            description: addedCount > 0
+              ? `${addedCount} new record${addedCount === 1 ? ' was' : 's were'} added.`
+              : 'No new records were added.',
+          });
+        } else {
+          showToast({ variant: 'error', title: 'Invalid file format.', description: 'Please choose a valid history export file.' });
         }
       } catch (error) {
         console.error('Failed to import history:', error);
+        showToast({ variant: 'error', title: 'Failed to import history.' });
       }
+
+      event.target.value = '';
     };
     reader.readAsText(file);
   };

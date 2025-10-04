@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { 
   Users, Search, Shield, ShieldOff, TrendingUp, 
-  Calendar, Trophy, Target 
+  Trophy, Target 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
+import { useToast } from '@/providers/toast-provider';
 
 interface UserData {
   id: string;
@@ -33,6 +34,7 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchUsers();
@@ -51,9 +53,19 @@ export default function UserManagementPage() {
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
+      } else {
+        let message = 'Failed to fetch users.';
+        try {
+          const data = await response.json();
+          message = data?.error || message;
+        } catch {
+          // ignore JSON parse errors
+        }
+        showToast({ variant: 'error', title: message });
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      showToast({ variant: 'error', title: 'Failed to fetch users.' });
     } finally {
       setLoading(false);
     }
@@ -73,12 +85,31 @@ export default function UserManagementPage() {
       });
 
       if (response.ok) {
-        setUsers(users.map(u => 
-          u.id === userId ? { ...u, role: newRole } : u
-        ));
+        setUsers(prevUsers => 
+          prevUsers.map(u => 
+            u.id === userId ? { ...u, role: newRole } : u
+          )
+        );
+        showToast({
+          variant: 'success',
+          title: 'User role updated.',
+          description: newRole === 'admin'
+            ? 'The user now has admin access.'
+            : 'Admin access has been removed from the user.',
+        });
+      } else {
+        let message = 'Failed to update user role.';
+        try {
+          const data = await response.json();
+          message = data?.error || message;
+        } catch {
+          // ignore JSON parse errors
+        }
+        showToast({ variant: 'error', title: message });
       }
     } catch (error) {
       console.error('Failed to update user role:', error);
+      showToast({ variant: 'error', title: 'Failed to update user role.' });
     }
   };
 

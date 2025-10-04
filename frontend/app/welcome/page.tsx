@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui';
 import { Brain, Loader2 } from 'lucide-react';
+import { useToast } from '@/providers/toast-provider';
 
 export default function WelcomePage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
+  const { showToast } = useToast();
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,15 +43,24 @@ export default function WelcomePage() {
 
       if (response.ok) {
         // Profile created successfully, redirect to homepage
+        showToast({
+          variant: 'success',
+          title: 'Profile synced!',
+          description: 'Your account is ready to go.',
+        });
         router.push('/');
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to create profile');
+        const message = data.error || 'Failed to create profile';
+        setError(message);
+        showToast({ variant: 'error', title: message });
         setIsCreatingProfile(false);
       }
     } catch (error) {
       console.error('Error syncing user:', error);
-      setError('Failed to create profile. Please try again.');
+      const message = 'Failed to create profile. Please try again.';
+      setError(message);
+      showToast({ variant: 'error', title: message });
       setIsCreatingProfile(false);
     }
   };

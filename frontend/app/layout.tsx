@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
+import { ToastProvider } from "@/providers/toast-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
@@ -22,11 +23,13 @@ export default function RootLayout({
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
         </head>
         <body className="font-sans">
-          <QueryProvider>
-            <div className="min-h-screen bg-gray-50">
-              {children}
-            </div>
-          </QueryProvider>
+          <ToastProvider>
+            <QueryProvider>
+              <div className="min-h-screen bg-gray-50">
+                {children}
+              </div>
+            </QueryProvider>
+          </ToastProvider>
         </body>
       </html>
     </ClerkProvider>

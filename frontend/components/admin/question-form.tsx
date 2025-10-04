@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { API_URL } from '@/lib/config';
+import { useToast } from '@/providers/toast-provider';
 
 interface QuestionFormProps {
   question?: {
@@ -48,6 +49,7 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
   });
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchTopics();
@@ -102,13 +104,24 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
       });
 
       if (response.ok) {
+        showToast({
+          variant: 'success',
+          title: question ? 'Question updated successfully.' : 'Question created successfully.',
+        });
         onSave();
       } else {
-        alert('Failed to save question');
+        let message = 'Failed to save question';
+        try {
+          const data = await response.json();
+          message = data?.error || message;
+        } catch {
+          // ignore JSON parsing errors
+        }
+        showToast({ variant: 'error', title: message });
       }
     } catch (error) {
       console.error('Failed to save question:', error);
-      alert('Failed to save question');
+      showToast({ variant: 'error', title: 'Failed to save question' });
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Database, Shield, Bell, Save, RefreshCw } from 'lucide-react';
+import { Settings, Database, Shield, Save, RefreshCw } from 'lucide-react';
+import { useToast } from '@/providers/toast-provider';
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
@@ -18,13 +19,14 @@ export default function AdminSettingsPage() {
   });
 
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   const handleSave = async () => {
     setSaving(true);
     // Save settings to backend
     setTimeout(() => {
       setSaving(false);
-      alert('Settings saved successfully!');
+      showToast({ variant: 'success', title: 'Settings saved successfully!' });
     }, 1000);
   };
 
