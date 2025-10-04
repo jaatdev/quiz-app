@@ -66,6 +66,27 @@ export default function QuizPage() {
     }
   }, [session, topicId, topicName, subjectName, difficulty, startTime, setQuizSession]);
 
+  // Persist answers for review usage
+  useEffect(() => {
+    if (!session) return;
+
+    const questionIds = session.questions.map((question) => question.id);
+    const answersEntries = Array.from(answers.entries());
+
+    try {
+      sessionStorage.setItem(
+        `quiz_questions_${topicId}`,
+        JSON.stringify(questionIds)
+      );
+      sessionStorage.setItem(
+        `quiz_answers_${topicId}`,
+        JSON.stringify(Object.fromEntries(answersEntries))
+      );
+    } catch (storageError) {
+      console.error('Failed to sync quiz review data:', storageError);
+    }
+  }, [session, answers, topicId]);
+
   // Submit quiz mutation
   const submitMutation = useMutation({
     mutationFn: async (submission: QuizSubmission) => {
@@ -110,6 +131,24 @@ export default function QuizPage() {
         percentage: (result.correctAnswers / result.totalQuestions) * 100,
         timeSpent,
       });
+
+      // Persist answers and question IDs for review page
+      if (typeof window !== 'undefined' && session) {
+        try {
+          const questionIds = session.questions.map((q) => q.id);
+          const answersEntries = Array.from(answers.entries());
+          sessionStorage.setItem(
+            `quiz_questions_${topicId}`,
+            JSON.stringify(questionIds)
+          );
+          sessionStorage.setItem(
+            `quiz_answers_${topicId}`,
+            JSON.stringify(Object.fromEntries(answersEntries))
+          );
+        } catch (storageError) {
+          console.error('Failed to persist quiz review data:', storageError);
+        }
+      }
       
       // Navigate to results page
       router.push(`/quiz/${topicId}/results`);
@@ -149,12 +188,22 @@ export default function QuizPage() {
     if (!session || submitMutation.isPending) return;
 
     const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    const currentAnswers = session
+      ? session.questions.reduce<Array<{ questionId: string; selectedOptionId: string }>>((acc, question) => {
+          const selectedOptionId = answers.get(question.id);
+          if (selectedOptionId) {
+            acc.push({ questionId: question.id, selectedOptionId });
+          }
+          return acc;
+        }, [])
+      : Array.from(answers.entries()).map(([questionId, selectedOptionId]) => ({
+          questionId,
+          selectedOptionId,
+        }));
+
     const submission: QuizSubmission = {
       topicId,
-      answers: Array.from(answers.entries()).map(([questionId, selectedOptionId]) => ({
-        questionId,
-        selectedOptionId,
-      })),
+      answers: currentAnswers,
       timeSpent,
     };
 
