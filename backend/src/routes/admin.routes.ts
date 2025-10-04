@@ -124,9 +124,30 @@ router.put('/subjects/:id', async (req: Request, res: Response) => {
 router.delete('/subjects/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.subject.delete({ where: { id } });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.quizAttempt.deleteMany({
+        where: {
+          topic: { subjectId: id }
+        }
+      });
+
+      await tx.question.deleteMany({
+        where: {
+          topic: { subjectId: id }
+        }
+      });
+
+      await tx.topic.deleteMany({ where: { subjectId: id } });
+      await tx.subject.delete({ where: { id } });
+    });
+
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+    console.error('Failed to delete subject:', error);
     res.status(500).json({ error: 'Failed to delete subject' });
   }
 });
@@ -177,9 +198,19 @@ router.put('/topics/:id', async (req: Request, res: Response) => {
 router.delete('/topics/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.topic.delete({ where: { id } });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.quizAttempt.deleteMany({ where: { topicId: id } });
+      await tx.question.deleteMany({ where: { topicId: id } });
+      await tx.topic.delete({ where: { id } });
+    });
+
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+    console.error('Failed to delete topic:', error);
     res.status(500).json({ error: 'Failed to delete topic' });
   }
 });
