@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { quizService } from '@/services/quiz.service';
@@ -12,22 +12,41 @@ import { StatsCard } from '@/components/ui/stats-card';
 import { Home, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Target, Clock } from 'lucide-react';
 import type { QuestionWithAnswer } from '@/types';
 
+interface StoredHistoryAttempt {
+  id: string;
+  topicId: string;
+  topicName: string;
+  subjectName: string;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  percentage: number;
+  timestamp: number;
+  timeSpent: number;
+  difficulty?: string;
+  questionIds?: string[];
+  answers?: Record<string, string>;
+}
+
 export default function ReviewPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const topicId = params.topicId as string;
-  const score = parseFloat(searchParams.get('score') || '0');
-  const total = parseInt(searchParams.get('total') || '0');
-  const correct = parseInt(searchParams.get('correct') || '0');
-  const timeSpent = parseInt(searchParams.get('time') || '0');
+  const attemptId = searchParams.get('attemptId');
+  const scoreParam = searchParams.get('score');
+  const totalParam = searchParams.get('total');
+  const correctParam = searchParams.get('correct');
+  const timeParam = searchParams.get('time');
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswersMap, setUserAnswersMap] = useState<Map<string, string>>(new Map());
 
   // Get question IDs from session storage (stored during quiz)
   const [questionIds, setQuestionIds] = useState<string[]>([]);
+  const [historyAttempt, setHistoryAttempt] = useState<StoredHistoryAttempt | null>(null);
+  const [missingReviewData, setMissingReviewData] = useState(false);
 
   useEffect(() => {
     // Try to get stored quiz data from sessionStorage
@@ -40,8 +59,41 @@ export default function ReviewPage() {
       
       setUserAnswersMap(new Map(Object.entries(answers)));
       setQuestionIds(questions);
+      setMissingReviewData(false);
+      return;
     }
-  }, [topicId]);
+
+    if (attemptId) {
+      try {
+        const historyRaw = localStorage.getItem('quiz-history');
+        const history: StoredHistoryAttempt[] = historyRaw ? JSON.parse(historyRaw) : [];
+        const safeHistory = Array.isArray(history) ? history : [];
+        const entry = safeHistory.find((record) => record.id === attemptId);
+
+        if (!entry) {
+          setMissingReviewData(true);
+          return;
+        }
+
+        setHistoryAttempt(entry);
+
+        if (Array.isArray(entry.questionIds) && entry.questionIds.length > 0) {
+          setQuestionIds(entry.questionIds);
+          const answersObject = entry.answers && typeof entry.answers === 'object' ? entry.answers : {};
+          setUserAnswersMap(new Map(Object.entries(answersObject)));
+          setMissingReviewData(false);
+        } else {
+          // Attempt exists but lacks detailed review data (legacy export)
+          setMissingReviewData(true);
+        }
+      } catch (error) {
+        console.error('Failed to load history attempt for review:', error);
+        setMissingReviewData(true);
+      }
+    } else {
+      setMissingReviewData(true);
+    }
+  }, [topicId, attemptId]);
 
   // Fetch review questions
   const { data: reviewData, isLoading, error, refetch } = useQuery({
@@ -50,6 +102,48 @@ export default function ReviewPage() {
     enabled: questionIds.length > 0,
     retry: false,
   });
+
+  useEffect(() => {
+    // Attempt fallback to sessionStorage persisted per attempt ID
+    if (questionIds.length === 0 && attemptId) {
+      const stored = sessionStorage.getItem(`quiz_review_${attemptId}`);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed.questionIds) && parsed.questionIds.length > 0) {
+            setQuestionIds(parsed.questionIds);
+            const answersObject = parsed.answers && typeof parsed.answers === 'object' ? parsed.answers : {};
+            setUserAnswersMap(new Map(Object.entries(answersObject)));
+            setMissingReviewData(false);
+          }
+        } catch (error) {
+          console.error('Failed to hydrate review data from session storage cache:', error);
+        }
+      }
+    }
+  }, [attemptId, questionIds.length]);
+
+  const summary = useMemo(() => {
+    const parseNumber = (value: string | null | undefined) => {
+      if (value === null || value === undefined) return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const fallbackTotal = historyAttempt?.totalQuestions ?? reviewData?.length ?? 0;
+    const fallbackCorrect = historyAttempt?.correctAnswers ?? 0;
+    const fallbackScore = historyAttempt?.score ?? fallbackCorrect;
+    const fallbackTime = historyAttempt?.timeSpent ?? 0;
+
+    return {
+      score: parseNumber(scoreParam) ?? fallbackScore ?? 0,
+      total: parseNumber(totalParam) ?? fallbackTotal ?? 0,
+      correct: parseNumber(correctParam) ?? fallbackCorrect ?? 0,
+      timeSpent: parseNumber(timeParam) ?? fallbackTime ?? 0,
+    };
+  }, [scoreParam, totalParam, correctParam, timeParam, historyAttempt, reviewData?.length]);
+
+  const { score, total, correct, timeSpent } = summary;
 
   const goToPrevious = () => {
     if (currentQuestionIndex > 0) {
@@ -77,6 +171,10 @@ export default function ReviewPage() {
     router.push(`/quiz/${topicId}`);
   };
 
+  const handleRetakeLegacy = () => {
+    router.push(`/quiz/${topicId}`);
+  };
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -88,7 +186,26 @@ export default function ReviewPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentQuestionIndex, reviewData]);
 
-  if (isLoading || questionIds.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (questionIds.length === 0) {
+    if (missingReviewData) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <Error
+            message="Detailed review data is not available for this quiz attempt. Retake the quiz to generate a new review."
+            onRetry={handleRetakeLegacy}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading />
@@ -112,9 +229,10 @@ export default function ReviewPage() {
   const isCorrect = userAnswer === currentQuestion.correctAnswerId;
 
   // Calculate statistics
-  const incorrect = total - correct;
+  const safeTotal = total > 0 ? total : reviewData.length;
+  const incorrect = Math.max(safeTotal - correct, 0);
   const answeredCount = userAnswersMap.size;
-  const skipped = total - answeredCount;
+  const skipped = Math.max(safeTotal - answeredCount, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -149,17 +267,17 @@ export default function ReviewPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
           <StatsCard
             title="Score"
-            value={`${score.toFixed(1)}/${total}`}
+            value={`${score.toFixed(1)}/${safeTotal}`}
             icon={Target}
             color="blue"
-            description={`${((score / total) * 100).toFixed(1)}%`}
+            description={safeTotal > 0 ? `${((score / safeTotal) * 100).toFixed(1)}%` : '—'}
           />
           <StatsCard
             title="Correct"
             value={correct}
             icon={CheckCircle}
             color="green"
-            description={`${((correct / total) * 100).toFixed(0)}% accuracy`}
+            description={safeTotal > 0 ? `${((correct / safeTotal) * 100).toFixed(0)}% accuracy` : '—'}
           />
           <StatsCard
             title="Incorrect"
@@ -173,7 +291,7 @@ export default function ReviewPage() {
             value={`${Math.floor(timeSpent / 60)}:${(timeSpent % 60).toString().padStart(2, '0')}`}
             icon={Clock}
             color="purple"
-            description={`${Math.floor(timeSpent / total)}s per question`}
+            description={safeTotal > 0 ? `${Math.floor(timeSpent / safeTotal)}s per question` : '—'}
           />
         </div>
       </section>

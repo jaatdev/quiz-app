@@ -25,6 +25,8 @@ interface QuizAttempt {
   timestamp: number;
   timeSpent: number;
   difficulty?: string;
+  questionIds?: string[];
+  answers?: Record<string, string>;
 }
 
 export default function HistoryPage() {
@@ -186,6 +188,18 @@ export default function HistoryPage() {
     reader.readAsText(file);
   };
 
+  const navigateToReview = (item: QuizAttempt) => {
+    const params = new URLSearchParams({
+      attemptId: item.id,
+      score: Number.isFinite(item.score) ? item.score.toString() : '0',
+      total: Number.isFinite(item.totalQuestions) ? item.totalQuestions.toString() : '0',
+      correct: Number.isFinite(item.correctAnswers) ? item.correctAnswers.toString() : '0',
+      time: Number.isFinite(item.timeSpent) ? item.timeSpent.toString() : '0',
+    });
+
+    router.push(`/quiz/${item.topicId}/review?${params.toString()}`);
+  };
+
   // Pagination
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -303,76 +317,79 @@ export default function HistoryPage() {
           </CardContent>
         </Card>
 
-        {/* History Table */}
-        <Card className="border-2">
+        {/* History Table (Desktop) */}
+        <Card className="border-2 hidden lg:block">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b-2">
+              <table className="min-w-[960px] w-full table-fixed">
+                <thead className="bg-gray-100 border-b-2 sticky top-0 z-10">
                   <tr>
-                    <th className="p-4 text-left">
+                    <th className="px-4 py-3 text-left align-middle w-12">
                       <input
                         type="checkbox"
                         checked={selectedItems.size === filteredHistory.length && filteredHistory.length > 0}
                         onChange={handleSelectAll}
                         className="rounded"
+                        aria-label="Select all history rows"
                       />
                     </th>
-                    <th className="p-4 text-left font-bold">Date</th>
-                    <th className="p-4 text-left font-bold">Subject</th>
-                    <th className="p-4 text-left font-bold">Topic</th>
-                    <th className="p-4 text-left font-bold">Score</th>
-                    <th className="p-4 text-left font-bold">Grade</th>
-                    <th className="p-4 text-left font-bold">Time</th>
-                    <th className="p-4 text-left font-bold">Difficulty</th>
-                    <th className="p-4 text-left font-bold">Actions</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-40">Date</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-48">Subject</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-56">Topic</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-32">Score</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-24">Grade</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-32">Time</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-32">Difficulty</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide text-gray-700 whitespace-nowrap w-28">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedHistory.map((item) => {
                     const { grade, color } = calculateGrade(item.percentage);
                     return (
-                      <tr key={item.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">
+                      <tr key={item.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-4 align-top">
                           <input
                             type="checkbox"
                             checked={selectedItems.has(item.id)}
                             onChange={() => handleSelectItem(item.id)}
                             className="rounded"
+                            aria-label={`Select quiz from ${format(item.timestamp, 'MMM d, yyyy')}`}
                           />
                         </td>
-                        <td className="p-4">
-                          <div className="font-bold">{format(item.timestamp, 'MMM d, yyyy')}</div>
-                          <div className="text-xs text-gray-700 font-bold">
-                            {format(item.timestamp, 'h:mm a')}
-                          </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="text-sm font-semibold text-gray-900">{format(item.timestamp, 'MMM d, yyyy')}</div>
+                          <div className="text-xs font-medium text-gray-500">{format(item.timestamp, 'h:mm a')}</div>
                         </td>
-                        <td className="p-4 font-bold">{item.subjectName}</td>
-                        <td className="p-4 font-bold">{item.topicName}</td>
-                        <td className="p-4">
-                          <div className="font-bold">{(item.percentage || 0).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-700 font-bold">
-                            {item.correctAnswers || 0}/{item.totalQuestions || 0}
-                          </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="text-sm font-semibold text-gray-900 break-words">{item.subjectName}</div>
                         </td>
-                        <td className="p-4">
-                          <span className={`font-bold ${color}`}>{grade}</span>
+                        <td className="px-4 py-4 align-top">
+                          <div className="text-sm font-semibold text-gray-900 break-words">{item.topicName}</div>
                         </td>
-                        <td className="p-4 font-bold">
-                          {Math.floor(item.timeSpent / 60)}:{(item.timeSpent % 60).toString().padStart(2, '0')}
+                        <td className="px-4 py-4 align-top">
+                          <div className="text-sm font-semibold text-gray-900">{(item.percentage || 0).toFixed(1)}%</div>
+                          <div className="text-xs font-medium text-gray-500">{item.correctAnswers || 0}/{item.totalQuestions || 0}</div>
                         </td>
-                        <td className="p-4">
-                          <span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold">
+                        <td className="px-4 py-4 align-top">
+                          <span className={`text-sm font-semibold ${color}`}>{grade}</span>
+                        </td>
+                        <td className="px-4 py-4 align-top">
+                          <span className="text-sm font-semibold text-gray-900">
+                            {Math.floor(item.timeSpent / 60)}:{(item.timeSpent % 60).toString().padStart(2, '0')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 align-top">
+                          <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 uppercase">
                             {item.difficulty || 'Medium'}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="px-4 py-4 align-top">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              router.push(`/quiz/${item.topicId}/review`);
-                            }}
+                            onClick={() => navigateToReview(item)}
+                            aria-label="Review quiz attempt"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -382,11 +399,10 @@ export default function HistoryPage() {
                   })}
                 </tbody>
               </table>
-              
               {paginatedHistory.length === 0 && (
                 <div className="text-center py-12">
-                  <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-700 font-bold">
+                  <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-700 font-semibold">
                     {searchTerm ? 'No quizzes found matching your search' : 'No quiz history yet'}
                   </p>
                 </div>
@@ -394,6 +410,94 @@ export default function HistoryPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* History Cards (Mobile) */}
+        <div className="space-y-4 lg:hidden">
+          {paginatedHistory.map((item) => {
+            const { grade, color } = calculateGrade(item.percentage);
+            const isSelected = selectedItems.has(item.id);
+            return (
+              <Card key={item.id} className="border-2">
+                <CardContent className="pt-5 pb-4 px-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{format(item.timestamp, 'MMM d, yyyy')}</p>
+                      <p className="text-xs font-medium text-gray-500">{format(item.timestamp, 'h:mm a')}</p>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleSelectItem(item.id)}
+                        className="rounded"
+                        aria-label={`Select quiz from ${format(item.timestamp, 'MMM d, yyyy')}`}
+                      />
+                      Select
+                    </label>
+                  </div>
+
+                  <dl className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Subject</dt>
+                      <dd className="text-gray-900 font-semibold text-right break-words max-w-[60%]">{item.subjectName}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Topic</dt>
+                      <dd className="text-gray-900 font-semibold text-right break-words max-w-[60%]">{item.topicName}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Score</dt>
+                      <dd className="text-gray-900 font-semibold text-right">{(item.percentage || 0).toFixed(1)}%</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Correct</dt>
+                      <dd className="text-gray-900 font-semibold text-right">{item.correctAnswers || 0}/{item.totalQuestions || 0}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Grade</dt>
+                      <dd className={`font-semibold text-right ${color}`}>{grade}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Time</dt>
+                      <dd className="text-gray-900 font-semibold text-right">
+                        {Math.floor(item.timeSpent / 60)}:{(item.timeSpent % 60).toString().padStart(2, '0')}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-gray-500 font-medium">Difficulty</dt>
+                      <dd>
+                        <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 uppercase">
+                          {item.difficulty || 'Medium'}
+                        </span>
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-5 flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigateToReview(item)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" /> Review
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {paginatedHistory.length === 0 && (
+            <Card className="border-2">
+              <CardContent className="py-10 text-center">
+                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-700 font-semibold">
+                  {searchTerm ? 'No quizzes found matching your search' : 'No quiz history yet'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

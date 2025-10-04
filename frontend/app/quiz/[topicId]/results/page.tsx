@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
@@ -28,6 +28,63 @@ export default function EnhancedResultsPage() {
   const [pdfError, setPdfError] = useState<string | null>(null);
 
   const { lastResult, currentSession, clearSession, answers } = useQuizStore();
+  const attemptIdRef = useRef<string | null>(null);
+  const attemptTimestampRef = useRef<number | null>(null);
+
+  const persistAttemptToHistory = useCallback(() => {
+    if (!lastResult || !currentSession) {
+      return attemptIdRef.current;
+    }
+
+    if (!attemptIdRef.current) {
+      attemptIdRef.current = generateId();
+    }
+
+    if (!attemptTimestampRef.current) {
+      attemptTimestampRef.current = Date.now();
+    }
+
+    const attemptId = attemptIdRef.current;
+    const timestamp = attemptTimestampRef.current;
+
+    try {
+      const historyRaw = localStorage.getItem('quiz-history');
+      const history = historyRaw ? JSON.parse(historyRaw) : [];
+      const safeHistory = Array.isArray(history) ? history : [];
+
+      const questionIds = currentSession.questions.map((question) => question.id);
+      const answersObject = Object.fromEntries(Array.from(answers.entries()));
+
+      const newEntry = {
+        id: attemptId,
+        topicId: currentSession.topicId,
+        topicName: currentSession.topicName,
+        subjectName: currentSession.subjectName,
+        score: lastResult.score,
+        totalQuestions: lastResult.totalQuestions,
+        correctAnswers: lastResult.correctAnswers,
+        percentage: lastResult.percentage,
+        timestamp,
+        timeSpent: lastResult.timeSpent,
+        difficulty: currentSession.difficulty || 'medium',
+        questionIds,
+        answers: answersObject,
+      };
+
+      const filteredHistory = safeHistory.filter((item) => item?.id !== attemptId);
+      const updatedHistory = [newEntry, ...filteredHistory].slice(0, 50);
+
+      localStorage.setItem('quiz-history', JSON.stringify(updatedHistory));
+      sessionStorage.setItem(
+        `quiz_review_${attemptId}`,
+        JSON.stringify({ questionIds, answers: answersObject })
+      );
+    } catch (error) {
+      console.error('Failed to persist quiz attempt for history:', error);
+    }
+
+    return attemptId;
+  }, [answers, currentSession, lastResult]);
 
   // Fetch review questions for PDF export
   const questionIds = currentSession?.questions.map(q => q.id) || [];
@@ -40,26 +97,8 @@ export default function EnhancedResultsPage() {
 
   // Save to history
   useEffect(() => {
-    if (lastResult && currentSession) {
-      const history = JSON.parse(localStorage.getItem('quiz-history') || '[]');
-      const newEntry = {
-        id: generateId(),
-        topicId: currentSession.topicId,
-        topicName: currentSession.topicName,
-        subjectName: currentSession.subjectName,
-        score: lastResult.score,
-        totalQuestions: lastResult.totalQuestions,
-        correctAnswers: lastResult.correctAnswers,
-        percentage: lastResult.percentage,
-        timestamp: Date.now(),
-        timeSpent: lastResult.timeSpent,
-        difficulty: currentSession.difficulty || 'medium',
-      };
-      
-      const updatedHistory = [newEntry, ...history].slice(0, 50);
-      localStorage.setItem('quiz-history', JSON.stringify(updatedHistory));
-    }
-  }, [lastResult, currentSession]);
+    persistAttemptToHistory();
+  }, [persistAttemptToHistory]);
 
   // Redirect if no result
   useEffect(() => {
@@ -80,7 +119,19 @@ export default function EnhancedResultsPage() {
   };
 
   const handleReview = () => {
-    router.push(`/quiz/${topicId}/review`);
+    const attemptId = persistAttemptToHistory();
+    const params = new URLSearchParams({
+      score: lastResult.score.toString(),
+      total: lastResult.totalQuestions.toString(),
+      correct: lastResult.correctAnswers.toString(),
+      time: lastResult.timeSpent.toString(),
+    });
+
+    if (attemptId) {
+      params.set('attemptId', attemptId);
+    }
+
+    router.push(`/quiz/${topicId}/review?${params.toString()}`);
   };
 
   const handleHome = () => {
