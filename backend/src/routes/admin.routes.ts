@@ -68,11 +68,16 @@ router.get('/subjects', async (req: Request, res: Response) => {
     const subjects = await prisma.subject.findMany({
       include: {
         topics: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            subjectId: true,
             _count: { select: { questions: true } }
-          }
+          },
+          orderBy: { name: 'asc' }
         }
-      }
+      },
+      orderBy: { name: 'asc' }
     });
     res.json(subjects);
   } catch (error) {
@@ -257,10 +262,17 @@ router.delete('/questions/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Bulk Import Questions
+// Bulk Import Questions with override/per-row support
 router.post('/questions/bulk', async (req: Request, res: Response) => {
   try {
-    const { questions } = req.body ?? {};
+    const {
+      questions,
+      mode = 'perRow',
+      defaultSubjectId,
+      defaultTopicId,
+      defaultSubjectName,
+      defaultTopicName
+    } = req.body ?? {};
 
     if (!Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({ error: 'questions must be a non-empty array' });
@@ -274,7 +286,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
       return allowedDifficulties.has(difficulty) ? difficulty : 'medium';
     };
 
-  const normalizeOptions = (question: any): Array<{ id: string; text: string }> => {
+    const normalizeOptions = (question: any): Array<{ id: string; text: string }> => {
       if (Array.isArray(question?.options) && question.options.length) {
         return question.options
           .map((option: any, index: number) => ({
@@ -294,7 +306,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
       return fallbackOptions;
     };
 
-    const resolveTopicId = async (tx: Prisma.TransactionClient, question: any): Promise<string | null> => {
+    const resolvePerRowTopicId = async (tx: Prisma.TransactionClient, question: any): Promise<string | null> => {
       const rawTopicId = typeof question?.topicId === 'string' ? question.topicId.trim() : '';
       if (rawTopicId) {
         const existingTopic = await tx.topic.findUnique({ where: { id: rawTopicId } });
@@ -360,6 +372,46 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
     let createdCount = 0;
 
     await prisma.$transaction(async (tx) => {
+      let overrideTopicId: string | null = null;
+
+      if (mode === 'override') {
+        let subjectId: string | null = null;
+
+        if (defaultSubjectId) {
+          const subject = await tx.subject.findUnique({ where: { id: defaultSubjectId } });
+          if (!subject) {
+            throw new ImportValidationError('defaultSubjectId not found');
+          }
+          subjectId = subject.id;
+        } else if (typeof defaultSubjectName === 'string' && defaultSubjectName.trim()) {
+          const subject = await tx.subject.upsert({
+            where: { name: defaultSubjectName.trim() },
+            update: {},
+            create: { name: defaultSubjectName.trim() }
+          });
+          subjectId = subject.id;
+        } else {
+          throw new ImportValidationError('Provide defaultSubjectId or defaultSubjectName in override mode');
+        }
+
+        if (defaultTopicId) {
+          const topic = await tx.topic.findUnique({ where: { id: defaultTopicId } });
+          if (!topic) {
+            throw new ImportValidationError('defaultTopicId not found');
+          }
+          overrideTopicId = topic.id;
+        } else if (typeof defaultTopicName === 'string' && defaultTopicName.trim()) {
+          const topic = await tx.topic.upsert({
+            where: { subjectId_name: { subjectId: subjectId!, name: defaultTopicName.trim() } },
+            update: {},
+            create: { subjectId: subjectId!, name: defaultTopicName.trim() }
+          });
+          overrideTopicId = topic.id;
+        } else {
+          throw new ImportValidationError('Provide defaultTopicId or defaultTopicName in override mode');
+        }
+      }
+
       for (const question of questions) {
         const textSource = typeof question?.text === 'string' ? question.text : question?.question;
         const text = typeof textSource === 'string' ? textSource.trim() : '';
@@ -367,7 +419,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
           throw new ImportValidationError('Each question must include text');
         }
 
-  const options: Array<{ id: string; text: string }> = normalizeOptions(question);
+        const options: Array<{ id: string; text: string }> = normalizeOptions(question);
         if (!options.length) {
           throw new ImportValidationError(`Question "${text.slice(0, 50)}" must include at least one option with text`);
         }
@@ -381,7 +433,14 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
           throw new ImportValidationError(`Question "${text.slice(0, 50)}" has a correctAnswerId that does not match any option`);
         }
 
-        const topicId = await resolveTopicId(tx, question);
+        let topicId: string | null = null;
+
+        if (mode === 'override') {
+          topicId = overrideTopicId;
+        } else {
+          topicId = await resolvePerRowTopicId(tx, question);
+        }
+
         if (!topicId) {
           throw new ImportValidationError(`Question "${text.slice(0, 50)}" could not resolve a topic. Provide topicId or subjectName + topicName.`);
         }
@@ -396,7 +455,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
             correctAnswerId: suppliedAnswer,
             explanation,
             difficulty,
-            topicId
+            topicId: topicId!
           }
         });
 
@@ -407,7 +466,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
     return res.json({
       success: true,
       created: createdCount,
-      message: `Successfully imported ${createdCount} questions`
+      message: `Imported ${createdCount} questions`
     });
   } catch (error) {
     console.error('Bulk import error:', error);
@@ -417,7 +476,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return res.status(400).json({ error: error.message });
     }
-    return res.status(500).json({ error: 'Failed to import questions' });
+    return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to import questions' });
   }
 });
 
