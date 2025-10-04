@@ -249,10 +249,6 @@ function SubjectForm({ subject, onClose, onSave }: any) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectId) {
-      setErrorMessage('Select a subject before saving the topic.');
-      return;
-    }
     setLoading(true);
     setErrorMessage(null);
 
