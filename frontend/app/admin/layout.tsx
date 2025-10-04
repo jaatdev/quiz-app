@@ -29,7 +29,7 @@ export default function AdminLayout({
 
   const checkAdminStatus = async () => {
     if (!user) {
-      router.push('/sign-in');
+      // Don't redirect here - let middleware handle it
       return;
     }
 
@@ -43,11 +43,11 @@ export default function AdminLayout({
       if (response.ok) {
         setIsAdmin(true);
       } else {
-        router.push('/');
+        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Admin check failed:', error);
-      router.push('/');
+      router.push('/dashboard');
     } finally {
       setIsLoading(false);
     }
