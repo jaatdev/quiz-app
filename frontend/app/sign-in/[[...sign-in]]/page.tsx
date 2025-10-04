@@ -1,6 +1,10 @@
 import { SignIn } from '@clerk/nextjs';
 
-export default function SignInPage() {
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: { redirect_url?: string };
+}) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="w-full max-w-md">
@@ -16,6 +20,7 @@ export default function SignInPage() {
             }
           }}
           signUpUrl="/sign-up"
+          forceRedirectUrl={searchParams.redirect_url}
         />
       </div>
     </div>
