@@ -1,25 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import path from 'path';
-import fs from 'fs';
 import routes from './routes';
+import { getUploadsDir, getNotesDir } from './utils/uploads';
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-const notesDir = path.join(uploadsDir, 'notes');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-if (!fs.existsSync(notesDir)) {
-  fs.mkdirSync(notesDir, { recursive: true });
-}
+const uploadsDir = getUploadsDir();
+const notesDir = getNotesDir();
 
 // CORS configuration for production
 const corsOptions = {
@@ -64,6 +55,9 @@ const server = app.listen(PORT, () => {
   console.log('   GET  /api/quiz/session/:topicId?count=10 - Start quiz');
   console.log('   POST /api/quiz/submit         - Submit quiz answers');
   console.log('   POST /api/quiz/review         - Get review questions');
+  console.log('='.repeat(60));
+  console.log(`📂 Uploads directory: ${uploadsDir}`);
+  console.log(`📄 Notes directory:   ${notesDir}`);
   console.log('='.repeat(60) + '\n');
 });
 

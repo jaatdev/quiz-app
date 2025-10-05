@@ -2,16 +2,16 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, Prisma } from '@prisma/client';
 import multer, { FileFilterCallback } from 'multer';
 import fs from 'fs';
-import path from 'path';
 import { requireAdmin } from '../middleware/admin';
+import {
+  getNotesDir,
+  buildNotesUrl,
+  resolveAbsoluteFromUrl,
+} from '../utils/uploads';
 
 const router = Router();
 const prisma = new PrismaClient();
-const notesUploadDir = path.join(__dirname, '..', '..', 'uploads', 'notes');
-
-if (!fs.existsSync(notesUploadDir)) {
-  fs.mkdirSync(notesUploadDir, { recursive: true });
-}
+const notesUploadDir = getNotesDir();
 
 const storage = multer.diskStorage({
   destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
@@ -247,7 +247,7 @@ router.delete('/topics/:id', async (req: Request, res: Response) => {
       const existingTopic = await tx.topic.findUnique({ where: { id } });
 
       if (existingTopic?.notesUrl) {
-        const existingPath = path.join(__dirname, '..', '..', existingTopic.notesUrl.replace(/^\//, ''));
+        const existingPath = resolveAbsoluteFromUrl(existingTopic.notesUrl);
         fs.promises.unlink(existingPath).catch(() => undefined);
       }
 
@@ -360,17 +360,15 @@ router.post('/topics/:id/notes', upload.single('notes'), async (req: Request, re
     }
 
     if (topic.notesUrl) {
-      const existingPath = path.join(__dirname, '..', '..', topic.notesUrl.replace(/^\//, ''));
+      const existingPath = resolveAbsoluteFromUrl(topic.notesUrl);
       fs.promises.unlink(existingPath).catch(() => undefined);
     }
 
-    const relativePath = path
-      .relative(path.join(__dirname, '..', '..'), req.file.path)
-      .replace(/\\/g, '/');
+    const notesUrl = buildNotesUrl(req.file.path);
 
     const updated = await prisma.topic.update({
       where: { id },
-      data: { notesUrl: `/${relativePath}` },
+      data: { notesUrl },
       include: { subject: true },
     });
 
@@ -391,7 +389,7 @@ router.delete('/topics/:id/notes', async (req: Request, res: Response) => {
     }
 
     if (topic.notesUrl) {
-      const existingPath = path.join(__dirname, '..', '..', topic.notesUrl.replace(/^\//, ''));
+      const existingPath = resolveAbsoluteFromUrl(topic.notesUrl);
       await fs.promises.unlink(existingPath).catch(() => undefined);
     }
 
