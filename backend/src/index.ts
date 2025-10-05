@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 const notesDir = path.join(uploadsDir, 'notes');
 
 if (!fs.existsSync(uploadsDir)) {
