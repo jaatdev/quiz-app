@@ -53,8 +53,8 @@ router.post('/quiz-attempt', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'User authentication required' });
     }
 
-    const attempt = await userService.saveQuizAttempt(clerkId, attemptData);
-    res.json(attempt);
+  const { attempt, achievements } = await userService.saveQuizAttempt(clerkId, attemptData);
+  res.json({ attempt, achievements });
   } catch (error) {
     console.error('Error saving quiz attempt:', error);
     res.status(500).json({ error: 'Failed to save quiz attempt' });

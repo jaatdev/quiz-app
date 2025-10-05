@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
 import { quizService } from '@/services/quiz.service';
+import { api } from '@/lib/api';
 import { useQuizStore } from '@/stores/quiz-store';
 import { 
   Timer, 
@@ -20,7 +21,8 @@ import {
 } from '@/components/ui';
 import { X } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
-import type { QuizSubmission } from '@/types';
+import { useToast } from '@/providers/toast-provider';
+import type { QuizSubmission, AchievementUnlock } from '@/types';
 
 const QUIZ_DURATION = 600; // 10 minutes in seconds
 
@@ -29,6 +31,7 @@ export default function QuizPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useUser();
+  const { showToast } = useToast();
   
   const topicId = params.topicId as string;
   const topicName = searchParams.get('topic') || 'Quiz';
@@ -91,35 +94,42 @@ export default function QuizPage() {
   const submitMutation = useMutation({
     mutationFn: async (submission: QuizSubmission) => {
       const result = await quizService.submitQuiz(submission);
-      
-      // If user is logged in, save to database
+
+      let achievements: AchievementUnlock[] = [];
+
+      type AttemptResponse = {
+        attempt: unknown;
+        achievements?: AchievementUnlock[];
+      };
+
+      // If user is logged in, save to database and capture achievements
       if (user) {
         try {
-          await fetch('http://localhost:5001/api/user/quiz-attempt', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              clerkId: user.id,
-              topicId: submission.topicId,
-              score: result.score,
-              totalQuestions: result.totalQuestions,
-              correctAnswers: result.correctAnswers,
-              percentage: (result.correctAnswers / result.totalQuestions) * 100,
-              timeSpent: submission.timeSpent,
-              difficulty: difficulty,
-            }),
-          });
+          const response = (await api.post<AttemptResponse>('/user/quiz-attempt', {
+            clerkId: user.id,
+            topicId: submission.topicId,
+            score: result.score,
+            totalQuestions: result.totalQuestions,
+            correctAnswers: result.correctAnswers,
+            percentage: result.percentage,
+            timeSpent: submission.timeSpent,
+            difficulty,
+            subjectName,
+            topicName,
+          })) as unknown as AttemptResponse;
+
+          achievements = Array.isArray((response as AttemptResponse).achievements)
+            ? (response as AttemptResponse).achievements!
+            : [];
         } catch (error) {
           console.error('Failed to save to database:', error);
           // Continue anyway - don't block the user experience
         }
       }
-      
-      return result;
+
+      return { result, achievements };
     },
-    onSuccess: (result) => {
+    onSuccess: ({ result, achievements }) => {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
       
       // Save result to Zustand store
@@ -128,9 +138,24 @@ export default function QuizPage() {
         totalQuestions: result.totalQuestions,
         correctAnswers: result.correctAnswers,
         incorrectAnswers: result.incorrectAnswers || [],
-        percentage: (result.correctAnswers / result.totalQuestions) * 100,
+        percentage:
+          typeof result.percentage === 'number'
+            ? result.percentage
+            : (result.correctAnswers / result.totalQuestions) * 100,
         timeSpent,
+        achievements: achievements.length > 0 ? achievements : undefined,
       });
+
+      if (achievements.length > 0) {
+        achievements.forEach((achievement) => {
+          const title = `${achievement.icon ?? '🎉'} ${achievement.title}`;
+          showToast({
+            variant: 'success',
+            title,
+            description: achievement.description,
+          });
+        });
+      }
 
       // Persist answers and question IDs for review page
       if (typeof window !== 'undefined' && session) {

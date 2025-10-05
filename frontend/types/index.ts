@@ -50,6 +50,14 @@ export interface QuizResult {
   percentage: number;
 }
 
+export interface AchievementUnlock {
+  userId: string;
+  type: string;
+  title: string;
+  description: string;
+  icon: string;
+}
+
 export interface QuestionWithAnswer extends Question {
   correctAnswerId: string;
   explanation?: string;

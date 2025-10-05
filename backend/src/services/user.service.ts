@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { AchievementService } from './achievement.service';
 
 export class UserService {
   constructor(private prisma: PrismaClient) {}
@@ -57,6 +58,8 @@ export class UserService {
       percentage: number;
       timeSpent: number;
       difficulty?: string;
+      subjectName?: string;
+      topicName?: string;
     }
   ) {
     // First get the user
@@ -69,7 +72,7 @@ export class UserService {
     }
 
     // Save the quiz attempt
-    return await this.prisma.quizAttempt.create({
+    const attempt = await this.prisma.quizAttempt.create({
       data: {
         userId: user.id,
         topicId: attemptData.topicId,
@@ -88,6 +91,24 @@ export class UserService {
         },
       },
     });
+
+  let achievements: Awaited<ReturnType<AchievementService['checkAchievements']>> = [];
+
+    try {
+      const achievementService = new AchievementService(this.prisma);
+      achievements = await achievementService.checkAchievements(user.id, {
+        topicId: attempt.topicId,
+        percentage: attempt.percentage,
+        timeSpent: attempt.timeSpent,
+        totalQuestions: attempt.totalQuestions,
+        subjectName: attemptData.subjectName || attempt.topic?.subject?.name,
+        topicName: attemptData.topicName || attempt.topic?.name,
+      });
+    } catch (error) {
+      console.error('Error checking achievements:', error);
+    }
+
+    return { attempt, achievements };
   }
 
   // Get user's quiz history

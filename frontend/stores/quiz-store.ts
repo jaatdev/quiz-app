@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Question, QuizSubmission, Answer } from '@/types';
+import type { Question, Answer, AchievementUnlock } from '@/types';
+
+interface CompletedQuizResult {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: Answer[];
+  percentage: number;
+  timeSpent: number;
+  achievements?: AchievementUnlock[];
+}
 
 interface QuizSession {
   topicId: string;
@@ -20,14 +30,7 @@ interface QuizState {
   flaggedQuestions: Set<number>;
   
   // Quiz results
-  lastResult: {
-    score: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    incorrectAnswers: Answer[];
-    percentage: number;
-    timeSpent: number;
-  } | null;
+  lastResult: CompletedQuizResult | null;
 
   // Actions
   startSession: (session: QuizSession) => void;
@@ -36,7 +39,7 @@ interface QuizState {
   goToQuestion: (index: number) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
-  saveResult: (result: any) => void;
+  saveResult: (result: CompletedQuizResult) => void;
   clearSession: () => void;
   
   // Computed values

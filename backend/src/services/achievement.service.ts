@@ -5,7 +5,13 @@ export class AchievementService {
 
   // Check and award achievements after each quiz
   async checkAchievements(userId: string, quizData: any) {
-    const achievements = [];
+    const achievements = [] as Array<{
+      userId: string;
+      type: string;
+      title: string;
+      description: string;
+      icon: string;
+    }>;
 
     // Get user's quiz history
     const userQuizzes = await this.prisma.quizAttempt.findMany({
@@ -57,25 +63,31 @@ export class AchievementService {
     }
 
     // Subject Master Achievement
-    const subjectQuizzes = await this.prisma.quizAttempt.findMany({
-      where: { 
-        userId,
-        topic: {
-          subject: {
-            name: quizData.subjectName,
+    const subjectName = typeof quizData.subjectName === 'string' && quizData.subjectName.trim().length > 0
+      ? quizData.subjectName.trim()
+      : null;
+
+    if (subjectName) {
+      const subjectQuizzes = await this.prisma.quizAttempt.findMany({
+        where: { 
+          userId,
+          topic: {
+            subject: {
+              name: subjectName,
+            },
           },
         },
-      },
-    });
-
-    if (subjectQuizzes.length === 5) {
-      achievements.push({
-        userId,
-        type: `subject_master_${quizData.subjectName}`,
-        title: `${quizData.subjectName} Explorer`,
-        description: `Complete 5 quizzes in ${quizData.subjectName}`,
-        icon: '📚',
       });
+
+      if (subjectQuizzes.length === 5) {
+        achievements.push({
+          userId,
+          type: `subject_master_${subjectName}`,
+          title: `${subjectName} Explorer`,
+          description: `Complete 5 quizzes in ${subjectName}`,
+          icon: '📚',
+        });
+      }
     }
 
     // High Scorer Achievement

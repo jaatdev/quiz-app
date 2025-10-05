@@ -8,7 +8,7 @@ import { useQuizStore } from '@/stores/quiz-store';
 import { quizService } from '@/services/quiz.service';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { ScoreDisplay } from '@/components/quiz/score-display';
-import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2 } from 'lucide-react';
+import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2, Sparkles } from 'lucide-react';
 import { calculateGrade } from '@/lib/utils';
 import { generateProfessionalPDF } from '@/lib/pdf-generator';
 import { useToast } from '@/providers/toast-provider';
@@ -26,6 +26,7 @@ export default function EnhancedResultsPage() {
   const topicId = params.topicId as string;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const achievementsToastRef = useRef(false);
 
   const { lastResult, currentSession, clearSession, answers } = useQuizStore();
   const attemptIdRef = useRef<string | null>(null);
@@ -95,6 +96,25 @@ export default function EnhancedResultsPage() {
     staleTime: Infinity, // Keep the data fresh
   });
 
+  const achievements = lastResult?.achievements ?? [];
+
+  useEffect(() => {
+    if (achievements.length === 0 || achievementsToastRef.current) {
+      return;
+    }
+
+    achievements.forEach((achievement) => {
+      const title = `${achievement.icon ?? '🎉'} ${achievement.title}`;
+      showToast({
+        variant: 'success',
+        title,
+        description: achievement.description,
+      });
+    });
+
+    achievementsToastRef.current = true;
+  }, [achievements, showToast]);
+
   // Save to history
   useEffect(() => {
     persistAttemptToHistory();
@@ -112,6 +132,7 @@ export default function EnhancedResultsPage() {
   }
 
   const { grade, color } = calculateGrade(lastResult.percentage);
+  const unlockedAchievements = lastResult.achievements ?? [];
 
   const handleRetry = () => {
     clearSession();
@@ -249,6 +270,42 @@ export default function EnhancedResultsPage() {
           timeSpent={lastResult.timeSpent}
         />
 
+        {unlockedAchievements.length > 0 && (
+          <Card className="max-w-4xl mx-auto mt-6 border-2 border-green-200 bg-green-50/80">
+            <CardHeader className="pb-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-green-500/10 p-2 text-green-700">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold text-green-900">Achievement unlocked!</CardTitle>
+                  <p className="text-sm font-medium text-green-800">
+                    {unlockedAchievements.length > 1
+                      ? `You just earned ${unlockedAchievements.length} new achievements`
+                      : 'You just earned a brand new achievement'}
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              {unlockedAchievements.map((achievement) => (
+                <div
+                  key={achievement.type}
+                  className="flex items-start gap-3 rounded-lg border border-green-200 bg-white/70 p-4 shadow-sm"
+                >
+                  <div className="text-3xl" aria-hidden="true">
+                    {achievement.icon ?? '🏅'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{achievement.title}</p>
+                    <p className="text-sm text-gray-700 mt-1">{achievement.description}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Detailed Stats */}
         <div className="grid md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-8">
           <Card className="border-2">
@@ -341,6 +398,41 @@ export default function EnhancedResultsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Newly Unlocked Achievements */}
+        {achievements.length > 0 && (
+          <Card className="max-w-4xl mx-auto mt-8 border-2 border-yellow-200 bg-yellow-50/80">
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="rounded-full bg-yellow-200 p-2 text-yellow-800">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold text-yellow-900">New Achievements Unlocked!</CardTitle>
+                <p className="text-sm text-yellow-800/80">Celebrate your progress with these fresh milestones.</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                {achievements.map((achievement) => (
+                  <div
+                    key={achievement.type}
+                    className="rounded-lg border border-yellow-200 bg-white/70 p-4 shadow-sm"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl" aria-hidden>
+                        {achievement.icon || '🎉'}
+                      </span>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-gray-900">{achievement.title}</p>
+                        <p className="text-sm text-gray-700">{achievement.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* PDF Error Message */}
         {pdfError && (
