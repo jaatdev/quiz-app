@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { Plus, Edit, Trash2, BookOpen, FileText, X, Download } from 'lucide-react';
-import { API_URL } from '@/lib/config';
+import { API_URL, resolveBackendUrl } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
 
 interface Subject {
@@ -173,55 +173,59 @@ export default function SubjectManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 mb-4">
-                {subject.topics.map((topic) => (
-                  <div
-                    key={topic.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4 text-gray-600" />
-                      <span className="font-medium text-gray-900">{topic.name}</span>
-                      <span className="text-sm text-gray-500">
-                        {topic._count?.questions || 0} questions
-                      </span>
-                      <span
-                        className={`text-xs font-medium ${topic.notesUrl ? 'text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full' : 'text-gray-400 italic'}`}
-                      >
-                        {topic.notesUrl ? 'Notes PDF' : 'No notes'}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      {topic.notesUrl && (
+                {subject.topics.map((topic) => {
+                  const notesLink = resolveBackendUrl(topic.notesUrl ?? null);
+
+                  return (
+                    <div
+                      key={topic.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-4 h-4 text-gray-600" />
+                        <span className="font-medium text-gray-900">{topic.name}</span>
+                        <span className="text-sm text-gray-500">
+                          {topic._count?.questions || 0} questions
+                        </span>
+                        <span
+                          className={`text-xs font-medium ${notesLink ? 'text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full' : 'text-gray-400 italic'}`}
+                        >
+                          {notesLink ? 'Notes PDF' : 'No notes'}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {notesLink && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(notesLink, '_blank', 'noopener,noreferrer')}
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Notes
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(`${API_URL}${topic.notesUrl}`, '_blank', 'noopener,noreferrer')}
+                          onClick={() => {
+                            setEditingTopic(topic);
+                            setSelectedSubjectId(subject.id);
+                            setShowTopicForm(true);
+                          }}
                         >
-                          <Download className="w-3 h-3 mr-1" />
-                          Notes
+                          <Edit className="w-3 h-3" />
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingTopic(topic);
-                          setSelectedSubjectId(subject.id);
-                          setShowTopicForm(true);
-                        }}
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteTopic(topic.id)}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteTopic(topic.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <Button
                 variant="outline"
@@ -384,6 +388,7 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
   const [notesFile, setNotesFile] = useState<File | null>(null);
   const [isRemovingNotes, setIsRemovingNotes] = useState(false);
   const { showToast } = useToast();
+  const currentNotesLink = resolveBackendUrl(topic?.notesUrl ?? null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -576,10 +581,10 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
                   </Button>
                 </div>
               )}
-              {topic?.notesUrl && (
+              {currentNotesLink && (
                 <div className="mt-3 flex items-center justify-between rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
                   <a
-                    href={`${API_URL}${topic.notesUrl}`}
+                    href={currentNotesLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold underline"

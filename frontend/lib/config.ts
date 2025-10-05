@@ -15,3 +15,18 @@ export const config = {
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production',
 } as const;
+
+const ABSOLUTE_URL_REGEX = /^https?:\/\//i;
+
+export const resolveBackendUrl = (path: string | null | undefined): string | null => {
+  if (!path) {
+    return null;
+  }
+
+  if (ABSOLUTE_URL_REGEX.test(path)) {
+    return path;
+  }
+
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${BACKEND_URL}${normalized}`;
+};

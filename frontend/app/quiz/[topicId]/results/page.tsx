@@ -11,6 +11,7 @@ import { ScoreDisplay } from '@/components/quiz/score-display';
 import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2, Sparkles, FileText } from 'lucide-react';
 import { calculateGrade } from '@/lib/utils';
 import { generateProfessionalPDF } from '@/lib/pdf-generator';
+import { resolveBackendUrl } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
 
 // Simple UUID generator for browser
@@ -134,7 +135,7 @@ export default function EnhancedResultsPage() {
 
   const { grade, color } = calculateGrade(lastResult.percentage);
   const unlockedAchievements = lastResult.achievements ?? [];
-  const notesUrl = currentSession.notesUrl;
+  const notesLink = resolveBackendUrl(currentSession.notesUrl ?? null);
 
   const handleRetry = () => {
     clearSession();
@@ -308,7 +309,7 @@ export default function EnhancedResultsPage() {
           </Card>
         )}
 
-        {notesUrl && (
+        {notesLink && (
           <Card className="max-w-4xl mx-auto mt-6 border-2 border-blue-200 bg-white">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="rounded-full bg-blue-100 p-2 text-blue-700">
@@ -322,7 +323,7 @@ export default function EnhancedResultsPage() {
             <CardContent>
               <Button
                 size="lg"
-                onClick={() => window.open(notesUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => window.open(notesLink, '_blank', 'noopener,noreferrer')}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 font-bold"
               >
                 <Download className="w-5 h-5" />
