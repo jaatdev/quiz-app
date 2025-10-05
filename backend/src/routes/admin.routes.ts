@@ -1,9 +1,44 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient, Prisma } from '@prisma/client';
+import multer, { FileFilterCallback } from 'multer';
+import fs from 'fs';
+import path from 'path';
 import { requireAdmin } from '../middleware/admin';
 
 const router = Router();
 const prisma = new PrismaClient();
+const notesUploadDir = path.join(__dirname, '..', '..', 'uploads', 'notes');
+
+if (!fs.existsSync(notesUploadDir)) {
+  fs.mkdirSync(notesUploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+    cb(null, notesUploadDir);
+  },
+  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+    const topicId = req.params.id || 'topic';
+    const timestamp = Date.now();
+    const sanitizedOriginal = file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    cb(null, `${topicId}-${timestamp}-${sanitizedOriginal}`);
+  },
+});
+
+const pdfFileFilter: multer.Options['fileFilter'] = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+  if (file.mimetype !== 'application/pdf') {
+    return cb(new Error('Only PDF files are allowed'));
+  }
+  cb(null, true);
+};
+
+const upload = multer({
+  storage,
+  fileFilter: pdfFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});
 
 class ImportValidationError extends Error {
   constructor(message: string) {
@@ -72,6 +107,7 @@ router.get('/subjects', async (req: Request, res: Response) => {
             id: true,
             name: true,
             subjectId: true,
+            notesUrl: true,
             _count: { select: { questions: true } }
           },
           orderBy: { name: 'asc' }
@@ -169,9 +205,13 @@ router.get('/topics', async (req: Request, res: Response) => {
 
 router.post('/topics', async (req: Request, res: Response) => {
   try {
-    const { name, subjectId } = req.body;
+    const { name, subjectId, notesUrl } = req.body;
     const topic = await prisma.topic.create({
-      data: { name, subjectId },
+      data: {
+        name,
+        subjectId,
+        notesUrl: typeof notesUrl === 'string' ? notesUrl : undefined,
+      },
       include: { subject: true }
     });
     res.json(topic);
@@ -183,10 +223,14 @@ router.post('/topics', async (req: Request, res: Response) => {
 router.put('/topics/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, subjectId } = req.body;
+    const { name, subjectId, notesUrl } = req.body;
     const topic = await prisma.topic.update({
       where: { id },
-      data: { name, subjectId },
+      data: {
+        name,
+        subjectId,
+        notesUrl: typeof notesUrl === 'string' ? notesUrl : undefined,
+      },
       include: { subject: true }
     });
     res.json(topic);
@@ -200,6 +244,13 @@ router.delete('/topics/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
 
     await prisma.$transaction(async (tx) => {
+      const existingTopic = await tx.topic.findUnique({ where: { id } });
+
+      if (existingTopic?.notesUrl) {
+        const existingPath = path.join(__dirname, '..', '..', existingTopic.notesUrl.replace(/^\//, ''));
+        fs.promises.unlink(existingPath).catch(() => undefined);
+      }
+
       await tx.quizAttempt.deleteMany({ where: { topicId: id } });
       await tx.question.deleteMany({ where: { topicId: id } });
       await tx.topic.delete({ where: { id } });
@@ -290,6 +341,70 @@ router.delete('/questions/:id', async (req: Request, res: Response) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete question' });
+  }
+});
+
+router.post('/topics/:id/notes', upload.single('notes'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Notes PDF is required' });
+    }
+
+    const topic = await prisma.topic.findUnique({ where: { id } });
+
+    if (!topic) {
+      await fs.promises.unlink(req.file.path).catch(() => undefined);
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    if (topic.notesUrl) {
+      const existingPath = path.join(__dirname, '..', '..', topic.notesUrl.replace(/^\//, ''));
+      fs.promises.unlink(existingPath).catch(() => undefined);
+    }
+
+    const relativePath = path
+      .relative(path.join(__dirname, '..', '..'), req.file.path)
+      .replace(/\\/g, '/');
+
+    const updated = await prisma.topic.update({
+      where: { id },
+      data: { notesUrl: `/${relativePath}` },
+      include: { subject: true },
+    });
+
+    res.json({ success: true, topic: updated });
+  } catch (error: any) {
+    console.error('Error uploading notes:', error);
+    res.status(500).json({ error: error?.message || 'Failed to upload notes' });
+  }
+});
+
+router.delete('/topics/:id/notes', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const topic = await prisma.topic.findUnique({ where: { id } });
+
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    if (topic.notesUrl) {
+      const existingPath = path.join(__dirname, '..', '..', topic.notesUrl.replace(/^\//, ''));
+      await fs.promises.unlink(existingPath).catch(() => undefined);
+    }
+
+    const updated = await prisma.topic.update({
+      where: { id },
+      data: { notesUrl: null },
+      include: { subject: true },
+    });
+
+    res.json({ success: true, topic: updated });
+  } catch (error) {
+    console.error('Error removing notes:', error);
+    res.status(500).json({ error: 'Failed to remove notes' });
   }
 });
 

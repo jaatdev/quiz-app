@@ -48,6 +48,9 @@ export class QuizController {
       
       res.json(session);
     } catch (error) {
+      if (error instanceof Error && error.message === 'TOPIC_NOT_FOUND') {
+        return res.status(404).json({ error: 'Topic not found' });
+      }
       console.error('Error starting quiz session:', error);
       res.status(500).json({ error: 'Failed to start quiz session' });
     }

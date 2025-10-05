@@ -10,6 +10,7 @@ export interface Topic {
   id: string;
   name: string;
   subjectId: string;
+  notesUrl?: string | null;
   _count?: {
     questions: number;
   };
@@ -17,6 +18,9 @@ export interface Topic {
 
 export interface QuizSession {
   topicId: string;
+  topicName: string;
+  subjectName: string;
+  notesUrl?: string | null;
   questions: Question[];
 }
 

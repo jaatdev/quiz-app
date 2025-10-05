@@ -12,6 +12,7 @@ export class QuizService {
           select: {
             id: true,
             name: true,
+            notesUrl: true,
             _count: {
               select: { questions: true }
             }
@@ -37,6 +38,15 @@ export class QuizService {
 
   // Get random questions for a quiz session
   async getQuizSession(topicId: string, questionCount: number = 10): Promise<QuizSession> {
+    const topic = await this.prisma.topic.findUnique({
+      where: { id: topicId },
+      include: { subject: true },
+    });
+
+    if (!topic) {
+      throw new Error('TOPIC_NOT_FOUND');
+    }
+
     // Get all questions for the topic
     const questions = await this.prisma.question.findMany({
       where: { topicId },
@@ -61,6 +71,9 @@ export class QuizService {
 
     return {
       topicId,
+      topicName: topic.name,
+      subjectName: topic.subject.name,
+      notesUrl: topic.notesUrl,
       questions: formattedQuestions
     };
   }
@@ -108,7 +121,7 @@ export class QuizService {
     const percentage = (score / submission.answers.length) * 100;
 
     return {
-      score: Math.max(0, score), // Don't go below 0
+      score: Math.max(0, score),
       totalQuestions: submission.answers.length,
       correctAnswers: correctCount,
       incorrectAnswers,

@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
-import { Plus, Edit, Trash2, BookOpen, FileText, X } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, FileText, X, Download } from 'lucide-react';
 import { API_URL } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
 
@@ -18,6 +18,7 @@ interface Subject {
 interface Topic {
   id: string;
   name: string;
+  notesUrl?: string | null;
   _count?: {
     questions: number;
   };
@@ -42,7 +43,7 @@ export default function SubjectManagementPage() {
     if (!user) return;
 
     try {
-  const response = await fetch(`${API_URL}/admin/subjects`, {
+      const response = await fetch(`${API_URL}/admin/subjects`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -183,8 +184,23 @@ export default function SubjectManagementPage() {
                       <span className="text-sm text-gray-500">
                         {topic._count?.questions || 0} questions
                       </span>
+                      <span
+                        className={`text-xs font-medium ${topic.notesUrl ? 'text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full' : 'text-gray-400 italic'}`}
+                      >
+                        {topic.notesUrl ? 'Notes PDF' : 'No notes'}
+                      </span>
                     </div>
                     <div className="flex gap-2">
+                      {topic.notesUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`${API_URL}${topic.notesUrl}`, '_blank', 'noopener,noreferrer')}
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Notes
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -277,7 +293,7 @@ function SubjectForm({ subject, onClose, onSave }: any) {
     try {
       const url = subject
         ? `${API_URL}/admin/subjects/${subject.id}`
-  : `${API_URL}/admin/subjects`;
+        : `${API_URL}/admin/subjects`;
       
       const method = subject ? 'PUT' : 'POST';
 
@@ -365,6 +381,8 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
   const [name, setName] = useState(topic?.name || '');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notesFile, setNotesFile] = useState<File | null>(null);
+  const [isRemovingNotes, setIsRemovingNotes] = useState(false);
   const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -379,7 +397,7 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
     try {
       const url = topic
         ? `${API_URL}/admin/topics/${topic.id}`
-  : `${API_URL}/admin/topics`;
+        : `${API_URL}/admin/topics`;
       
       const method = topic ? 'PUT' : 'POST';
 
@@ -393,10 +411,56 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
       });
 
       if (response.ok) {
+        let savedTopic: any = null;
+        try {
+          savedTopic = await response.json();
+        } catch {
+          savedTopic = null;
+        }
+
+        let uploadError: string | null = null;
+
+        if (notesFile && savedTopic?.id) {
+          try {
+            const formData = new FormData();
+            formData.append('notes', notesFile);
+
+            const uploadResponse = await fetch(`${API_URL}/admin/topics/${savedTopic.id}/notes`, {
+              method: 'POST',
+              headers: {
+                'x-clerk-user-id': user!.id,
+              },
+              body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+              let uploadData: any = null;
+              try {
+                uploadData = await uploadResponse.json();
+              } catch {
+                uploadData = null;
+              }
+              uploadError = uploadData?.error || 'Topic saved, but uploading notes failed. Please try again.';
+            }
+          } catch (uploadErr) {
+            console.error('Failed to upload notes:', uploadErr);
+            uploadError = 'Topic saved, but uploading notes failed. Please try again.';
+          }
+        }
+
+        setNotesFile(null);
+        setErrorMessage(null);
+
         showToast({
           variant: 'success',
           title: topic ? 'Topic updated successfully.' : 'Topic created successfully.',
         });
+
+        if (uploadError) {
+          setErrorMessage(uploadError);
+          showToast({ variant: 'error', title: uploadError });
+        }
+
         onSave();
       } else {
         let data: any = null;
@@ -414,6 +478,44 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
       showToast({ variant: 'error', title: 'Failed to save topic' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemoveNotes = async () => {
+    if (!topic?.id) return;
+
+    setIsRemovingNotes(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`${API_URL}/admin/topics/${topic.id}/notes`, {
+        method: 'DELETE',
+        headers: {
+          'x-clerk-user-id': user!.id,
+        },
+      });
+
+      if (response.ok) {
+        showToast({ variant: 'success', title: 'Notes removed successfully.' });
+        onSave();
+      } else {
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+        const message = data?.error || 'Failed to remove notes';
+        setErrorMessage(message);
+        showToast({ variant: 'error', title: message });
+      }
+    } catch (error) {
+      console.error('Failed to remove notes:', error);
+      const message = 'Failed to remove notes';
+      setErrorMessage(message);
+      showToast({ variant: 'error', title: message });
+    } finally {
+      setIsRemovingNotes(false);
     }
   };
 
@@ -445,6 +547,56 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
                 className="w-full p-2 border rounded-lg"
                 required
               />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes PDF (optional)
+              </label>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => setNotesFile(event.target.files?.[0] || null)}
+                className="w-full text-sm text-gray-700"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Uploading a new file will replace any existing notes. Maximum size 10MB.
+              </p>
+              {notesFile && (
+                <div className="mt-2 flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  <span className="truncate" title={notesFile.name}>
+                    Selected: {notesFile.name}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setNotesFile(null)}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
+              {topic?.notesUrl && (
+                <div className="mt-3 flex items-center justify-between rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                  <a
+                    href={`${API_URL}${topic.notesUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline"
+                  >
+                    View current notes
+                  </a>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveNotes}
+                    disabled={isRemovingNotes || loading}
+                  >
+                    {isRemovingNotes ? 'Removing...' : 'Remove Notes'}
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="outline" onClick={onClose}>

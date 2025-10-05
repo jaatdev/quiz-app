@@ -1,5 +1,8 @@
 export interface QuizSession {
   topicId: string;
+  topicName: string;
+  subjectName: string;
+  notesUrl?: string | null;
   questions: QuizQuestion[];
 }
 

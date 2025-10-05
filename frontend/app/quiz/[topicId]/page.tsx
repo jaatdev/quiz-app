@@ -58,9 +58,10 @@ export default function QuizPage() {
   useEffect(() => {
     if (session) {
       setQuizSession({
-        topicId,
-        topicName,
-        subjectName,
+        topicId: session.topicId ?? topicId,
+        topicName: session.topicName || topicName,
+        subjectName: session.subjectName || subjectName,
+        notesUrl: session.notesUrl ?? null,
         difficulty,
         questions: session.questions,
         startTime: startTime,
@@ -97,6 +98,9 @@ export default function QuizPage() {
 
       let achievements: AchievementUnlock[] = [];
 
+      const resolvedTopicName = session?.topicName || topicName;
+      const resolvedSubjectName = session?.subjectName || subjectName;
+
       type AttemptResponse = {
         attempt: unknown;
         achievements?: AchievementUnlock[];
@@ -114,8 +118,8 @@ export default function QuizPage() {
             percentage: result.percentage,
             timeSpent: submission.timeSpent,
             difficulty,
-            subjectName,
-            topicName,
+            subjectName: resolvedSubjectName,
+            topicName: resolvedTopicName,
           })) as unknown as AttemptResponse;
 
           achievements = Array.isArray((response as AttemptResponse).achievements)

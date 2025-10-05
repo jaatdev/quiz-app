@@ -16,6 +16,7 @@ interface QuizSession {
   topicId: string;
   topicName: string;
   subjectName: string;
+  notesUrl?: string | null;
   difficulty?: string;
   questions: Question[];
   startTime: number;

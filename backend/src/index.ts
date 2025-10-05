@@ -1,12 +1,25 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import routes from './routes';
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
+
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+const notesDir = path.join(uploadsDir, 'notes');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+if (!fs.existsSync(notesDir)) {
+  fs.mkdirSync(notesDir, { recursive: true });
+}
 
 // CORS configuration for production
 const corsOptions = {
@@ -24,6 +37,7 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 // API Routes
 app.use('/api', routes);

@@ -8,7 +8,7 @@ import { useQuizStore } from '@/stores/quiz-store';
 import { quizService } from '@/services/quiz.service';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { ScoreDisplay } from '@/components/quiz/score-display';
-import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2, Sparkles } from 'lucide-react';
+import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2, Sparkles, FileText } from 'lucide-react';
 import { calculateGrade } from '@/lib/utils';
 import { generateProfessionalPDF } from '@/lib/pdf-generator';
 import { useToast } from '@/providers/toast-provider';
@@ -61,6 +61,7 @@ export default function EnhancedResultsPage() {
         topicId: currentSession.topicId,
         topicName: currentSession.topicName,
         subjectName: currentSession.subjectName,
+        notesUrl: currentSession.notesUrl,
         score: lastResult.score,
         totalQuestions: lastResult.totalQuestions,
         correctAnswers: lastResult.correctAnswers,
@@ -133,6 +134,7 @@ export default function EnhancedResultsPage() {
 
   const { grade, color } = calculateGrade(lastResult.percentage);
   const unlockedAchievements = lastResult.achievements ?? [];
+  const notesUrl = currentSession.notesUrl;
 
   const handleRetry = () => {
     clearSession();
@@ -302,6 +304,30 @@ export default function EnhancedResultsPage() {
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {notesUrl && (
+          <Card className="max-w-4xl mx-auto mt-6 border-2 border-blue-200 bg-white">
+            <CardHeader className="flex flex-row items-center gap-3">
+              <div className="rounded-full bg-blue-100 p-2 text-blue-700">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold text-blue-900">Topic Notes Available</CardTitle>
+                <p className="text-sm text-blue-800/80">Download the PDF notes shared by your instructor to keep studying.</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Button
+                size="lg"
+                onClick={() => window.open(notesUrl, '_blank', 'noopener,noreferrer')}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 font-bold"
+              >
+                <Download className="w-5 h-5" />
+                Download Notes PDF
+              </Button>
             </CardContent>
           </Card>
         )}

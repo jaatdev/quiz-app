@@ -44,6 +44,7 @@ model Topic {
   subject      Subject       @relation(fields: [subjectId], references: [id])
   questions    Question[]
   quizAttempts QuizAttempt[]
+  notesUrl     String?
   
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
