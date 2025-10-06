@@ -30,9 +30,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get('/uploads/*', async (req, res) => {
-  const params = req.params as Record<string, string>;
-  const requestedPath = params['0'] ?? '';
+app.get('/uploads/:path(*)', async (req, res) => {
+  const requestedPath = (req.params as Record<string, string>).path ?? '';
   const urlPath = `/uploads/${requestedPath}`;
 
   try {
