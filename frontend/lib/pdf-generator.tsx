@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface QuizResultData {
   // User Info
@@ -262,121 +261,246 @@ export async function generateProfessionalPDF(data: QuizResultData) {
     yPos += 10;
     
     // Questions
+    const detailLineHeight = 5;
     for (let i = 0; i < data.questions.length; i++) {
       const question = data.questions[i];
-      
-      // Check if we need a new page
-      if (yPos > pageHeight - 60) {
+      const wasSkipped = !question.userAnswer || question.userAnswer === 'not-answered';
+
+      if (yPos > pageHeight - 80) {
         pdf.addPage();
         currentPage++;
         addPageHeader(currentPage);
         yPos = 40;
       }
-      
-      // Question header
-      const questionBgColor = question.isCorrect 
-        ? [220, 252, 231] // Light green
-        : [254, 226, 226]; // Light red
-      
-      pdf.setFillColor(questionBgColor[0], questionBgColor[1], questionBgColor[2]);
+
+      const headerBgColor = wasSkipped
+        ? [241, 245, 249]
+        : question.isCorrect
+        ? [220, 252, 231]
+        : [254, 226, 226];
+
+      const statusLabel = wasSkipped
+        ? 'Status: Skipped'
+        : question.isCorrect
+        ? 'Status: Correct'
+        : 'Status: Incorrect';
+
+      const statusColor = wasSkipped ? grayColor : question.isCorrect ? successColor : errorColor;
+
+      pdf.setFillColor(headerBgColor[0], headerBgColor[1], headerBgColor[2]);
       pdf.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F');
-      
+
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(33, 33, 33);
       pdf.text(`Question ${question.questionNumber}`, margin + 3, yPos + 7);
-      
-      // Status badge
-      if (question.isCorrect) {
-        pdf.setTextColor(successColor[0], successColor[1], successColor[2]);
-        pdf.text('✓ Correct', pageWidth - margin - 3, yPos + 7, { align: 'right' });
-      } else {
-        pdf.setTextColor(errorColor[0], errorColor[1], errorColor[2]);
-        pdf.text('✗ Incorrect', pageWidth - margin - 3, yPos + 7, { align: 'right' });
-      }
-      
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+      pdf.text(statusLabel, pageWidth - margin - 3, yPos + 7, { align: 'right' });
+
       yPos += 14;
-      
-      // Question text
+
       pdf.setTextColor(33, 33, 33);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
       const questionLines = pdf.splitTextToSize(question.questionText, contentWidth - 6);
       questionLines.forEach((line: string) => {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          currentPage++;
+          addPageHeader(currentPage);
+          yPos = 40;
+        }
         pdf.text(line, margin + 3, yPos);
-        yPos += 5;
+        yPos += detailLineHeight;
       });
-      
+
       yPos += 3;
-      
-      // Options
-      question.options.forEach((option) => {
+
+      question.options.forEach((option, optionIndex) => {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          currentPage++;
+          addPageHeader(currentPage);
+          yPos = 40;
+        }
+
         const isUserAnswer = option.id === question.userAnswer;
         const isCorrectAnswer = option.id === question.correctAnswer;
-        const wasNotAnswered = question.userAnswer === 'not-answered';
-        
-        // Debug logging
-        console.log(`  Option ${option.id}:`, {
-          isUserAnswer,
-          isCorrectAnswer,
-          userAnswer: question.userAnswer,
-          correctAnswer: question.correctAnswer,
-          wasNotAnswered
-        });
-        
-        // Option background
+        const optionLabel = option.id && option.id.trim().length > 0
+          ? option.id.trim().toUpperCase()
+          : String.fromCharCode(65 + optionIndex);
+
+        const optionBadges: string[] = [];
         if (isCorrectAnswer) {
-          pdf.setFillColor(successColor[0], successColor[1], successColor[2], 30);
-          pdf.roundedRect(margin + 3, yPos - 4, contentWidth - 6, 7, 1, 1, 'F');
-        } else if (isUserAnswer && !isCorrectAnswer && !wasNotAnswered) {
-          pdf.setFillColor(errorColor[0], errorColor[1], errorColor[2], 30);
-          pdf.roundedRect(margin + 3, yPos - 4, contentWidth - 6, 7, 1, 1, 'F');
+          optionBadges.push('Correct answer');
         }
-        
-        // Option text
+        if (isUserAnswer && !wasSkipped) {
+          optionBadges.push('Your answer');
+        }
+
+        let optionLine = `${optionLabel}. ${option.text}`;
+        if (optionBadges.length > 0) {
+          optionLine += ` [${optionBadges.join(', ')}]`;
+        }
+
+        const optionLines = pdf.splitTextToSize(optionLine, contentWidth - 16);
+        const optionBlockHeight = optionLines.length * detailLineHeight + 6;
+
+        if (isCorrectAnswer || (isUserAnswer && !isCorrectAnswer && !wasSkipped)) {
+          const highlightColor = isCorrectAnswer
+            ? [222, 247, 236]
+            : [254, 226, 226];
+          pdf.setFillColor(highlightColor[0], highlightColor[1], highlightColor[2]);
+          pdf.roundedRect(margin + 3, yPos, contentWidth - 6, optionBlockHeight, 2, 2, 'F');
+        }
+
+        let optionTextColor: [number, number, number] = [grayColor[0], grayColor[1], grayColor[2]];
+        let optionFont: 'bold' | 'normal' = 'normal';
+        if (isCorrectAnswer) {
+          optionTextColor = [successColor[0], successColor[1], successColor[2]];
+          optionFont = 'bold';
+        } else if (isUserAnswer && !isCorrectAnswer && !wasSkipped) {
+          optionTextColor = [errorColor[0], errorColor[1], errorColor[2]];
+          optionFont = 'bold';
+        }
+
+        pdf.setFont('helvetica', optionFont);
         pdf.setFontSize(9);
-        let optionPrefix = `${option.id.toUpperCase()}. `;
-        
-        if (isCorrectAnswer) {
-          pdf.setTextColor(successColor[0], successColor[1], successColor[2]);
-          pdf.setFont('helvetica', 'bold');
-          optionPrefix = `✓ ${optionPrefix}`;
-        } else if (isUserAnswer && !isCorrectAnswer && !wasNotAnswered) {
-          pdf.setTextColor(errorColor[0], errorColor[1], errorColor[2]);
-          pdf.setFont('helvetica', 'bold');
-          optionPrefix = `✗ ${optionPrefix}`;
-        } else {
-          pdf.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-          pdf.setFont('helvetica', 'normal');
-        }
-        
-        pdf.text(`${optionPrefix}${option.text}`, margin + 6, yPos);
-        yPos += 7;
-      });
-      
-      // Explanation (if incorrect)
-      if (!question.isCorrect && question.explanation) {
-        yPos += 2;
-        pdf.setFillColor(250, 251, 252);
-        pdf.roundedRect(margin + 3, yPos - 3, contentWidth - 6, 15, 2, 2, 'F');
-        
-        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Explanation:', margin + 6, yPos);
-        
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-        const explainLines = pdf.splitTextToSize(question.explanation, contentWidth - 12);
-        yPos += 4;
-        explainLines.forEach((line: string) => {
-          pdf.text(line, margin + 6, yPos);
-          yPos += 4;
+        pdf.setTextColor(optionTextColor[0], optionTextColor[1], optionTextColor[2]);
+
+        let optionTextY = yPos + 4;
+        optionLines.forEach((line: string) => {
+          pdf.text(line, margin + 6, optionTextY);
+          optionTextY += detailLineHeight;
         });
-        yPos += 2;
+
+        yPos += optionBlockHeight + 3;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(33, 33, 33);
+      });
+
+      const userAnswerOption = question.options.find((option) => option.id === question.userAnswer);
+      const correctAnswerOption = question.options.find((option) => option.id === question.correctAnswer);
+
+      const userAnswerText = wasSkipped ? 'Not answered' : userAnswerOption?.text ?? 'Not answered';
+      const correctAnswerText = correctAnswerOption?.text ?? 'Unavailable';
+
+      const summaryGap = 6;
+      const summaryWidth = (contentWidth - summaryGap) / 2;
+
+      const userAnswerLines = pdf.splitTextToSize(userAnswerText, summaryWidth - 10);
+      const correctAnswerLines = pdf.splitTextToSize(correctAnswerText, summaryWidth - 10);
+
+      const userBoxHeight = 14 + userAnswerLines.length * detailLineHeight;
+      const correctBoxHeight = 14 + correctAnswerLines.length * detailLineHeight;
+      const summaryBoxHeight = Math.max(userBoxHeight, correctBoxHeight);
+
+      if (yPos + summaryBoxHeight > pageHeight - 40) {
+        pdf.addPage();
+        currentPage++;
+        addPageHeader(currentPage);
+        yPos = 40;
       }
-      
-      yPos += 8; // Space between questions
+
+      const userFill = wasSkipped
+        ? [255, 255, 255]
+        : question.isCorrect
+        ? [222, 247, 236]
+        : [254, 226, 226];
+      const userStroke = wasSkipped
+        ? [203, 213, 225]
+        : question.isCorrect
+        ? [successColor[0], successColor[1], successColor[2]]
+        : [errorColor[0], errorColor[1], errorColor[2]];
+      const userValueColor = wasSkipped
+        ? [71, 85, 105]
+        : question.isCorrect
+        ? [17, 94, 89]
+        : [153, 27, 27];
+
+      pdf.setFillColor(userFill[0], userFill[1], userFill[2]);
+      pdf.setDrawColor(userStroke[0], userStroke[1], userStroke[2]);
+      pdf.roundedRect(margin + 3, yPos, summaryWidth, summaryBoxHeight, 2, 2, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Your answer', margin + 7, yPos + 6);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(userValueColor[0], userValueColor[1], userValueColor[2]);
+      let answerTextY = yPos + 12;
+      userAnswerLines.forEach((line: string) => {
+        pdf.text(line, margin + 7, answerTextY);
+        answerTextY += detailLineHeight;
+      });
+
+      const correctFill = [222, 247, 236];
+      const correctStroke = [successColor[0], successColor[1], successColor[2]];
+
+      pdf.setFillColor(correctFill[0], correctFill[1], correctFill[2]);
+      pdf.setDrawColor(correctStroke[0], correctStroke[1], correctStroke[2]);
+      pdf.roundedRect(margin + 3 + summaryWidth + summaryGap, yPos, summaryWidth, summaryBoxHeight, 2, 2, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Correct answer', margin + 7 + summaryWidth + summaryGap, yPos + 6);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(17, 94, 89);
+      let correctTextY = yPos + 12;
+      correctAnswerLines.forEach((line: string) => {
+        pdf.text(line, margin + 7 + summaryWidth + summaryGap, correctTextY);
+        correctTextY += detailLineHeight;
+      });
+
+      yPos += summaryBoxHeight + 8;
+
+      if (question.explanation) {
+        const explanationLines = pdf.splitTextToSize(question.explanation, contentWidth - 14);
+        const explanationHeight = 12 + explanationLines.length * detailLineHeight;
+
+        if (yPos + explanationHeight > pageHeight - 40) {
+          pdf.addPage();
+          currentPage++;
+          addPageHeader(currentPage);
+          yPos = 40;
+        }
+
+        pdf.setFillColor(245, 247, 250);
+        pdf.roundedRect(margin + 3, yPos, contentWidth - 6, explanationHeight, 2, 2, 'F');
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.text('Explanation', margin + 7, yPos + 6);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+        let explanationY = yPos + 12;
+        explanationLines.forEach((line: string) => {
+          if (explanationY > pageHeight - 20) {
+            pdf.addPage();
+            currentPage++;
+            addPageHeader(currentPage);
+            explanationY = 40;
+          }
+          pdf.text(line, margin + 7, explanationY);
+          explanationY += detailLineHeight;
+        });
+
+        yPos += explanationHeight + 8;
+      } else {
+        yPos += 8;
+      }
     }
   }
   
