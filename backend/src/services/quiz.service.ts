@@ -37,7 +37,7 @@ export class QuizService {
   }
 
   // Get random questions for a quiz session
-  async getQuizSession(topicId: string, questionCount: number = 10): Promise<QuizSession> {
+  async getQuizSession(topicId: string, questionCount: number | 'all' = 10): Promise<QuizSession> {
     const topic = await this.prisma.topic.findUnique({
       where: { id: topicId },
       include: { subject: true },
@@ -60,7 +60,10 @@ export class QuizService {
 
     // Shuffle and pick random questions
     const shuffled = this.shuffleArray(questions);
-    const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
+    const limit = questionCount === 'all'
+      ? shuffled.length
+      : Math.min(questionCount, shuffled.length);
+    const selected = shuffled.slice(0, limit);
 
     // Format questions and shuffle options
     const formattedQuestions = selected.map(q => ({

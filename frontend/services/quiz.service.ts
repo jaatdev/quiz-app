@@ -20,9 +20,17 @@ export const quizService = {
   },
 
   // Start a quiz session
-  async startQuizSession(topicId: string, questionCount = 10): Promise<QuizSession> {
+  async startQuizSession(topicId: string, questionCount: number | 'all' = 10): Promise<QuizSession> {
+    const params: Record<string, string | number> = {};
+
+    if (questionCount === 'all') {
+      params.count = 'all';
+    } else if (typeof questionCount === 'number') {
+      params.count = Math.max(1, questionCount);
+    }
+
     return api.get(`/quiz/session/${topicId}`, {
-      params: { count: questionCount },
+      params,
     });
   },
 

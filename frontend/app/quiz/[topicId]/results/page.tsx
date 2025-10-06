@@ -139,7 +139,21 @@ export default function EnhancedResultsPage() {
 
   const handleRetry = () => {
     clearSession();
-    router.push(`/quiz/${topicId}?topic=${encodeURIComponent(currentSession.topicName)}&subject=${encodeURIComponent(currentSession.subjectName)}`);
+    const params = new URLSearchParams({
+      topic: currentSession.topicName,
+      subject: currentSession.subjectName,
+    });
+
+    if (currentSession.difficulty) {
+      params.set('difficulty', currentSession.difficulty);
+    }
+
+    const requestedCount = currentSession.questions.length;
+    if (Number.isFinite(requestedCount) && requestedCount > 0) {
+      params.set('count', String(requestedCount));
+    }
+
+    router.push(`/quiz/${topicId}?${params.toString()}`);
   };
 
   const handleReview = () => {

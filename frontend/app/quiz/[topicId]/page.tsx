@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
@@ -17,7 +17,8 @@ import {
 import { 
   Loading, 
   Error, 
-  ConfirmationDialog 
+  ConfirmationDialog,
+  Button,
 } from '@/components/ui';
 import { X } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
@@ -38,6 +39,58 @@ export default function QuizPage() {
   const subjectName = searchParams.get('subject') || '';
   const difficulty = searchParams.get('difficulty') || 'medium';
 
+  const countParam = searchParams.get('count');
+  const initialSelection = (() => {
+    if (!countParam) return null as number | 'all' | null;
+    const lowered = countParam.toLowerCase();
+    if (lowered === 'all') {
+      return 'all' as const;
+    }
+    const parsed = Number(countParam);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+    return null;
+  })();
+
+  const [questionCountInput, setQuestionCountInput] = useState<string>(() =>
+    typeof initialSelection === 'number' ? String(initialSelection) : '10'
+  );
+  const [selectedCount, setSelectedCount] = useState<number | 'all' | null>(initialSelection);
+  const [inputError, setInputError] = useState<string | null>(null);
+
+  const hasStarted = selectedCount !== null;
+
+  const quickStartOptions = [5, 10, 15, 20];
+
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setInputError(null);
+    setQuestionCountInput(event.target.value);
+  };
+
+  const startQuizWithCount = useCallback((count: number | 'all') => {
+    setInputError(null);
+
+    if (count === 'all') {
+      setSelectedCount('all');
+      return;
+    }
+
+    const sanitized = Math.max(1, Math.floor(count));
+    setQuestionCountInput(String(sanitized));
+    setSelectedCount(sanitized);
+  }, []);
+
+  const handleCustomStart = useCallback(() => {
+    const parsed = Number(questionCountInput);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setInputError('Enter at least 1 question');
+      return;
+    }
+
+    startQuizWithCount(parsed);
+  }, [questionCountInput, startQuizWithCount]);
+
   // Zustand store
   const saveResult = useQuizStore((state) => state.saveResult);
   const setQuizSession = useQuizStore((state) => state.startSession);
@@ -49,12 +102,32 @@ export default function QuizPage() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [startTime] = useState(Date.now());
 
-  // Fetch quiz session
-  const { data: session, isLoading, error } = useQuery({
-    queryKey: ['quiz-session', topicId],
-    queryFn: () => quizService.startQuizSession(topicId),
+  const { data: session, isLoading, isFetching, error } = useQuery({
+    queryKey: ['quiz-session', topicId, selectedCount ?? 'default'],
+    queryFn: () => {
+      const requestedCount = selectedCount === null ? 10 : selectedCount;
+      return quizService.startQuizSession(topicId, requestedCount);
+    },
+    enabled: hasStarted,
     retry: false,
   });
+
+  const isSessionLoading = (isLoading || isFetching) && hasStarted;
+
+  useEffect(() => {
+    if (selectedCount === null) return;
+
+    const current = countParam ?? null;
+    const desired = selectedCount === 'all' ? 'all' : String(selectedCount);
+
+    if (current === desired) {
+      return;
+    }
+
+  const params = new URLSearchParams(searchParams.toString());
+    params.set('count', desired);
+    router.replace(`/quiz/${topicId}?${params.toString()}`, { scroll: false });
+  }, [selectedCount, countParam, searchParams, router, topicId]);
 
   // Initialize Zustand session when quiz data loads
   useEffect(() => {
@@ -77,7 +150,7 @@ export default function QuizPage() {
     if (!session) return;
 
     const questionIds = session.questions.map((question) => question.id);
-  const answersEntries = Array.from(answers.entries());
+    const answersEntries = Array.from(answers.entries());
 
     try {
       sessionStorage.setItem(
@@ -272,7 +345,73 @@ export default function QuizPage() {
     minSwipeDistance: 50,
   });
 
-  if (isLoading) {
+  if (!hasStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl p-8 space-y-6">
+          <div>
+            <p className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+              {subjectName || 'Quiz challenge'}
+            </p>
+            <h1 className="mt-2 text-2xl font-bold text-gray-900">{topicName}</h1>
+            <p className="mt-2 text-gray-600">
+              Choose how many questions you’d like to answer. Stick with the classic 10-question run or customize it for a longer session.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Quick start</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {quickStartOptions.map((countOption) => (
+                <Button
+                  key={countOption}
+                  onClick={() => startQuizWithCount(countOption)}
+                  className="font-semibold"
+                >
+                  {countOption} questions
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                onClick={() => startQuizWithCount('all')}
+                className="font-semibold"
+              >
+                All available
+              </Button>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label htmlFor="question-count" className="block text-sm font-semibold text-gray-700">
+              Custom question count
+            </label>
+            <div className="mt-2 flex items-center gap-3">
+              <input
+                id="question-count"
+                type="number"
+                min={1}
+                value={questionCountInput}
+                onChange={handleInputChange}
+                className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                placeholder="e.g. 12"
+              />
+              <Button onClick={handleCustomStart} className="font-semibold">
+                Start quiz
+              </Button>
+            </div>
+            {inputError && (
+              <p className="mt-2 text-sm text-red-600">{inputError}</p>
+            )}
+            <p className="mt-3 text-xs text-gray-500">
+              Default run uses 10 questions. You can adjust before starting.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSessionLoading && !session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading />
@@ -283,9 +422,9 @@ export default function QuizPage() {
   if (error || !session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Error 
-          message="Failed to load quiz" 
-          onRetry={() => router.push('/')} 
+        <Error
+          message="Failed to load quiz"
+          onRetry={() => router.push('/')}
         />
       </div>
     );

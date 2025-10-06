@@ -38,8 +38,20 @@ export class QuizController {
   async startQuizSession(req: Request, res: Response) {
     try {
       const { topicId } = req.params;
-      const questionCount = parseInt(req.query.count as string) || 10;
-      
+      const countParam = req.query.count;
+      let questionCount: number | 'all' = 10;
+
+      if (typeof countParam === 'string') {
+        if (countParam.toLowerCase() === 'all') {
+          questionCount = 'all';
+        } else {
+          const parsed = parseInt(countParam, 10);
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            questionCount = parsed;
+          }
+        }
+      }
+
       const session = await quizService.getQuizSession(topicId, questionCount);
       
       if (session.questions.length === 0) {
