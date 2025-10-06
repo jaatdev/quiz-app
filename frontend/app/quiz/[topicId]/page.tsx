@@ -39,11 +39,13 @@ export default function QuizPage() {
   const difficulty = searchParams.get('difficulty') || 'medium';
 
   // Zustand store
-  const { saveResult, startSession: setQuizSession } = useQuizStore();
+  const saveResult = useQuizStore((state) => state.saveResult);
+  const setQuizSession = useQuizStore((state) => state.startSession);
+  const recordAnswer = useQuizStore((state) => state.answerQuestion);
+  const answers = useQuizStore((state) => state.answers);
 
   // Quiz state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Map<string, string>>(new Map());
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [startTime] = useState(Date.now());
 
@@ -75,7 +77,7 @@ export default function QuizPage() {
     if (!session) return;
 
     const questionIds = session.questions.map((question) => question.id);
-    const answersEntries = Array.from(answers.entries());
+  const answersEntries = Array.from(answers.entries());
 
     try {
       sessionStorage.setItem(
@@ -186,12 +188,8 @@ export default function QuizPage() {
 
   // Handle answer selection
   const handleAnswerSelect = useCallback((questionId: string, optionId: string) => {
-    setAnswers(prev => {
-      const newAnswers = new Map(prev);
-      newAnswers.set(questionId, optionId);
-      return newAnswers;
-    });
-  }, []);
+    recordAnswer(questionId, optionId);
+  }, [recordAnswer]);
 
   // Navigation functions
   const goToQuestion = useCallback((index: number) => {
