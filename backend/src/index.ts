@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import routes from './routes';
-import { getUploadsDir, getNotesDir } from './utils/uploads';
+import { getUploadsDir, getNotesDir, resolveAbsoluteFromUrl } from './utils/uploads';
 
 dotenv.config();
 
@@ -28,7 +29,22 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
+
+app.get('/uploads/*', async (req, res) => {
+  const params = req.params as Record<string, string>;
+  const requestedPath = params['0'] ?? '';
+  const urlPath = `/uploads/${requestedPath}`;
+
+  try {
+    const absolutePath = resolveAbsoluteFromUrl(urlPath);
+    await fs.promises.access(absolutePath, fs.constants.R_OK);
+    console.log(`[uploads] Serving ${urlPath} -> ${absolutePath}`);
+    return res.sendFile(absolutePath);
+  } catch (error) {
+    console.warn(`[uploads] Missing file for ${urlPath}`, error);
+    return res.status(404).json({ error: 'File not found' });
+  }
+});
 
 // API Routes
 app.use('/api', routes);
