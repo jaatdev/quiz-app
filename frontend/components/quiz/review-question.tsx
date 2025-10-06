@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { CheckCircle, XCircle, Info } from 'lucide-react';
+import { CheckCircle, XCircle, Info, Target } from 'lucide-react';
 import type { QuestionWithAnswer } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,9 @@ export function ReviewQuestion({
   questionNumber,
 }: ReviewQuestionProps) {
   const isCorrect = userAnswer === question.correctAnswerId;
+  const isSkipped = !userAnswer;
+  const userAnswerOption = question.options.find((option) => option.id === userAnswer);
+  const correctAnswerOption = question.options.find((option) => option.id === question.correctAnswerId);
 
   return (
     <Card className="w-full">
@@ -29,6 +32,11 @@ export function ReviewQuestion({
             <span className="flex items-center gap-1 text-green-600">
               <CheckCircle className="w-4 h-4" />
               Correct
+            </span>
+          ) : isSkipped ? (
+            <span className="flex items-center gap-1 text-gray-500">
+              <Target className="w-4 h-4" />
+              Skipped
             </span>
           ) : (
             <span className="flex items-center gap-1 text-red-600">
@@ -82,6 +90,39 @@ export function ReviewQuestion({
               </div>
             );
           })}
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div
+            className={cn(
+              'rounded-lg border-2 p-4 transition-colors',
+              isSkipped
+                ? 'border-gray-300 bg-white'
+                : isCorrect
+                ? 'border-green-500 bg-green-50'
+                : 'border-red-500 bg-red-50'
+            )}
+          >
+            <p className="text-sm font-medium text-gray-600">Your answer</p>
+            <p
+              className={cn(
+                'mt-2 text-base font-semibold',
+                isSkipped
+                  ? 'text-gray-600'
+                  : isCorrect
+                  ? 'text-green-700'
+                  : 'text-red-700'
+              )}
+            >
+              {isSkipped ? 'Not answered' : userAnswerOption?.text ?? 'Not answered'}
+            </p>
+          </div>
+          <div className="rounded-lg border-2 border-green-500 bg-green-50 p-4">
+            <p className="text-sm font-medium text-gray-600">Correct answer</p>
+            <p className="mt-2 text-base font-semibold text-green-700">
+              {correctAnswerOption?.text ?? 'Unavailable'}
+            </p>
+          </div>
         </div>
 
         {question.explanation && (

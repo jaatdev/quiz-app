@@ -331,22 +331,22 @@ export default function ReviewPage() {
                 {reviewData.map((q: QuestionWithAnswer, idx: number) => {
                   const qUserAnswer = userAnswersMap.get(q.id);
                   const qIsCorrect = qUserAnswer === q.correctAnswerId;
-                  
+                  const isCurrent = currentQuestionIndex === idx;
+                  const isSkipped = !qUserAnswer;
+
+                  const buttonClasses = isCurrent
+                    ? 'border-blue-600 bg-blue-500 text-white shadow-md'
+                    : qIsCorrect
+                    ? 'border-green-600 bg-green-500 text-white hover:bg-green-600/90'
+                    : !isSkipped
+                    ? 'border-red-600 bg-red-500 text-white hover:bg-red-600/90'
+                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50';
+
                   return (
                     <button
                       key={q.id}
                       onClick={() => setCurrentQuestionIndex(idx)}
-                      className={`
-                        w-10 h-10 rounded-lg border-2 text-sm font-medium transition-all
-                        ${currentQuestionIndex === idx
-                          ? 'border-blue-500 bg-blue-500 text-white'
-                          : qIsCorrect
-                          ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
-                          : qUserAnswer
-                          ? 'border-red-500 bg-red-50 text-red-700 hover:bg-red-100'
-                          : 'border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100'
-                        }
-                      `}
+                      className={`w-10 h-10 rounded-lg border-2 text-sm font-medium transition-all ${buttonClasses}`}
                     >
                       {idx + 1}
                     </button>
@@ -355,19 +355,19 @@ export default function ReviewPage() {
               </div>
               <div className="mt-4 flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-500"></div>
+                  <div className="w-4 h-4 rounded border-2 border-blue-600 bg-blue-500"></div>
                   <span className="text-gray-600">Current</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 rounded border-2 border-green-500 bg-green-50"></div>
+                  <div className="w-4 h-4 rounded border-2 border-green-600 bg-green-500"></div>
                   <span className="text-gray-600">Correct</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 rounded border-2 border-red-500 bg-red-50"></div>
+                  <div className="w-4 h-4 rounded border-2 border-red-600 bg-red-500"></div>
                   <span className="text-gray-600">Incorrect</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 rounded border-2 border-gray-300 bg-gray-50"></div>
+                  <div className="w-4 h-4 rounded border-2 border-gray-300 bg-white"></div>
                   <span className="text-gray-600">Skipped</span>
                 </div>
               </div>
