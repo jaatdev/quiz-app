@@ -37,47 +37,88 @@ export class QuizService {
   }
 
   // Get random questions for a quiz session
-  async getQuizSession(topicId: string, questionCount: number | 'all' = 10): Promise<QuizSession> {
-    const topic = await this.prisma.topic.findUnique({
+  async getQuizSession(
+    topicId: string,
+    options?: {
+      questionCount?: number | 'all';
+      includeTopicIds?: string[];
+      durationSeconds?: number | null;
+    }
+  ): Promise<QuizSession> {
+    const primaryTopic = await this.prisma.topic.findUnique({
       where: { id: topicId },
       include: { subject: true },
     });
 
-    if (!topic) {
+    if (!primaryTopic) {
       throw new Error('TOPIC_NOT_FOUND');
     }
 
-    // Get all questions for the topic
+    const extraTopicIds = Array.isArray(options?.includeTopicIds)
+      ? options.includeTopicIds.filter((id) => id && id !== topicId)
+      : [];
+
+    const topicIds = Array.from(new Set([topicId, ...extraTopicIds]));
+
+    const topics = await this.prisma.topic.findMany({
+      where: { id: { in: topicIds } },
+      include: { subject: true },
+    });
+
+    if (!topics.length) {
+      throw new Error('TOPIC_NOT_FOUND');
+    }
+
+    const topicLookup = new Map(topics.map((t) => [t.id, t] as const));
+
     const questions = await this.prisma.question.findMany({
-      where: { topicId },
+      where: { topicId: { in: topicIds } },
       select: {
         id: true,
         text: true,
         options: true,
-        difficulty: true
-      }
+        difficulty: true,
+        topicId: true,
+      },
     });
 
-    // Shuffle and pick random questions
-    const shuffled = this.shuffleArray(questions);
-    const limit = questionCount === 'all'
-      ? shuffled.length
-      : Math.min(questionCount, shuffled.length);
-    const selected = shuffled.slice(0, limit);
+    const shuffledQuestions = this.shuffleArray(questions);
 
-    // Format questions and shuffle options
-    const formattedQuestions = selected.map(q => ({
+    const requestedCount = options?.questionCount ?? 10;
+    const limit = requestedCount === 'all'
+      ? shuffledQuestions.length
+      : Math.min(requestedCount, shuffledQuestions.length);
+
+    const selectedQuestions = shuffledQuestions.slice(0, limit);
+
+    const formattedQuestions = selectedQuestions.map((q) => ({
       id: q.id,
       text: q.text,
-      options: this.shuffleArray(q.options as unknown as Option[])
+      options: this.shuffleArray(q.options as unknown as Option[]),
     }));
+
+    const resolvedTopicNames = topicIds
+      .map((id) => topicLookup.get(id)?.name)
+      .filter((name): name is string => Boolean(name));
+
+    const derivedDurationSeconds = options?.durationSeconds && options.durationSeconds > 0
+      ? options.durationSeconds
+      : Math.max(1, limit) * 30;
+
+    const primary = topicLookup.get(topicId) ?? topics[0];
 
     return {
       topicId,
-      topicName: topic.name,
-      subjectName: topic.subject.name,
-      notesUrl: topic.notesUrl,
-      questions: formattedQuestions
+      topicName: resolvedTopicNames.length === 1
+        ? resolvedTopicNames[0]
+        : resolvedTopicNames.join(', '),
+      subjectName: primary.subject.name,
+      notesUrl: resolvedTopicNames.length === 1 ? primary.notesUrl : null,
+      durationSeconds: derivedDurationSeconds,
+      questionCount: formattedQuestions.length,
+      includedTopicIds: topicIds,
+      includedTopicNames: resolvedTopicNames,
+      questions: formattedQuestions,
     };
   }
 

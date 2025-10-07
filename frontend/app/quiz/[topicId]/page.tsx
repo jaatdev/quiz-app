@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, type ChangeEvent } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
@@ -23,9 +23,9 @@ import {
 import { X } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useToast } from '@/providers/toast-provider';
-import type { QuizSubmission, AchievementUnlock } from '@/types';
+import type { QuizSubmission, AchievementUnlock, Topic } from '@/types';
 
-const QUIZ_DURATION = 600; // 10 minutes in seconds
+const DEFAULT_SECONDS_PER_QUESTION = 30;
 
 export default function QuizPage() {
   const params = useParams();
@@ -53,22 +53,170 @@ export default function QuizPage() {
     return null;
   })();
 
+  const topicIdsParam = searchParams.get('topicIds');
+  const initialAdditionalTopics: string[] = (() => {
+    if (!topicIdsParam) return [];
+    return Array.from(
+      new Set(
+        topicIdsParam
+          .split(',')
+          .map((id) => id.trim())
+          .filter((id) => id && id !== topicId)
+      )
+    );
+  })();
+
+  const durationParamRaw = searchParams.get('durationMinutes') ?? searchParams.get('duration');
+  const initialDurationMinutes: number | null = (() => {
+    if (!durationParamRaw) return null;
+    const parsed = Number(durationParamRaw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
+  })();
+
   const [questionCountInput, setQuestionCountInput] = useState<string>(() =>
     typeof initialSelection === 'number' ? String(initialSelection) : '10'
   );
   const [selectedCount, setSelectedCount] = useState<number | 'all' | null>(initialSelection);
   const [inputError, setInputError] = useState<string | null>(null);
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(initialAdditionalTopics);
+  const [customDurationEnabled, setCustomDurationEnabled] = useState<boolean>(
+    () => initialDurationMinutes !== null
+  );
+  const [durationMinutesInput, setDurationMinutesInput] = useState<string>(() =>
+    initialDurationMinutes !== null ? String(initialDurationMinutes) : ''
+  );
+  const [customDurationMinutes, setCustomDurationMinutes] = useState<number | null>(
+    initialDurationMinutes
+  );
+  const [durationError, setDurationError] = useState<string | null>(null);
 
   const hasStarted = selectedCount !== null;
 
   const quickStartOptions = [5, 10, 15, 20];
+
+  const { data: subjects } = useQuery({
+    queryKey: ['subjects'],
+    queryFn: () => quizService.getSubjects(),
+  });
+
+  const additionalTopics = useMemo(() => {
+    if (!subjects) return [] as Topic[];
+    const parentSubject = subjects.find((subject) =>
+      subject.topics.some((topic) => topic.id === topicId)
+    );
+    if (!parentSubject) return [] as Topic[];
+    return parentSubject.topics.filter((topic) => topic.id !== topicId);
+  }, [subjects, topicId]);
+
+  useEffect(() => {
+    setSelectedTopicIds((current) => {
+      if (!current.length) return current;
+      const validIds = Array.from(
+        new Set(
+          current.filter((id) => id !== topicId && additionalTopics.some((topic) => topic.id === id))
+        )
+      );
+      if (
+        validIds.length === current.length &&
+        validIds.every((id, index) => id === current[index])
+      ) {
+        return current;
+      }
+      return validIds;
+    });
+  }, [additionalTopics, topicId]);
+
+  const topicSelectionKey = useMemo(() => {
+    if (!selectedTopicIds.length) return 'primary-only';
+    return selectedTopicIds.slice().sort().join(',');
+  }, [selectedTopicIds]);
+
+  const estimatedAutoMinutes = useMemo(() => {
+    if (selectedCount === null || selectedCount === 'all') return null;
+    const totalSeconds = Math.max(1, selectedCount) * DEFAULT_SECONDS_PER_QUESTION;
+    return totalSeconds / 60;
+  }, [selectedCount]);
+
+  const autoMinutesLabel = useMemo(() => {
+    if (estimatedAutoMinutes === null) return null;
+    const rounded = Math.round(estimatedAutoMinutes * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  }, [estimatedAutoMinutes]);
+
+  const durationKey = useMemo(() => {
+    if (!customDurationEnabled) return 'auto';
+    if (customDurationMinutes === null) return 'custom-pending';
+    return `custom-${customDurationMinutes}`;
+  }, [customDurationEnabled, customDurationMinutes]);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     setInputError(null);
     setQuestionCountInput(event.target.value);
   };
 
+  const handleDurationInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setDurationError(null);
+    setDurationMinutesInput(event.target.value);
+  };
+
+  const handleCustomDurationToggle = (event: ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    setCustomDurationEnabled(enabled);
+    setDurationError(null);
+
+    if (!enabled) {
+      setCustomDurationMinutes(null);
+      return;
+    }
+
+    if (!durationMinutesInput) {
+      const fallbackMinutes = estimatedAutoMinutes && estimatedAutoMinutes > 0 ? estimatedAutoMinutes : 5;
+      const rounded = Math.round(fallbackMinutes * 10) / 10;
+      setDurationMinutesInput(String(rounded));
+      setCustomDurationMinutes(rounded);
+      return;
+    }
+
+    const parsed = Number(durationMinutesInput);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      const sanitized = Math.round(parsed * 100) / 100;
+      setCustomDurationMinutes(sanitized);
+      setDurationMinutesInput(String(sanitized));
+    } else {
+      setDurationMinutesInput('');
+      setCustomDurationMinutes(null);
+    }
+  };
+
+  const applyCustomDuration = useCallback((): number | null | false => {
+    if (!customDurationEnabled) {
+      setDurationError(null);
+      setCustomDurationMinutes(null);
+      return null;
+    }
+
+    const parsed = Number(durationMinutesInput);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setDurationError('Enter at least 1 minute');
+      return false;
+    }
+
+    const sanitized = Math.round(parsed * 100) / 100;
+    setDurationError(null);
+    setCustomDurationMinutes(sanitized);
+    setDurationMinutesInput(String(sanitized));
+    return sanitized;
+  }, [customDurationEnabled, durationMinutesInput]);
+
   const startQuizWithCount = useCallback((count: number | 'all') => {
+    const normalizedDuration = applyCustomDuration();
+    if (normalizedDuration === false) {
+      return;
+    }
+
     setInputError(null);
 
     if (count === 'all') {
@@ -79,7 +227,7 @@ export default function QuizPage() {
     const sanitized = Math.max(1, Math.floor(count));
     setQuestionCountInput(String(sanitized));
     setSelectedCount(sanitized);
-  }, []);
+  }, [applyCustomDuration]);
 
   const handleCustomStart = useCallback(() => {
     const parsed = Number(questionCountInput);
@@ -91,6 +239,15 @@ export default function QuizPage() {
     startQuizWithCount(parsed);
   }, [questionCountInput, startQuizWithCount]);
 
+  const handleTopicToggle = useCallback((id: string) => {
+    setSelectedTopicIds((current) => {
+      if (current.includes(id)) {
+        return current.filter((topicId) => topicId !== id);
+      }
+      return [...current, id];
+    });
+  }, []);
+
   // Zustand store
   const saveResult = useQuizStore((state) => state.saveResult);
   const setQuizSession = useQuizStore((state) => state.startSession);
@@ -100,13 +257,28 @@ export default function QuizPage() {
   // Quiz state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState<number | null>(null);
+
+  const computeTimeSpent = useCallback(() => {
+    if (startTime === null) return 0;
+    return Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+  }, [startTime]);
 
   const { data: session, isLoading, isFetching, error } = useQuery({
-    queryKey: ['quiz-session', topicId, selectedCount ?? 'default'],
+    queryKey: [
+      'quiz-session',
+      topicId,
+      selectedCount ?? 'default',
+      durationKey,
+      topicSelectionKey,
+    ],
     queryFn: () => {
       const requestedCount = selectedCount === null ? 10 : selectedCount;
-      return quizService.startQuizSession(topicId, requestedCount);
+      return quizService.startQuizSession(topicId, {
+        questionCount: requestedCount,
+        durationMinutes: customDurationEnabled ? customDurationMinutes ?? undefined : undefined,
+        topicIds: selectedTopicIds,
+      });
     },
     enabled: hasStarted,
     retry: false,
@@ -117,33 +289,57 @@ export default function QuizPage() {
   useEffect(() => {
     if (selectedCount === null) return;
 
-    const current = countParam ?? null;
-    const desired = selectedCount === 'all' ? 'all' : String(selectedCount);
+    const params = new URLSearchParams(searchParams.toString());
+    const desiredCount = selectedCount === 'all' ? 'all' : String(selectedCount);
+    params.set('count', desiredCount);
 
-    if (current === desired) {
+    if (customDurationEnabled && customDurationMinutes) {
+      params.set('durationMinutes', String(customDurationMinutes));
+    } else {
+      params.delete('durationMinutes');
+      params.delete('duration');
+    }
+
+    if (selectedTopicIds.length > 0) {
+      params.set('topicIds', selectedTopicIds.join(','));
+    } else {
+      params.delete('topicIds');
+    }
+
+    const nextQuery = params.toString();
+    if (nextQuery === searchParams.toString()) {
       return;
     }
 
-  const params = new URLSearchParams(searchParams.toString());
-    params.set('count', desired);
-    router.replace(`/quiz/${topicId}?${params.toString()}`, { scroll: false });
-  }, [selectedCount, countParam, searchParams, router, topicId]);
+    router.replace(`/quiz/${topicId}?${nextQuery}`, { scroll: false });
+  }, [
+    selectedCount,
+    customDurationEnabled,
+    customDurationMinutes,
+    selectedTopicIds,
+    searchParams,
+    router,
+    topicId,
+  ]);
 
   // Initialize Zustand session when quiz data loads
   useEffect(() => {
-    if (session) {
-      setQuizSession({
-        topicId: session.topicId ?? topicId,
-        topicName: session.topicName || topicName,
-        subjectName: session.subjectName || subjectName,
-        notesUrl: session.notesUrl ?? null,
-        difficulty,
-        questions: session.questions,
-        startTime: startTime,
-        duration: QUIZ_DURATION,
-      });
-    }
-  }, [session, topicId, topicName, subjectName, difficulty, startTime, setQuizSession]);
+    if (!session) return;
+
+    const sessionStartTime = Date.now();
+    setStartTime(sessionStartTime);
+
+    setQuizSession({
+      topicId: session.topicId ?? topicId,
+      topicName: session.topicName || topicName,
+      subjectName: session.subjectName || subjectName,
+      notesUrl: session.notesUrl ?? null,
+      difficulty,
+      questions: session.questions,
+      startTime: sessionStartTime,
+      duration: session.durationSeconds,
+    });
+  }, [session, topicId, topicName, subjectName, difficulty, setQuizSession, setStartTime]);
 
   // Persist answers for review usage
   useEffect(() => {
@@ -209,7 +405,7 @@ export default function QuizPage() {
       return { result, achievements };
     },
     onSuccess: ({ result, achievements }) => {
-      const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+      const timeSpent = computeTimeSpent();
       
       // Save result to Zustand store
       saveResult({
@@ -287,7 +483,7 @@ export default function QuizPage() {
   const handleFinish = useCallback(() => {
     if (!session || submitMutation.isPending) return;
 
-    const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+    const timeSpent = computeTimeSpent();
     const currentAnswers = session
       ? session.questions.reduce<Array<{ questionId: string; selectedOptionId: string }>>((acc, question) => {
           const selectedOptionId = answers.get(question.id);
@@ -308,7 +504,7 @@ export default function QuizPage() {
     };
 
     submitMutation.mutate(submission);
-  }, [session, topicId, answers, startTime, submitMutation]);
+  }, [session, topicId, answers, computeTimeSpent, submitMutation]);
 
   // Handle time up
   const handleTimeUp = useCallback(() => {
@@ -355,7 +551,7 @@ export default function QuizPage() {
             </p>
             <h1 className="mt-2 text-2xl font-bold text-gray-900">{topicName}</h1>
             <p className="mt-2 text-gray-600">
-              Choose how many questions you’d like to answer. Stick with the classic 10-question run or customize it for a longer session.
+              Choose how many questions you’d like to answer, adjust the timer, and even mix in extra topics from this subject before you dive in.
             </p>
           </div>
 
@@ -382,6 +578,99 @@ export default function QuizPage() {
           </div>
 
           <div className="pt-4 border-t border-gray-100">
+            <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Time settings
+            </p>
+            <div className="mt-3 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Automatic pacing</p>
+                  <p className="text-xs text-gray-500">
+                    {estimatedAutoMinutes !== null && autoMinutesLabel
+                      ? `≈ ${autoMinutesLabel} minute${Number(autoMinutesLabel) === 1 ? '' : 's'} (${DEFAULT_SECONDS_PER_QUESTION}s per question)`
+                      : 'Time adjusts automatically to 30 seconds per question once the quiz begins.'}
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={customDurationEnabled}
+                    onChange={handleCustomDurationToggle}
+                  />
+                  Set custom time
+                </label>
+              </div>
+
+              {customDurationEnabled && (
+                <div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min={1}
+                      step={0.5}
+                      value={durationMinutesInput}
+                      onChange={handleDurationInputChange}
+                      className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      placeholder="e.g. 15"
+                    />
+                    <span className="text-sm font-medium text-gray-600">minutes</span>
+                  </div>
+                  {durationError && (
+                    <p className="mt-2 text-sm text-red-600">{durationError}</p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-500">
+                    We’ll use your custom limit instead of the automatic pacing for this run.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {additionalTopics.length > 0 && (
+            <div className="pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Mix related topics
+              </p>
+              <p className="mt-2 text-sm text-gray-600">
+                Add more variety by including questions from other topics in this subject.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {additionalTopics.map((topic) => {
+                  const checked = selectedTopicIds.includes(topic.id);
+                  const questionTotal = topic._count?.questions ?? null;
+                  return (
+                    <label
+                      key={topic.id}
+                      className={`flex items-center justify-between gap-3 rounded-xl border p-3 transition ${
+                        checked ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{topic.name}</p>
+                        {typeof questionTotal === 'number' && (
+                          <p className="text-xs text-gray-500">{questionTotal} question{questionTotal === 1 ? '' : 's'}</p>
+                        )}
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={checked}
+                        onChange={() => handleTopicToggle(topic.id)}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              {selectedTopicIds.length > 0 && (
+                <p className="mt-2 text-xs text-blue-600">
+                  We’ll mix in {selectedTopicIds.length} extra topic{selectedTopicIds.length > 1 ? 's' : ''} this time.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-gray-100">
             <label htmlFor="question-count" className="block text-sm font-semibold text-gray-700">
               Custom question count
             </label>
@@ -403,7 +692,7 @@ export default function QuizPage() {
               <p className="mt-2 text-sm text-red-600">{inputError}</p>
             )}
             <p className="mt-3 text-xs text-gray-500">
-              Default run uses 10 questions. You can adjust before starting.
+              Default run uses 10 questions with automatic pacing. Adjust the count (and timer) before starting.
             </p>
           </div>
         </div>
@@ -451,8 +740,13 @@ export default function QuizPage() {
                 <X className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">{topicName}</h1>
-                <p className="text-sm text-gray-600">{subjectName}</p>
+                <h1 className="text-lg font-semibold text-gray-900">{session.topicName || topicName}</h1>
+                <p className="text-sm text-gray-600">{session.subjectName || subjectName}</p>
+                {session.includedTopicNames.length > 1 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Topics: {session.includedTopicNames.join(', ')}
+                  </p>
+                )}
               </div>
             </div>
             <div className="hidden md:block">
@@ -471,7 +765,7 @@ export default function QuizPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-4">
             <Timer
-              duration={QUIZ_DURATION}
+              duration={session.durationSeconds}
               onTimeUp={handleTimeUp}
             />
             <QuestionIndicator

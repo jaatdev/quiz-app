@@ -20,13 +20,29 @@ export const quizService = {
   },
 
   // Start a quiz session
-  async startQuizSession(topicId: string, questionCount: number | 'all' = 10): Promise<QuizSession> {
-    const params: Record<string, string | number> = {};
+  async startQuizSession(
+    topicId: string,
+    options?: {
+      questionCount?: number | 'all';
+      durationMinutes?: number;
+      topicIds?: string[];
+    }
+  ): Promise<QuizSession> {
+    const params: Record<string, string> = {};
 
-    if (questionCount === 'all') {
+    const requestedCount = options?.questionCount;
+    if (requestedCount === 'all') {
       params.count = 'all';
-    } else if (typeof questionCount === 'number') {
-      params.count = Math.max(1, questionCount);
+    } else if (typeof requestedCount === 'number' && Number.isFinite(requestedCount)) {
+      params.count = String(Math.max(1, Math.floor(requestedCount)));
+    }
+
+    if (options?.durationMinutes && options.durationMinutes > 0) {
+      params.durationMinutes = String(options.durationMinutes);
+    }
+
+    if (options?.topicIds && options.topicIds.length > 0) {
+      params.topicIds = Array.from(new Set(options.topicIds)).join(',');
     }
 
     return api.get(`/quiz/session/${topicId}`, {

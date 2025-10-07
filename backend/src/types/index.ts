@@ -3,6 +3,10 @@ export interface QuizSession {
   topicName: string;
   subjectName: string;
   notesUrl?: string | null;
+  durationSeconds: number;
+  questionCount: number;
+  includedTopicIds: string[];
+  includedTopicNames: string[];
   questions: QuizQuestion[];
 }
 

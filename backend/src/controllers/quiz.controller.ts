@@ -38,9 +38,9 @@ export class QuizController {
   async startQuizSession(req: Request, res: Response) {
     try {
       const { topicId } = req.params;
+
       const countParam = req.query.count;
       let questionCount: number | 'all' = 10;
-
       if (typeof countParam === 'string') {
         if (countParam.toLowerCase() === 'all') {
           questionCount = 'all';
@@ -52,7 +52,32 @@ export class QuizController {
         }
       }
 
-      const session = await quizService.getQuizSession(topicId, questionCount);
+      const durationParam = (req.query.durationMinutes ?? req.query.duration) as string | undefined;
+      let durationSeconds: number | null = null;
+      if (typeof durationParam === 'string' && durationParam.trim().length > 0) {
+        const parsed = Number(durationParam);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          durationSeconds = Math.round(parsed * 60);
+        }
+      }
+
+      const topicIdsParam = req.query.topicIds;
+      const additionalTopicIds: string[] = [];
+      if (typeof topicIdsParam === 'string') {
+        additionalTopicIds.push(...topicIdsParam.split(',').map((id: string) => id.trim()).filter(Boolean));
+      } else if (Array.isArray(topicIdsParam)) {
+        topicIdsParam.forEach((value) => {
+          if (typeof value === 'string') {
+            additionalTopicIds.push(...value.split(',').map((id: string) => id.trim()).filter(Boolean));
+          }
+        });
+      }
+
+      const session = await quizService.getQuizSession(topicId, {
+        questionCount,
+        includeTopicIds: additionalTopicIds,
+        durationSeconds,
+      });
       
       if (session.questions.length === 0) {
         return res.status(404).json({ error: 'No questions found for this topic' });
