@@ -27,6 +27,8 @@ export default function EnhancedResultsPage() {
   const topicId = params.topicId as string;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [isDownloadingNotes, setIsDownloadingNotes] = useState(false);
+  const [notesDownloadError, setNotesDownloadError] = useState<string | null>(null);
   const achievementsToastRef = useRef(false);
 
   const { lastResult, currentSession, clearSession, answers } = useQuizStore();
@@ -337,12 +339,54 @@ export default function EnhancedResultsPage() {
             <CardContent>
               <Button
                 size="lg"
-                onClick={() => window.open(notesLink, '_blank', 'noopener,noreferrer')}
+                onClick={async () => {
+                  setNotesDownloadError(null);
+                  setIsDownloadingNotes(true);
+                  try {
+                    const res = await fetch(notesLink, { credentials: 'same-origin' });
+                    if (!res.ok) {
+                      throw new Error(`Failed to download notes: ${res.status} ${res.statusText}`);
+                    }
+
+                    // Try to infer filename from content-disposition header
+                    const cd = res.headers.get('content-disposition') || '';
+                    let filename = '';
+                    const match = /filename\*?=(?:UTF-8'')?"?([^;"\\n]+)"?/i.exec(cd);
+                    if (match && match[1]) {
+                      filename = decodeURIComponent(match[1]);
+                    } else {
+                      // fallback: use topic name or generic name
+                      const safeTopic = (currentSession?.topicName || 'notes').replace(/[^a-z0-9-_\.]/gi, '-');
+                      filename = `${safeTopic}-notes.pdf`;
+                    }
+
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    // Revoke object URL shortly after
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  } catch (err: any) {
+                    console.error('Notes download failed', err);
+                    setNotesDownloadError(err?.message || 'Failed to download notes.');
+                    showToast({ variant: 'error', title: 'Download failed', description: 'Could not download notes PDF.' });
+                  } finally {
+                    setIsDownloadingNotes(false);
+                  }
+                }}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 font-bold"
               >
-                <Download className="w-5 h-5" />
-                Download Notes PDF
+                {isDownloadingNotes ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                {isDownloadingNotes ? 'Downloading...' : 'Download Notes PDF'}
               </Button>
+
+              {notesDownloadError && (
+                <p className="text-sm text-red-600 mt-2">{notesDownloadError}</p>
+              )}
             </CardContent>
           </Card>
         )}
