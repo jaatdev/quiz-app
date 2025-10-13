@@ -46,6 +46,12 @@ export function ReviewQuestion({
           )}
         </div>
         <h3 className="text-lg font-semibold text-gray-900">{question.text}</h3>
+        {typeof question.pyq === 'string' && question.pyq.trim().length > 0 && (
+          <span className="mt-3 inline-flex items-center gap-2 self-start rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            PYQ: {question.pyq.trim()}
+          </span>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-3 mb-4">

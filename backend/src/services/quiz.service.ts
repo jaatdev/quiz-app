@@ -95,6 +95,7 @@ export class QuizService {
         options: true,
         difficulty: true,
         topicId: true,
+        pyq: true,
       },
     });
 
@@ -111,6 +112,7 @@ export class QuizService {
       id: q.id,
       text: q.text,
       options: this.shuffleArray(q.options as unknown as Option[]),
+      pyq: q.pyq ?? null,
     }));
 
     const resolvedTopicNames = topicIds
@@ -202,7 +204,8 @@ export class QuizService {
       text: q.text,
       options: q.options as unknown as Option[],
       correctAnswerId: q.correctAnswerId,
-      explanation: q.explanation || undefined
+      explanation: q.explanation || undefined,
+      pyq: q.pyq ?? null,
     }));
   }
 

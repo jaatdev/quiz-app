@@ -272,6 +272,7 @@ export default function EnhancedResultsPage() {
         return {
           questionNumber: index + 1,
           questionText: q.text,
+          pyqLabel: reviewQ?.pyq ?? q.pyq ?? null,
           options: q.options,
           userAnswer: userAnswer || 'not-answered',
           correctAnswer: correctAnswerId || '',

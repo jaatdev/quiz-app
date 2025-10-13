@@ -428,7 +428,9 @@ export default function AdminSubjectPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/admin/questions?topicId=${topic.id}`)}
+                            onClick={() =>
+                              subjectId && router.push(`/admin/questions/${subjectId}/${topic.id}`)
+                            }
                           >
                             Manage questions
                           </Button>

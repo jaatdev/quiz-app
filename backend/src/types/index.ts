@@ -14,6 +14,7 @@ export interface QuizQuestion {
   id: string;
   text: string;
   options: Option[];
+  pyq?: string | null;
 }
 
 export interface Option {

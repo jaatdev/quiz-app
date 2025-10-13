@@ -8,6 +8,7 @@ interface QuestionDetail {
   correctAnswerId: string;
   userAnswerId?: string;
   explanation?: string;
+  pyqLabel?: string | null;
 }
 
 interface QuizResultData {
@@ -202,6 +203,17 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
         yPosition += lineHeight;
       });
       yPosition += lineHeight * 0.5;
+
+      if (question.pyqLabel && question.pyqLabel.trim()) {
+        checkAddPage();
+        pdf.setFont(undefined, 'bold');
+        pdf.setFontSize(10);
+        pdf.setTextColor(217, 119, 6);
+        pdf.text(`PYQ: ${question.pyqLabel.trim()}`, marginLeft + 2, yPosition);
+        yPosition += lineHeight;
+        pdf.setFont(undefined, 'normal');
+        pdf.setTextColor(52, 73, 94);
+      }
       
       // Calculate space needed for options
       const numOptions = question.options.length;

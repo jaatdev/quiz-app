@@ -61,6 +61,7 @@ model Question {
   difficulty      String   @default("medium") // easy, medium, hard
   topicId         String
   topic           Topic    @relation(fields: [topicId], references: [id])
+  pyq             String?  // Previous-year question exam label, null if not a PYQ
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

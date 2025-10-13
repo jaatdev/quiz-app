@@ -13,6 +13,29 @@ const router = Router();
 const prisma = new PrismaClient();
 const notesUploadDir = getNotesDir();
 
+function normalizePyq(input: unknown): string | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+
+  const raw = String(input).trim();
+  if (!raw) {
+    return null;
+  }
+
+  const prefixed = raw.match(/pyq:\s*\[(.*)\]/i);
+  if (prefixed?.[1]) {
+    return prefixed[1].trim() || null;
+  }
+
+  const bracketed = raw.match(/^\[(.*)\]$/);
+  if (bracketed?.[1]) {
+    return bracketed[1].trim() || null;
+  }
+
+  return raw;
+}
+
 const storage = multer.diskStorage({
   destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
     cb(null, notesUploadDir);
@@ -121,6 +144,28 @@ router.get('/subjects', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/subjects-with-topics', async (_req: Request, res: Response) => {
+  try {
+    const subjects = await prisma.subject.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        topics: {
+          orderBy: { name: 'asc' },
+          include: {
+            _count: { select: { questions: true } },
+          },
+        },
+        _count: { select: { topics: true } },
+      },
+    });
+
+    res.json(subjects);
+  } catch (error) {
+    console.error('Failed to fetch subjects with topics:', error);
+    res.status(500).json({ error: 'Failed to fetch subjects' });
+  }
+});
+
 router.get('/subjects/:id', async (req: Request, res: Response) => {
   try {
     const subject = await prisma.subject.findUnique({
@@ -131,7 +176,8 @@ router.get('/subjects/:id', async (req: Request, res: Response) => {
             _count: { select: { questions: true } }
           },
           orderBy: { name: 'asc' }
-        }
+        },
+        _count: { select: { topics: true } },
       }
     });
 
@@ -423,7 +469,12 @@ router.get('/questions', async (req: Request, res: Response) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(questions);
+    res.json(
+      questions.map((question) => ({
+        ...question,
+        pyq: question.pyq ?? null,
+      }))
+    );
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch questions' });
   }
@@ -431,16 +482,22 @@ router.get('/questions', async (req: Request, res: Response) => {
 
 router.post('/questions', async (req: Request, res: Response) => {
   try {
-    const { text, options, correctAnswerId, explanation, difficulty, topicId } = req.body;
+    const { text, options, correctAnswerId, explanation, difficulty, topicId, pyq } = req.body;
+
+    const sanitizedExplanation = typeof explanation === 'string' ? explanation.trim() : null;
+    const normalizedDifficulty = typeof difficulty === 'string' && difficulty.trim()
+      ? difficulty.trim().toLowerCase()
+      : 'medium';
     
     const question = await prisma.question.create({
       data: {
         text,
         options,
         correctAnswerId,
-        explanation,
-        difficulty: difficulty || 'medium',
-        topicId
+        explanation: sanitizedExplanation && sanitizedExplanation.length > 0 ? sanitizedExplanation : null,
+        difficulty: normalizedDifficulty,
+        topicId,
+        pyq: normalizePyq(pyq),
       },
       include: {
         topic: { include: { subject: true } }
@@ -456,7 +513,12 @@ router.post('/questions', async (req: Request, res: Response) => {
 router.put('/questions/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { text, options, correctAnswerId, explanation, difficulty, topicId } = req.body;
+    const { text, options, correctAnswerId, explanation, difficulty, topicId, pyq } = req.body;
+
+    const sanitizedExplanation = typeof explanation === 'string' ? explanation.trim() : null;
+    const normalizedDifficulty = typeof difficulty === 'string' && difficulty.trim()
+      ? difficulty.trim().toLowerCase()
+      : undefined;
     
     const question = await prisma.question.update({
       where: { id },
@@ -464,9 +526,10 @@ router.put('/questions/:id', async (req: Request, res: Response) => {
         text,
         options,
         correctAnswerId,
-        explanation,
-        difficulty,
-        topicId
+        explanation: sanitizedExplanation !== null && sanitizedExplanation.length === 0 ? null : sanitizedExplanation ?? undefined,
+        difficulty: normalizedDifficulty,
+        topicId,
+        pyq: normalizePyq(pyq),
       },
       include: {
         topic: { include: { subject: true } }
@@ -735,6 +798,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
 
         const explanation = typeof question?.explanation === 'string' ? question.explanation.trim() : null;
         const difficulty = normalizeDifficulty(question?.difficulty);
+        const pyqLabel = normalizePyq(question?.pyq);
 
         await tx.question.create({
           data: {
@@ -743,7 +807,8 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
             correctAnswerId: suppliedAnswer,
             explanation,
             difficulty,
-            topicId: topicId!
+            topicId: topicId!,
+            pyq: pyqLabel,
           }
         });
 
@@ -765,6 +830,62 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.message });
     }
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to import questions' });
+  }
+});
+
+router.get('/topics/:id/questions', async (req: Request, res: Response) => {
+  try {
+    const topicId = req.params.id;
+    const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10));
+    const pageSize = Math.max(1, Math.min(100, parseInt(String(req.query.pageSize ?? '12'), 10)));
+    const search = String(req.query.q ?? '').trim();
+
+    const where: Prisma.QuestionWhereInput = { topicId };
+
+    if (search) {
+      where.OR = [
+        { text: { contains: search, mode: 'insensitive' } },
+        { explanation: { contains: search, mode: 'insensitive' } },
+        { pyq: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (page - 1) * pageSize;
+
+    const [items, total] = await Promise.all([
+      prisma.question.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          text: true,
+          options: true,
+          correctAnswerId: true,
+          explanation: true,
+          difficulty: true,
+          pyq: true,
+          topicId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.question.count({ where }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    res.json({
+      items,
+      total,
+      page,
+      pageSize,
+      totalPages,
+    });
+  } catch (error) {
+    console.error('Failed to fetch questions for topic:', error);
+    res.status(500).json({ error: 'Failed to fetch questions' });
   }
 });
 

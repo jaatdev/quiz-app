@@ -24,6 +24,7 @@ interface QuizResultData {
   questions?: Array<{
     questionNumber: number;
     questionText: string;
+    pyqLabel?: string | null;
     options: Array<{
       id: string;
       text: string;
@@ -265,6 +266,7 @@ export async function generateProfessionalPDF(data: QuizResultData) {
     for (let i = 0; i < data.questions.length; i++) {
       const question = data.questions[i];
       const wasSkipped = !question.userAnswer || question.userAnswer === 'not-answered';
+      const pyqLabel = typeof question.pyqLabel === 'string' ? question.pyqLabel.trim() : '';
 
       if (yPos > pageHeight - 80) {
         pdf.addPage();
@@ -301,6 +303,21 @@ export async function generateProfessionalPDF(data: QuizResultData) {
       pdf.text(statusLabel, pageWidth - margin - 3, yPos + 7, { align: 'right' });
 
       yPos += 14;
+
+      if (pyqLabel) {
+        if (yPos > pageHeight - 40) {
+          pdf.addPage();
+          currentPage++;
+          addPageHeader(currentPage);
+          yPos = 40;
+        }
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(217, 119, 6);
+        pdf.text(`PYQ: ${pyqLabel}`, margin + 3, yPos);
+        yPos += detailLineHeight + 1;
+      }
 
       pdf.setTextColor(33, 33, 33);
       pdf.setFont('helvetica', 'normal');

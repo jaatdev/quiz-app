@@ -87,7 +87,13 @@ export default function BulkImportPage() {
     try {
       if (importType === 'json') {
         const json = JSON.parse(text);
-        setPreviewData(Array.isArray(json) ? json.slice(0, 3) : [json]);
+        const normalized = Array.isArray(json) ? json : [json];
+        setPreviewData(
+          normalized.slice(0, 3).map((item) => ({
+            ...item,
+            pyq: typeof item?.pyq === 'string' ? item.pyq : '',
+          }))
+        );
       } else {
         const lines = text.split('\n').filter(Boolean);
         if (!lines.length) return setPreviewData([]);
@@ -101,7 +107,12 @@ export default function BulkImportPage() {
           });
           rows.push(row);
         }
-        setPreviewData(rows);
+        setPreviewData(
+          rows.map((row) => ({
+            ...row,
+            pyq: row.pyq || row.PYQ || row.pyqLabel || '',
+          }))
+        );
       }
     } catch (error) {
       console.error('Failed to preview file:', error);
@@ -148,6 +159,7 @@ export default function BulkImportPage() {
           difficulty: 'easy',
           subjectName: 'General Knowledge',
           topicName: 'Planets',
+          pyq: '[2019]',
         },
         {
           text: "Who painted the 'Mona Lisa'?",
@@ -160,6 +172,7 @@ export default function BulkImportPage() {
           correctAnswerId: 'c',
           difficulty: 'medium',
           topicId: 'YOUR_TOPIC_ID_HERE',
+          pyq: 'Art Olympiad 2021',
         },
       ];
       const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
@@ -169,7 +182,7 @@ export default function BulkImportPage() {
       link.download = 'quiz-template.json';
       link.click();
     } else {
-      const csv = `text,optionA,optionB,optionC,optionD,correctAnswerId,explanation,difficulty,subjectName,topicName,topicId\n"Which planet is known as the 'Red Planet'?","Jupiter","Mars","Venus","Saturn","b","Mars appears red due to iron oxide.","easy","General Knowledge","Planets",\n"Who painted the 'Mona Lisa'?","Vincent van Gogh","Pablo Picasso","Leonardo da Vinci","Claude Monet","c","A Renaissance masterpiece.","medium",,,"YOUR_TOPIC_ID_HERE"`;
+      const csv = `text,optionA,optionB,optionC,optionD,correctAnswerId,explanation,difficulty,subjectName,topicName,topicId,pyq\n"Which planet is known as the 'Red Planet'?","Jupiter","Mars","Venus","Saturn","b","Mars appears red due to iron oxide.","easy","General Knowledge","Planets",,"[2019]"\n"Who painted the 'Mona Lisa'?","Vincent van Gogh","Pablo Picasso","Leonardo da Vinci","Claude Monet","c","A Renaissance masterpiece.","medium",,,"YOUR_TOPIC_ID_HERE","Art Olympiad 2021"`;
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -216,6 +229,7 @@ export default function BulkImportPage() {
             subjectName: entry.subjectName,
             topicName: entry.topicName,
             topicId: entry.topicId,
+            pyq: entry.pyq,
           });
         }
       }
@@ -376,6 +390,11 @@ export default function BulkImportPage() {
                   <p className="font-medium text-gray-900">{item.text || item.question || 'Untitled question'}</p>
                   <p className="mt-1 text-sm text-gray-600">
                     Subject: {item.subjectName || item.subject || '—'} · Topic: {item.topicName || item.topic || item.topicId || '—'} · Difficulty: {item.difficulty || 'medium'}
+                    {item.pyq && (
+                      <>
+                        {' '}· PYQ: {item.pyq}
+                      </>
+                    )}
                   </p>
                 </div>
               ))}

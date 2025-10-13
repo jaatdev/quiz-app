@@ -1,111 +1,104 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Search, RefreshCcw } from 'lucide-react';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { QuestionForm } from '@/components/admin/question-form';
-import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
+import { buttonVariants } from '@/components/ui/button';
 
-interface Question {
+interface SubjectResponse {
   id: string;
-  text: string;
-  options: Array<{ id: string; text: string }>;
-  correctAnswerId: string;
-  explanation?: string;
-  difficulty: string;
-  topic: {
+  name: string;
+  topics: Array<{
     id: string;
     name: string;
-    subject: {
-      name: string;
-    };
+    _count?: { questions?: number };
+  }>;
+  _count?: {
+    topics?: number;
   };
 }
 
-export default function QuestionManagement() {
-  const { user } = useUser();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+export default function AdminSubjectOverview() {
+  const { user, isLoaded } = useUser();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchQuestions();
-  }, [user]);
+  const [subjects, setSubjects] = useState<SubjectResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchQuestions = async () => {
-    if (!user) return;
+  useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!user) {
+      setSubjects([]);
+      setLoading(false);
+      return;
+    }
+
+    fetchSubjects();
+  }, [user, isLoaded]);
+
+  const fetchSubjects = async () => {
+    if (!user) {
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/admin/questions`, {
+      const response = await fetch(`${API_URL}/admin/subjects-with-topics`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setQuestions(data);
-      } else {
-        let message = 'Failed to fetch questions.';
-        try {
-          const data = await response.json();
-          message = data?.error || message;
-        } catch {
-          // ignore JSON parse errors
-        }
-        showToast({ variant: 'error', title: message });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to load subjects');
       }
+
+      const payload = (await response.json()) as SubjectResponse[];
+      setSubjects(payload);
     } catch (error) {
-      console.error('Failed to fetch questions:', error);
-      showToast({ variant: 'error', title: 'Failed to fetch questions.' });
+      console.error('Failed to fetch subjects:', error);
+      showToast({ variant: 'error', title: error instanceof Error ? error.message : 'Failed to load subjects' });
+      setSubjects([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
-
-    try {
-      const response = await fetch(`${API_URL}/admin/questions/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'x-clerk-user-id': user!.id,
-        },
-      });
-
-      if (response.ok) {
-        setQuestions(questions.filter(q => q.id !== id));
-        showToast({ variant: 'success', title: 'Question deleted successfully.' });
-      } else {
-        let message = 'Failed to delete question.';
-        try {
-          const data = await response.json();
-          message = data?.error || message;
-        } catch {
-          // ignore JSON parse errors
-        }
-        showToast({ variant: 'error', title: message });
-      }
-    } catch (error) {
-      console.error('Failed to delete question:', error);
-      showToast({ variant: 'error', title: 'Failed to delete question.' });
+  const filteredSubjects = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+    if (!normalized) {
+      return subjects;
     }
-  };
 
-  const filteredQuestions = questions.filter(q =>
-    q.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    q.topic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    q.topic.subject.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    return subjects.filter((subject) => {
+      const haystack = [
+        subject.name,
+        ...subject.topics.map((topic) => topic.name),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(normalized);
+    });
+  }, [subjects, searchTerm]);
 
   if (loading) {
     return <Loading />;
@@ -113,109 +106,95 @@ export default function QuestionManagement() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Question Management</h1>
-        <p className="text-gray-600">Manage quiz questions</p>
+      <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Question Bank</h1>
+          <p className="text-gray-600">Browse subjects to manage topics and questions</p>
+        </div>
+        <button
+          type="button"
+          onClick={fetchSubjects}
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+        >
+          <RefreshCcw className="mr-2 h-4 w-4" />
+          Refresh
+        </button>
       </div>
 
-      {/* Actions Bar */}
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-600" />
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
+        <div className="relative w-full md:w-96">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <input
-            type="text"
-            placeholder="Search questions..."
+            type="search"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg"
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search subjects or topics..."
+            className="w-full rounded-lg border px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Question
-        </Button>
       </div>
 
-      {/* Questions List */}
-      <div className="space-y-4">
-        {filteredQuestions.length > 0 ? (
-          filteredQuestions.map((question) => (
-            <Card key={question.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 mb-2">{question.text}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                      <span>{question.topic.subject.name}</span>
-                      <span>•</span>
-                      <span>{question.topic.name}</span>
-                      <span>•</span>
-                      <span className="capitalize">{question.difficulty}</span>
-                    </div>
-                    <div className="space-y-1">
-                      {question.options.map((option) => (
-                        <div
-                          key={option.id}
-                          className={cn(
-                            'text-sm p-2 rounded',
-                            option.id === question.correctAnswerId
-                              ? 'bg-green-50 text-green-700 font-medium'
-                              : 'bg-gray-50 text-gray-700'
-                          )}
-                        >
-                          {option.id.toUpperCase()}. {option.text}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingQuestion(question);
-                        setShowForm(true);
-                      }}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(question.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+      {filteredSubjects.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-gray-600">
+            No subjects found. Create a subject first, then add topics and questions.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredSubjects.map((subject) => {
+            const totalTopics = subject._count?.topics ?? subject.topics.length;
+            const totalQuestions = subject.topics.reduce((sum, topic) => {
+              const count = topic._count?.questions ?? 0;
+              return sum + count;
+            }, 0);
+            const topTopics = subject.topics.slice(0, 3);
+            const remainingCount = Math.max(0, subject.topics.length - topTopics.length);
+
+            return (
+              <Card key={subject.id} className="flex flex-col justify-between">
+                <div>
+                  <CardHeader>
+                    <CardTitle>{subject.name}</CardTitle>
+                    <CardDescription>
+                      {totalTopics} {totalTopics === 1 ? 'topic' : 'topics'} · {totalQuestions}{' '}
+                      {totalQuestions === 1 ? 'question' : 'questions'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {topTopics.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {topTopics.map((topic) => (
+                          <span
+                            key={topic.id}
+                            className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700"
+                          >
+                            {topic.name}
+                          </span>
+                        ))}
+                        {remainingCount > 0 && (
+                          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                            +{remainingCount} more
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">No topics yet. Add topics to start building questions.</p>
+                    )}
+                  </CardContent>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-gray-500 py-8">
-                {searchTerm ? 'No questions match your search' : 'No questions yet. Add your first question!'}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Question Form Modal */}
-      {showForm && (
-        <QuestionForm
-          question={editingQuestion}
-          onClose={() => {
-            setShowForm(false);
-            setEditingQuestion(null);
-          }}
-          onSave={() => {
-            fetchQuestions();
-            setShowForm(false);
-            setEditingQuestion(null);
-          }}
-        />
+                <CardFooter>
+                  <Link
+                    href={`/admin/questions/${subject.id}`}
+                    className={buttonVariants({ variant: 'default', size: 'sm' })}
+                  >
+                    Manage Topics
+                  </Link>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
       )}
     </div>
   );

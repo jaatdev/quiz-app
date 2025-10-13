@@ -16,10 +16,12 @@ interface QuestionFormProps {
     correctAnswerId: string;
     explanation?: string;
     difficulty: string;
+    pyq?: string | null;
     topic: {
       id: string;
     };
   } | null;
+  defaultTopicId?: string;
   onClose: () => void;
   onSave: () => void;
 }
@@ -32,44 +34,56 @@ interface Topic {
   };
 }
 
-export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
+const initialOptions = [
+  { id: 'a', text: '' },
+  { id: 'b', text: '' },
+  { id: 'c', text: '' },
+  { id: 'd', text: '' },
+];
+
+const createInitialFormData = (topicId = '') => ({
+  text: '',
+  options: initialOptions.map((option) => ({ ...option })),
+  correctAnswerId: 'a',
+  explanation: '',
+  difficulty: 'medium',
+  topicId,
+  pyq: '',
+});
+
+export function QuestionForm({ question, defaultTopicId, onClose, onSave }: QuestionFormProps) {
   const { user } = useUser();
-  const [formData, setFormData] = useState({
-    text: '',
-    options: [
-      { id: 'a', text: '' },
-      { id: 'b', text: '' },
-      { id: 'c', text: '' },
-      { id: 'd', text: '' },
-    ],
-    correctAnswerId: 'a',
-    explanation: '',
-    difficulty: 'medium',
-    topicId: '',
-  });
+  const [formData, setFormData] = useState(createInitialFormData(defaultTopicId));
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchTopics();
+  }, [user]);
+
+  useEffect(() => {
     if (question) {
       setFormData({
         text: question.text,
-        options: question.options,
+        options: question.options.map((option) => ({ ...option })),
         correctAnswerId: question.correctAnswerId,
         explanation: question.explanation || '',
         difficulty: question.difficulty,
         topicId: question.topic.id,
+        pyq: question.pyq ?? '',
       });
+      return;
     }
-  }, [question]);
+
+    setFormData(createInitialFormData(defaultTopicId));
+  }, [question, defaultTopicId]);
 
   const fetchTopics = async () => {
     if (!user) return;
-    
+
     try {
-  const response = await fetch(`${API_URL}/admin/topics`, {
+      const response = await fetch(`${API_URL}/admin/topics`, {
         headers: {
           'x-clerk-user-id': user.id,
         },
@@ -89,9 +103,9 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
 
     try {
       const url = question
-  ? `${API_URL}/admin/questions/${question.id}`
-  : `${API_URL}/admin/questions`;
-      
+        ? `${API_URL}/admin/questions/${question.id}`
+        : `${API_URL}/admin/questions`;
+
       const method = question ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -100,7 +114,10 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
           'Content-Type': 'application/json',
           'x-clerk-user-id': user!.id,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          pyq: formData.pyq.trim() || null,
+        }),
       });
 
       if (response.ok) {
@@ -225,6 +242,22 @@ export function QuestionForm({ question, onClose, onSave }: QuestionFormProps) {
                 <option value="medium">Medium</option>
                 <option value="hard">Hard</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                PYQ Label (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.pyq}
+                onChange={(e) => setFormData({ ...formData, pyq: e.target.value })}
+                className="w-full p-2 border rounded-lg"
+                placeholder="e.g. [2024] or JEE Main 2023"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Shown as a badge (Previous Year Question). Leave blank if not applicable.
+              </p>
             </div>
 
             <div>
