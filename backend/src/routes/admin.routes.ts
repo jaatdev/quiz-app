@@ -121,6 +121,31 @@ router.get('/subjects', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/subjects/:id', async (req: Request, res: Response) => {
+  try {
+    const subject = await prisma.subject.findUnique({
+      where: { id: req.params.id },
+      include: {
+        topics: {
+          include: {
+            _count: { select: { questions: true } }
+          },
+          orderBy: { name: 'asc' }
+        }
+      }
+    });
+
+    if (!subject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+
+    res.json(subject);
+  } catch (error) {
+    console.error('Get subject by id error:', error);
+    res.status(500).json({ error: 'Failed to fetch subject' });
+  }
+});
+
 router.post('/subjects', async (req: Request, res: Response) => {
   try {
     const rawName = req.body?.name ?? '';
@@ -146,14 +171,24 @@ router.post('/subjects', async (req: Request, res: Response) => {
 router.put('/subjects/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const rawName = req.body?.name ?? '';
+    const name = typeof rawName === 'string' ? rawName.trim() : '';
+
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
     const subject = await prisma.subject.update({
       where: { id },
       data: { name }
     });
     res.json(subject);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update subject' });
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(409).json({ error: 'A subject with that name already exists' });
+    }
+    console.error('Rename subject error:', error);
+    res.status(500).json({ error: 'Failed to rename subject' });
   }
 });
 
@@ -189,6 +224,93 @@ router.delete('/subjects/:id', async (req: Request, res: Response) => {
 });
 
 // Topic Management
+router.get('/subjects/:id/topics', async (req: Request, res: Response) => {
+  try {
+    const subjectId = req.params.id;
+    const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10));
+    const pageSize = Math.max(1, Math.min(100, parseInt(String(req.query.pageSize ?? '12'), 10)));
+    const search = String(req.query.q ?? '').trim();
+
+    const where: Prisma.TopicWhereInput = { subjectId };
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' };
+    }
+
+    const skip = (page - 1) * pageSize;
+
+    const [items, total] = await Promise.all([
+      prisma.topic.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { questions: true } } }
+      }),
+      prisma.topic.count({ where })
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    res.json({ items, total, page, pageSize, totalPages });
+  } catch (error) {
+    console.error('Error fetching paginated topics:', error);
+    res.status(500).json({ error: 'Failed to fetch topics' });
+  }
+});
+
+router.post('/subjects/:id/topics/bulk', async (req: Request, res: Response) => {
+  try {
+    const subjectId = req.params.id;
+    let { topics } = req.body as { topics: string[] };
+
+    if (!Array.isArray(topics) || topics.length === 0) {
+      return res.status(400).json({ error: 'topics must be a non-empty array of names' });
+    }
+
+    topics = topics
+      .map((name) => String(name ?? '').trim())
+      .filter(Boolean);
+
+    const uniqueInput = Array.from(new Set(topics));
+
+    if (uniqueInput.length === 0) {
+      return res.status(400).json({ error: 'No valid topic names provided' });
+    }
+
+    if (uniqueInput.length > 1000) {
+      return res.status(400).json({ error: 'Please import at most 1000 topics at a time' });
+    }
+
+    const existing = await prisma.topic.findMany({
+      where: {
+        subjectId,
+        name: { in: uniqueInput }
+      },
+      select: { name: true }
+    });
+
+    const existingNames = new Set(existing.map((topic) => topic.name));
+    const toCreate = uniqueInput.filter((name) => !existingNames.has(name));
+
+    if (toCreate.length > 0) {
+      await prisma.topic.createMany({
+        data: toCreate.map((name) => ({ name, subjectId })),
+        skipDuplicates: true,
+      });
+    }
+
+    res.json({
+      success: true,
+      created: toCreate.length,
+      duplicates: uniqueInput.filter((name) => existingNames.has(name)),
+      message: `Created ${toCreate.length} topics${existingNames.size ? `, ${existingNames.size} duplicates skipped` : ''}`,
+    });
+  } catch (error) {
+    console.error('Bulk topics error:', error);
+    res.status(500).json({ error: 'Failed to bulk create topics' });
+  }
+});
+
 router.get('/topics', async (req: Request, res: Response) => {
   try {
     const topics = await prisma.topic.findMany({
@@ -206,16 +328,27 @@ router.get('/topics', async (req: Request, res: Response) => {
 router.post('/topics', async (req: Request, res: Response) => {
   try {
     const { name, subjectId, notesUrl } = req.body;
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    const trimmedSubjectId = typeof subjectId === 'string' ? subjectId.trim() : '';
+
+    if (!trimmedName || !trimmedSubjectId) {
+      return res.status(400).json({ error: 'name and subjectId are required' });
+    }
+
     const topic = await prisma.topic.create({
       data: {
-        name,
-        subjectId,
+        name: trimmedName,
+        subjectId: trimmedSubjectId,
         notesUrl: typeof notesUrl === 'string' ? notesUrl : undefined,
       },
       include: { subject: true }
     });
     res.json(topic);
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(409).json({ error: 'Topic with this name already exists in this subject' });
+    }
+    console.error('Failed to create topic:', error);
     res.status(500).json({ error: 'Failed to create topic' });
   }
 });
@@ -224,17 +357,28 @@ router.put('/topics/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, subjectId, notesUrl } = req.body;
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    const trimmedSubjectId = typeof subjectId === 'string' ? subjectId.trim() : undefined;
+
+    if (!trimmedName) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
     const topic = await prisma.topic.update({
       where: { id },
       data: {
-        name,
-        subjectId,
+        name: trimmedName,
+        subjectId: trimmedSubjectId,
         notesUrl: typeof notesUrl === 'string' ? notesUrl : undefined,
       },
       include: { subject: true }
     });
     res.json(topic);
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(409).json({ error: 'A topic with that name already exists in this subject' });
+    }
+    console.error('Failed to update topic:', error);
     res.status(500).json({ error: 'Failed to update topic' });
   }
 });

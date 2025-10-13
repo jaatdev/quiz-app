@@ -14,6 +14,11 @@ export const quizService = {
     return api.get('/subjects');
   },
 
+  async getSubjectByName(subjectName: string): Promise<Subject> {
+    const encoded = encodeURIComponent(subjectName);
+    return api.get(`/subjects/by-name/${encoded}`);
+  },
+
   // Get single topic details
   async getTopic(topicId: string): Promise<Topic> {
     return api.get(`/topics/${topicId}`);

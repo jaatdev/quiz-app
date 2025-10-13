@@ -23,6 +23,22 @@ export class QuizService {
     });
   }
 
+  async getSubjectByName(name: string) {
+    return await this.prisma.subject.findUnique({
+      where: { name },
+      include: {
+        topics: {
+          select: {
+            id: true,
+            name: true,
+            _count: { select: { questions: true } },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+  }
+
   // Get a single topic with subject info
   async getTopicById(topicId: string) {
     return await this.prisma.topic.findUnique({

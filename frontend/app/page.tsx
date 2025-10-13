@@ -318,7 +318,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {subject.topics.map((topic) => (
+                    {subject.topics.slice(0, 2).map((topic) => (
                       <div
                         key={topic.id}
                         className="group/topic p-3 rounded-lg border bg-gray-50 hover:bg-white hover:border-blue-200 transition-all"
@@ -349,6 +349,17 @@ export default function HomePage() {
                       </div>
                     ))}
                   </div>
+                  {subject.topics.length > 2 && (
+                    <div className="pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/subject/${encodeURIComponent(subject.name)}`)}
+                      >
+                        Show all {subject.topics.length} topics
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

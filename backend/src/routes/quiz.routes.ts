@@ -6,6 +6,7 @@ const quizController = new QuizController();
 
 // Subject and topic routes
 router.get('/subjects', (req, res) => quizController.getSubjects(req, res));
+router.get('/subjects/by-name/:name', (req, res) => quizController.getSubjectByName(req, res));
 router.get('/topics/:topicId', (req, res) => quizController.getTopic(req, res));
 
 // Quiz session routes

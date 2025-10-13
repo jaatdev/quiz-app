@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
@@ -26,6 +27,7 @@ interface Topic {
 
 export default function SubjectManagementPage() {
   const { user } = useUser();
+  const router = useRouter();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubjectForm, setShowSubjectForm] = useState(false);
@@ -151,6 +153,13 @@ export default function SubjectManagementPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/admin/subject/${subject.id}`)}
+                  >
+                    Manage topics
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

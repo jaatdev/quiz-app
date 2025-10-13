@@ -34,6 +34,27 @@ export class QuizController {
     }
   }
 
+  async getSubjectByName(req: Request, res: Response) {
+    try {
+      const raw = req.params.name || '';
+      const name = decodeURIComponent(raw);
+
+      if (!name.trim()) {
+        return res.status(400).json({ error: 'Subject name is required' });
+      }
+
+      const subject = await quizService.getSubjectByName(name);
+      if (!subject) {
+        return res.status(404).json({ error: 'Subject not found' });
+      }
+
+      res.json(subject);
+    } catch (error) {
+      console.error('Error fetching subject by name:', error);
+      res.status(500).json({ error: 'Failed to fetch subject' });
+    }
+  }
+
   // GET /api/quiz/session/:topicId
   async startQuizSession(req: Request, res: Response) {
     try {
