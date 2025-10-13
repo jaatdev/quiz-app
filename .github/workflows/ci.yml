@@ -14,6 +14,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Cache frontend npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            frontend/node_modules
+          key: ${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
@@ -27,6 +36,10 @@ jobs:
             echo "typecheck passed";
           else
             echo "typecheck script not defined or failed";
+            # fail the job if typecheck script exists but failed
+            if [ -f frontend/package.json ] && grep -q '"typecheck"' frontend/package.json; then
+              exit 1;
+            fi
           fi
       - name: Frontend build
         working-directory: frontend
@@ -42,6 +55,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Cache backend npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            backend/node_modules
+          key: ${{ runner.os }}-backend-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-
       - name: Install backend deps
         working-directory: backend
         run: npm ci
@@ -71,8 +93,11 @@ jobs:
             echo "backend tests ran";
           else
             echo "no backend tests or tests failed";
+            # if a test script exists but returned non-zero, fail the job
+            if [ -f package.json ] && grep -q '"test"' package.json; then
+              exit 1;
+            fi
           fi
-        continue-on-error: true
       - name: Run frontend tests if present
         working-directory: frontend
         run: |
@@ -80,8 +105,10 @@ jobs:
             echo "frontend tests ran";
           else
             echo "no frontend tests or tests failed";
+            if [ -f package.json ] && grep -q '"test"' package.json; then
+              exit 1;
+            fi
           fi
-        continue-on-error: true
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
@@ -90,3 +117,12 @@ jobs:
             frontend/coverage/**
             backend/coverage/**
           if-no-files-found: warn
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: |
+            frontend/coverage/**
+            backend/coverage/**
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
