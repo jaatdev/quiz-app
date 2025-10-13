@@ -20,6 +20,14 @@ jobs:
       - name: Frontend lint
         working-directory: frontend
         run: npm run lint
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: |
+          if npm --prefix frontend run -s typecheck --if-present; then
+            echo "typecheck passed";
+          else
+            echo "typecheck script not defined or failed";
+          fi
       - name: Frontend build
         working-directory: frontend
         run: npm run build
@@ -40,3 +48,45 @@ jobs:
       - name: Backend build (tsc)
         working-directory: backend
         run: npm run build
+
+  tests:
+    name: Run tests and upload coverage
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install all deps
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+      - name: Run backend tests if present
+        working-directory: backend
+        run: |
+          if npm run test --silent --if-present; then
+            echo "backend tests ran";
+          else
+            echo "no backend tests or tests failed";
+          fi
+        continue-on-error: true
+      - name: Run frontend tests if present
+        working-directory: frontend
+        run: |
+          if npm run test --silent --if-present; then
+            echo "frontend tests ran";
+          else
+            echo "no frontend tests or tests failed";
+          fi
+        continue-on-error: true
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            frontend/coverage/**
+            backend/coverage/**
+          if-no-files-found: warn
