@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
-import { Plus, Edit, Trash2, BookOpen, FileText, X, Download } from 'lucide-react';
-import { API_URL, resolveBackendUrl } from '@/lib/config';
+import { Plus, Edit, Trash2, BookOpen, FileText, X, Download, Loader2 } from 'lucide-react';
+import { API_URL } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
 
 interface Subject {
@@ -35,6 +35,7 @@ export default function SubjectManagementPage() {
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [downloadingTopicId, setDownloadingTopicId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -59,6 +60,52 @@ export default function SubjectManagementPage() {
       console.error('Failed to fetch subjects:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadNotes = async (topic: Topic) => {
+    if (!topic.notesUrl) {
+      showToast({ variant: 'error', title: 'No notes available for this topic.' });
+      return;
+    }
+
+    setDownloadingTopicId(topic.id);
+    try {
+      const downloadUrl = `/api/download/note/${encodeURIComponent(topic.id)}`;
+      const response = await fetch(downloadUrl, { credentials: 'include' });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => null);
+        throw new Error(text || `Failed to download notes (${response.status}).`);
+      }
+
+      const contentDisposition = response.headers.get('content-disposition') ?? '';
+      const match = /filename\*?=(?:UTF-8'')?"?([^;"\n]+)/i.exec(contentDisposition);
+      const safeTopic = (topic.name || 'notes')
+        .replace(/[^a-z0-9._-]+/gi, '_')
+        .replace(/_{2,}/g, '_')
+        .replace(/^_+|_+$/g, '') || 'notes';
+      const filename = match && match[1] ? decodeURIComponent(match[1]) : `${safeTopic}-notes.pdf`;
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast({ variant: 'success', title: 'Notes download started.' });
+    } catch (error) {
+      console.error('Failed to download notes:', error);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Failed to download notes. Please try again.';
+      showToast({ variant: 'error', title: message });
+    } finally {
+      setDownloadingTopicId(null);
     }
   };
 
@@ -183,7 +230,7 @@ export default function SubjectManagementPage() {
             <CardContent>
               <div className="space-y-2 mb-4">
                 {subject.topics.map((topic) => {
-                  const notesLink = resolveBackendUrl(topic.notesUrl ?? null);
+                  const notesAvailable = Boolean(topic.notesUrl);
 
                   return (
                     <div
@@ -197,20 +244,25 @@ export default function SubjectManagementPage() {
                           {topic._count?.questions || 0} questions
                         </span>
                         <span
-                          className={`text-xs font-medium ${notesLink ? 'text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full' : 'text-gray-400 italic'}`}
+                          className={`text-xs font-medium ${notesAvailable ? 'text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full' : 'text-gray-400 italic'}`}
                         >
-                          {notesLink ? 'Notes PDF' : 'No notes'}
+                          {notesAvailable ? 'Notes PDF' : 'No notes'}
                         </span>
                       </div>
                       <div className="flex gap-2">
-                        {notesLink && (
+                        {notesAvailable && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(notesLink, '_blank', 'noopener,noreferrer')}
+                            onClick={() => handleDownloadNotes(topic)}
+                            disabled={downloadingTopicId === topic.id}
                           >
-                            <Download className="w-3 h-3 mr-1" />
-                            Notes
+                            {downloadingTopicId === topic.id ? (
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <Download className="w-3 h-3 mr-1" />
+                            )}
+                            {downloadingTopicId === topic.id ? 'Preparing...' : 'Notes'}
                           </Button>
                         )}
                         <Button
@@ -397,7 +449,9 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
   const [notesFile, setNotesFile] = useState<File | null>(null);
   const [isRemovingNotes, setIsRemovingNotes] = useState(false);
   const { showToast } = useToast();
-  const currentNotesLink = resolveBackendUrl(topic?.notesUrl ?? null);
+  const currentNotesLink = topic?.notesUrl && topic?.id
+    ? `/api/download/note/${encodeURIComponent(topic.id)}`
+    : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

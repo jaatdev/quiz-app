@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
 import { QuizService } from '../services/quiz.service';
+import { resolveAbsoluteFromUrl } from '../utils/uploads';
 
 const prisma = new PrismaClient();
 const quizService = new QuizService(prisma);
@@ -52,6 +54,55 @@ export class QuizController {
     } catch (error) {
       console.error('Error fetching subject by name:', error);
       res.status(500).json({ error: 'Failed to fetch subject' });
+    }
+  }
+
+  async downloadNotes(req: Request, res: Response) {
+    try {
+      const { topicId } = req.params;
+      const clerkUserId = (req.headers['x-clerk-user-id'] ?? '') as string;
+
+      if (!clerkUserId.trim()) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      const topic = await quizService.getTopicById(topicId);
+
+      if (!topic || !topic.notesUrl) {
+        return res.status(404).json({ error: 'Notes not found for this topic' });
+      }
+
+      const absolutePath = resolveAbsoluteFromUrl(topic.notesUrl);
+      if (!fs.existsSync(absolutePath)) {
+        return res.status(404).json({ error: 'Notes file not found' });
+      }
+
+      const baseName = topic.name || 'notes';
+      const sanitizedName = baseName
+        .replace(/[\r\n\t]/g, ' ')
+        .replace(/[^a-zA-Z0-9._-]+/g, '_')
+        .replace(/_{2,}/g, '_')
+        .replace(/^_+|_+$/g, '') || 'notes';
+      const filename = `${sanitizedName}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      const stream = fs.createReadStream(absolutePath);
+      stream.on('error', (error) => {
+        console.error('Error streaming notes file:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to stream notes file' });
+        } else {
+          res.end();
+        }
+      });
+
+      stream.pipe(res);
+    } catch (error) {
+      console.error('Error downloading notes:', error);
+      res.status(500).json({ error: 'Failed to download notes' });
     }
   }
 

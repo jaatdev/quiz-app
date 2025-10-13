@@ -8,6 +8,7 @@ const quizController = new QuizController();
 router.get('/subjects', (req, res) => quizController.getSubjects(req, res));
 router.get('/subjects/by-name/:name', (req, res) => quizController.getSubjectByName(req, res));
 router.get('/topics/:topicId', (req, res) => quizController.getTopic(req, res));
+router.get('/notes/:topicId/download', (req, res) => quizController.downloadNotes(req, res));
 
 // Quiz session routes
 router.get('/quiz/session/:topicId', (req, res) => quizController.startQuizSession(req, res));

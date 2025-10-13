@@ -11,7 +11,6 @@ import { ScoreDisplay } from '@/components/quiz/score-display';
 import { Home, RefreshCw, BookOpen, TrendingUp, Clock, Target, Award, Download, Loader2, Sparkles, FileText } from 'lucide-react';
 import { calculateGrade } from '@/lib/utils';
 import { generateProfessionalPDF } from '@/lib/pdf-generator';
-import { resolveBackendUrl } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
 
 // Simple UUID generator for browser
@@ -131,13 +130,76 @@ export default function EnhancedResultsPage() {
     }
   }, [lastResult, currentSession, router]);
 
+  const topicIdForDownload = currentSession?.topicId;
+  const topicNameForDownload = currentSession?.topicName ?? 'notes';
+  const notesDownloadUrl = currentSession?.notesUrl && topicIdForDownload
+    ? `/api/download/note/${encodeURIComponent(topicIdForDownload)}`
+    : null;
+
+  const handleDownloadNotes = useCallback(async () => {
+    setNotesDownloadError(null);
+
+    if (!notesDownloadUrl) {
+      setNotesDownloadError('Notes are not available for this topic.');
+      return;
+    }
+
+    setIsDownloadingNotes(true);
+    try {
+      const response = await fetch(notesDownloadUrl, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => null);
+        throw new Error(
+          errorText?.trim().length
+            ? errorText
+            : `Failed to download notes (${response.status}).`
+        );
+      }
+
+      const contentDisposition = response.headers.get('content-disposition') ?? '';
+      const match = /filename\*?=(?:UTF-8'')?"?([^;"\n]+)/i.exec(contentDisposition);
+      const safeTopic = topicNameForDownload
+        .replace(/[^a-z0-9._-]+/gi, '_')
+        .replace(/_{2,}/g, '_')
+        .replace(/^_+|_+$/g, '') || 'notes';
+      const fallbackName = `${safeTopic}-notes.pdf`;
+      const filename = match && match[1] ? decodeURIComponent(match[1]) : fallbackName;
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error: unknown) {
+      console.error('Notes download failed', error);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Failed to download notes. Please try again.';
+      setNotesDownloadError(message);
+      showToast({
+        variant: 'error',
+        title: 'Download failed',
+        description: 'Could not download notes PDF.',
+      });
+    } finally {
+      setIsDownloadingNotes(false);
+    }
+  }, [notesDownloadUrl, showToast, topicNameForDownload]);
+
   if (!lastResult || !currentSession) {
     return null;
   }
 
   const { grade, color } = calculateGrade(lastResult.percentage);
   const unlockedAchievements = lastResult.achievements ?? [];
-  const notesLink = resolveBackendUrl(currentSession.notesUrl ?? null);
 
   const handleRetry = () => {
     clearSession();
@@ -325,7 +387,7 @@ export default function EnhancedResultsPage() {
           </Card>
         )}
 
-        {notesLink && (
+        {notesDownloadUrl && (
           <Card className="max-w-4xl mx-auto mt-6 border-2 border-blue-200 bg-white">
             <CardHeader className="flex flex-row items-center gap-3">
               <div className="rounded-full bg-blue-100 p-2 text-blue-700">
@@ -339,45 +401,7 @@ export default function EnhancedResultsPage() {
             <CardContent>
               <Button
                 size="lg"
-                onClick={async () => {
-                  setNotesDownloadError(null);
-                  setIsDownloadingNotes(true);
-                  try {
-                    const res = await fetch(notesLink, { credentials: 'same-origin' });
-                    if (!res.ok) {
-                      throw new Error(`Failed to download notes: ${res.status} ${res.statusText}`);
-                    }
-
-                    // Try to infer filename from content-disposition header
-                    const cd = res.headers.get('content-disposition') || '';
-                    let filename = '';
-                    const match = /filename\*?=(?:UTF-8'')?"?([^;"\\n]+)"?/i.exec(cd);
-                    if (match && match[1]) {
-                      filename = decodeURIComponent(match[1]);
-                    } else {
-                      // fallback: use topic name or generic name
-                      const safeTopic = (currentSession?.topicName || 'notes').replace(/[^a-z0-9-_\.]/gi, '-');
-                      filename = `${safeTopic}-notes.pdf`;
-                    }
-
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    // Revoke object URL shortly after
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                  } catch (err: any) {
-                    console.error('Notes download failed', err);
-                    setNotesDownloadError(err?.message || 'Failed to download notes.');
-                    showToast({ variant: 'error', title: 'Download failed', description: 'Could not download notes PDF.' });
-                  } finally {
-                    setIsDownloadingNotes(false);
-                  }
-                }}
+                onClick={handleDownloadNotes}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 font-bold"
               >
                 {isDownloadingNotes ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
