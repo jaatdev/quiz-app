@@ -3,6 +3,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { ToastProvider } from "@/providers/toast-provider";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ClientShell } from '@/components/layout/ClientShell';
 
 export const metadata: Metadata = {
   title: "Quiz App - Test Your Knowledge",
@@ -25,9 +26,11 @@ export default function RootLayout({
         <body className="font-sans">
           <ToastProvider>
             <QueryProvider>
-              <div className="min-h-screen bg-gray-50">
-                {children}
-              </div>
+              <ClientShell>
+                <div className="min-h-screen bg-gray-50">
+                  {children}
+                </div>
+              </ClientShell>
             </QueryProvider>
           </ToastProvider>
         </body>

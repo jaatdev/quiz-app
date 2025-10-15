@@ -31,11 +31,12 @@ export function AnimatedHero() {
         </>
       )}
 
-      <div className="relative grid md:grid-cols-2 gap-4 px-6 py-14 md:px-12 md:py-16 items-center">
+  <div className="relative grid md:grid-cols-2 gap-6 px-6 py-14 md:px-12 md:py-16 items-center">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="text-center md:text-center"
         >
           <span className="inline-flex items-center rounded-full border bg-white/80 px-3 py-1 text-xs font-medium tracking-wide text-gray-700 shadow-sm backdrop-blur dark:bg-gray-800/70 dark:text-gray-200">
             New • PYQ tagging + Structured admin + Bulk topics
@@ -47,7 +48,7 @@ export function AnimatedHero() {
             Smart randomization, PYQ insights, and powerful analytics — built for speed and delight.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button className="h-11 px-6" onClick={() => router.push('/stats')}>
               View Your Stats
             </Button>

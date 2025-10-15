@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { quizService } from '@/services/quiz.service';
@@ -37,10 +37,37 @@ export default function HomePage() {
     staleTime: 60_000,
   });
 
+  // Search state
+  const [search, setSearch] = React.useState('');
+
+  // Filter subjects and topics by search
+  const filteredSubjects = useMemo(() => {
+    if (!search.trim()) return subjects ?? [];
+    const q = search.trim().toLowerCase();
+    return (subjects ?? []).map((subject) => {
+      // Check if subject matches
+      const subjectMatch = subject.name.toLowerCase().includes(q);
+      // Filter topics
+      const filteredTopics = subject.topics.filter((topic) =>
+        topic.name.toLowerCase().includes(q)
+      );
+      if (subjectMatch || filteredTopics.length) {
+        return {
+          ...subject,
+          topics: filteredTopics.length || subjectMatch ? filteredTopics : subject.topics,
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [subjects, search]);
+
+  // Totals for filtered subjects
   const totals = useMemo(() => {
+    const validSubjects = (filteredSubjects ?? []).filter(Boolean);
     return (
-      subjects?.reduce(
+      validSubjects.reduce(
         (acc, subject) => {
+          if (!subject) return acc;
           acc.subjects += 1;
           acc.topics += subject.topics.length;
           acc.questions += subject.topics.reduce(
@@ -52,7 +79,7 @@ export default function HomePage() {
         { subjects: 0, topics: 0, questions: 0 },
       ) || { subjects: 0, topics: 0, questions: 0 }
     );
-  }, [subjects]);
+  }, [filteredSubjects]);
 
   if (isLoading) {
     return (
@@ -74,6 +101,32 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50/50 dark:from-gray-950 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8 md:py-10">
         <AnimatedHero />
+
+        {/* Search bar */}
+        <div className="mt-6 flex justify-center">
+          <label htmlFor="subject-search" className="sr-only">Search subjects or topics</label>
+          <input
+            id="subject-search"
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search subjects or topics..."
+            className="w-full max-w-xl rounded-lg border px-4 py-2 text-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
+            autoComplete="off"
+            aria-label="Search subjects or topics"
+          />
+          {search && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              className="ml-2 rounded-full bg-gray-200 px-3 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setSearch('')}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         <StatsBar
           subjectsCount={totals.subjects}
           topicsCount={totals.topics}
@@ -83,7 +136,7 @@ export default function HomePage() {
         {/* Featured topics carousel below hero/stats */}
         <div className="mt-8">
           <FeaturedTopicsCarousel
-            subjects={subjects ?? []}
+            subjects={filteredSubjects ?? []}
             onOpenTopic={(id, name, subject) =>
               router.push(`/quiz/${id}?topic=${encodeURIComponent(name)}&subject=${encodeURIComponent(subject)}`)
             }
@@ -97,88 +150,90 @@ export default function HomePage() {
         <div className="mt-10">
           <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-gray-100">Browse Subjects</h2>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {subjects?.map((subject, index) => (
-              <motion.div
-                key={subject.id}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.35, delay: index * 0.05 }}
-              >
-                <SpotlightCard>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {subject.name}
-                      </h3>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        {subject.topics.length} topic
-                        {subject.topics.length !== 1 ? 's' : ''} •
-                        {' '}
-                        {subject.topics.reduce(
-                          (topicAcc: number, topic: Topic) =>
-                            topicAcc + (topic._count?.questions || 0),
-                          0,
-                        )}{' '}
-                        questions
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/subject/${encodeURIComponent(subject.name)}`)
-                      }
-                    >
-                      View all
-                    </Button>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {subject.topics.slice(0, 2).map((topic) => (
-                      <div
-                        key={topic.id}
-                        className="flex items-center justify-between rounded-lg border bg-gray-50 px-3 py-2 dark:bg-gray-800/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {topic.name}
-                          </span>
-                          <span className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
-                            <Target className="h-3 w-3" />
-                            {topic._count?.questions || 0}
-                          </span>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            router.push(
-                              `/quiz/${topic.id}?topic=${encodeURIComponent(
-                                topic.name,
-                              )}&subject=${encodeURIComponent(subject.name)}`,
-                            )
-                          }
-                        >
-                          Start
-                        </Button>
+            {filteredSubjects?.map((subject, index) => (
+              subject ? (
+                <motion.div
+                  key={subject.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ duration: 0.35, delay: index * 0.05 }}
+                >
+                  <SpotlightCard>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {subject.name}
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {subject.topics.length} topic
+                          {subject.topics.length !== 1 ? 's' : ''} •
+                          {' '}
+                          {subject.topics.reduce(
+                            (topicAcc: number, topic: Topic) =>
+                              topicAcc + (topic._count?.questions || 0),
+                            0,
+                          )}{' '}
+                          questions
+                        </p>
                       </div>
-                    ))}
-
-                    {subject.topics.length > 2 && (
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
                         onClick={() =>
                           router.push(`/subject/${encodeURIComponent(subject.name)}`)
                         }
                       >
-                        Show all {subject.topics.length} topics →
+                        View all
                       </Button>
-                    )}
-                  </div>
-                </SpotlightCard>
-              </motion.div>
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      {subject.topics.slice(0, 2).map((topic) => (
+                        <div
+                          key={topic.id}
+                          className="flex items-center justify-between rounded-lg border bg-gray-50 px-3 py-2 dark:bg-gray-800/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {topic.name}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
+                              <Target className="h-3 w-3" />
+                              {topic._count?.questions || 0}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/quiz/${topic.id}?topic=${encodeURIComponent(
+                                  topic.name,
+                                )}&subject=${encodeURIComponent(subject.name)}`,
+                              )
+                            }
+                          >
+                            Start
+                          </Button>
+                        </div>
+                      ))}
+
+                      {subject.topics.length > 2 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                          onClick={() =>
+                            router.push(`/subject/${encodeURIComponent(subject.name)}`)
+                          }
+                        >
+                          Show all {subject.topics.length} topics →
+                        </Button>
+                      )}
+                    </div>
+                  </SpotlightCard>
+                </motion.div>
+              ) : null
             ))}
           </div>
         </div>
