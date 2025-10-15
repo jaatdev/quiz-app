@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { quizService } from '@/services/quiz.service';
 import { AnimatedHero } from '@/components/home/AnimatedHero';
 import { StatsBar } from '@/components/home/StatsBar';
+import { FeaturedTopicsCarousel } from '@/components/home/FeaturedTopicsCarousel';
 import { SpotlightCard } from '@/components/home/SpotlightCard';
 import { LogoMarquee } from '@/components/home/LogoMarquee';
 import { Testimonials } from '@/components/home/Testimonials';
@@ -78,6 +79,16 @@ export default function HomePage() {
           topicsCount={totals.topics}
           questionsCount={totals.questions}
         />
+
+        {/* Featured topics carousel below hero/stats */}
+        <div className="mt-8">
+          <FeaturedTopicsCarousel
+            subjects={subjects ?? []}
+            onOpenTopic={(id, name, subject) =>
+              router.push(`/quiz/${id}?topic=${encodeURIComponent(name)}&subject=${encodeURIComponent(subject)}`)
+            }
+          />
+        </div>
 
         <div className="mt-8">
           <LogoMarquee />

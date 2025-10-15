@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, type ChangeEvent } from 'react';
+import { fireConfettiBurst } from '@/lib/confetti';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useUser } from '@clerk/nextjs';
@@ -94,6 +95,18 @@ export default function QuizPage() {
   const [durationError, setDurationError] = useState<string | null>(null);
 
   const hasStarted = selectedCount !== null;
+
+  // Fire confetti on first quiz start (per browser)
+  useEffect(() => {
+    try {
+      const key = 'confettiFirstQuizDone';
+      const already = localStorage.getItem(key);
+      if (!already && hasStarted) {
+        fireConfettiBurst();
+        localStorage.setItem(key, '1');
+      }
+    } catch {}
+  }, [hasStarted]);
 
   const quickStartOptions = [5, 10, 15, 20];
 
