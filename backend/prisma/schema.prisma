@@ -43,6 +43,7 @@ model Topic {
   subjectId    String
   subject      Subject       @relation(fields: [subjectId], references: [id])
   questions    Question[]
+  subTopics    SubTopic[]
   quizAttempts QuizAttempt[]
   notesUrl     String?
   
@@ -52,19 +53,41 @@ model Topic {
   @@unique([subjectId, name])
 }
 
+model SubTopic {
+  id        String     @id @default(cuid())
+  name      String
+  topicId   String
+  topic     Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([topicId, name])
+  @@index([topicId])
+}
+
 model Question {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   text            String
-  options         Json     // Will store array of {id: string, text: string}
+  options         Json      // Will store array of {id: string, text: string}
   correctAnswerId String
   explanation     String?
-  difficulty      String   @default("medium") // easy, medium, hard
+  difficulty      String    @default("medium") // easy, medium, hard
   topicId         String
-  topic           Topic    @relation(fields: [topicId], references: [id])
-  pyq             String?  // Previous-year question exam label, null if not a PYQ
+  topic           Topic     @relation(fields: [topicId], references: [id])
+  
+  // Optional sub-topic link (for backwards compatibility)
+  subTopicId      String?
+  subTopic        SubTopic? @relation(fields: [subTopicId], references: [id], onDelete: SetNull)
+  
+  pyq             String?   // Previous-year question exam label, null if not a PYQ
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@index([topicId])
+  @@index([subTopicId])
 }
 
 // QuizAttempt model - tracks user's quiz history in database

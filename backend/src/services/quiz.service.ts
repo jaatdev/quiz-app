@@ -32,11 +32,47 @@ export class QuizService {
             id: true,
             name: true,
             _count: { select: { questions: true } },
+            subTopics: {
+              orderBy: { name: 'asc' },
+              include: { _count: { select: { questions: true } } }
+            }
           },
           orderBy: { name: 'asc' },
         },
       },
     });
+  }
+
+  // Get subtopics metadata by IDs (public endpoint)
+  async getSubTopicsByIds(ids: string[]) {
+    if (!ids.length) return [];
+    return this.prisma.subTopic.findMany({
+      where: { id: { in: ids } },
+      include: {
+        topic: {
+          include: { subject: true }
+        }
+      }
+    });
+  }
+
+  // Get quiz session by multiple subTopicIds
+  async getQuizBySubTopics(subTopicIds: string[], count = 10) {
+    const questions = await this.prisma.question.findMany({
+      where: { subTopicId: { in: subTopicIds } },
+      select: { id: true, text: true, options: true, difficulty: true, pyq: true }
+    });
+    const selected = this.shuffleArray(questions).slice(0, Math.min(count, questions.length));
+    
+    return {
+      subTopicIds,
+      questions: selected.map(q => ({
+        id: q.id,
+        text: q.text,
+        options: this.shuffleArray(q.options as unknown as Option[]),
+        pyq: q.pyq ?? null,
+      })),
+    };
   }
 
   // Get a single topic with subject info

@@ -10,7 +10,11 @@ router.get('/subjects/by-name/:name', (req, res) => quizController.getSubjectByN
 router.get('/topics/:topicId', (req, res) => quizController.getTopic(req, res));
 router.get('/notes/:topicId/download', (req, res) => quizController.downloadNotes(req, res));
 
+// SubTopic routes
+router.get('/subtopics', (req, res) => quizController.getSubTopicsByIds(req, res));
+
 // Quiz session routes
+router.get('/quiz/session', (req, res) => quizController.startCustomQuizSession(req, res));
 router.get('/quiz/session/:topicId', (req, res) => quizController.startQuizSession(req, res));
 router.post('/quiz/submit', (req, res) => quizController.submitQuiz(req, res));
 router.post('/quiz/review', (req, res) => quizController.getReviewQuestions(req, res));

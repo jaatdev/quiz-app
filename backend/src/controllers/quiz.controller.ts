@@ -165,6 +165,41 @@ export class QuizController {
     }
   }
 
+  // GET /api/quiz/subtopics (public metadata endpoint)
+  async getSubTopicsByIds(req: Request, res: Response) {
+    try {
+      const raw = String(req.query.ids || '');
+      const ids = raw.split(',').map(s => s.trim()).filter(Boolean);
+      if (!ids.length) return res.json([]);
+      const subs = await quizService.getSubTopicsByIds(ids);
+      res.json(subs);
+    } catch (e) {
+      console.error('getSubTopicsByIds error:', e);
+      res.status(500).json({ error: 'Failed to fetch sub-topics' });
+    }
+  }
+
+  // GET /api/quiz/session (with subTopicIds support)
+  async startCustomQuizSession(req: Request, res: Response) {
+    try {
+      const subTopicIds = String(req.query.subTopicIds || '').split(',').map(s => s.trim()).filter(Boolean);
+      const count = parseInt(String(req.query.count || '10'));
+      
+      if (subTopicIds.length) {
+        const session = await quizService.getQuizBySubTopics(subTopicIds, isNaN(count) ? 10 : count);
+        if (session.questions.length === 0) {
+          return res.status(404).json({ error: 'No questions for these sub-topics' });
+        }
+        return res.json(session);
+      }
+      
+      return res.status(400).json({ error: 'Provide subTopicIds' });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to start quiz' });
+    }
+  }
+
   // POST /api/quiz/submit
   async submitQuiz(req: Request, res: Response) {
     try {

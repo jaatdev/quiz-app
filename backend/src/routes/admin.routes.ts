@@ -482,7 +482,7 @@ router.get('/questions', async (req: Request, res: Response) => {
 
 router.post('/questions', async (req: Request, res: Response) => {
   try {
-    const { text, options, correctAnswerId, explanation, difficulty, topicId, pyq } = req.body;
+    const { text, options, correctAnswerId, explanation, difficulty, topicId, subTopicId, pyq } = req.body;
 
     const sanitizedExplanation = typeof explanation === 'string' ? explanation.trim() : null;
     const normalizedDifficulty = typeof difficulty === 'string' && difficulty.trim()
@@ -497,6 +497,7 @@ router.post('/questions', async (req: Request, res: Response) => {
         explanation: sanitizedExplanation && sanitizedExplanation.length > 0 ? sanitizedExplanation : null,
         difficulty: normalizedDifficulty,
         topicId,
+        subTopicId: subTopicId || null,
         pyq: normalizePyq(pyq),
       },
       include: {
@@ -513,7 +514,7 @@ router.post('/questions', async (req: Request, res: Response) => {
 router.put('/questions/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { text, options, correctAnswerId, explanation, difficulty, topicId, pyq } = req.body;
+    const { text, options, correctAnswerId, explanation, difficulty, topicId, subTopicId, pyq } = req.body;
 
     const sanitizedExplanation = typeof explanation === 'string' ? explanation.trim() : null;
     const normalizedDifficulty = typeof difficulty === 'string' && difficulty.trim()
@@ -529,6 +530,7 @@ router.put('/questions/:id', async (req: Request, res: Response) => {
         explanation: sanitizedExplanation !== null && sanitizedExplanation.length === 0 ? null : sanitizedExplanation ?? undefined,
         difficulty: normalizedDifficulty,
         topicId,
+        subTopicId: subTopicId !== undefined ? (subTopicId || null) : undefined,
         pyq: normalizePyq(pyq),
       },
       include: {
@@ -724,6 +726,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
 
     await prisma.$transaction(async (tx) => {
       let overrideTopicId: string | null = null;
+      let defaultSubTopicIdResolved: string | null = null;
 
       if (mode === 'override') {
         let subjectId: string | null = null;
@@ -761,6 +764,23 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
         } else {
           throw new ImportValidationError('Provide defaultTopicId or defaultTopicName in override mode');
         }
+
+        // Handle default subTopic for override mode
+        const defaultSubTopicId = req.body?.defaultSubTopicId;
+        const defaultSubTopicName = req.body?.defaultSubTopicName;
+
+        if (defaultSubTopicId) {
+          const st = await tx.subTopic.findUnique({ where: { id: defaultSubTopicId } });
+          if (!st) throw new ImportValidationError('defaultSubTopicId not found');
+          defaultSubTopicIdResolved = st.id;
+        } else if (defaultSubTopicName && String(defaultSubTopicName).trim()) {
+          const st = await tx.subTopic.upsert({
+            where: { topicId_name: { topicId: overrideTopicId!, name: String(defaultSubTopicName).trim() } },
+            update: {},
+            create: { name: String(defaultSubTopicName).trim(), topicId: overrideTopicId! }
+          });
+          defaultSubTopicIdResolved = st.id;
+        }
       }
 
       for (const question of questions) {
@@ -796,6 +816,26 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
           throw new ImportValidationError(`Question "${text.slice(0, 50)}" could not resolve a topic. Provide topicId or subjectName + topicName.`);
         }
 
+        // Resolve subTopicId
+        let subTopicId: string | null = null;
+
+        if (mode === 'override') {
+          subTopicId = defaultSubTopicIdResolved;
+        } else {
+          // Per-row subtopic resolution
+          if (question.subTopicId && typeof question.subTopicId === 'string' && question.subTopicId.length >= 8) {
+            const st = await tx.subTopic.findUnique({ where: { id: question.subTopicId } });
+            if (st) subTopicId = st.id;
+          } else if (question.subTopicName) {
+            const st = await tx.subTopic.upsert({
+              where: { topicId_name: { topicId: topicId!, name: String(question.subTopicName).trim() } },
+              update: {},
+              create: { name: String(question.subTopicName).trim(), topicId: topicId! }
+            });
+            subTopicId = st.id;
+          }
+        }
+
         const explanation = typeof question?.explanation === 'string' ? question.explanation.trim() : null;
         const difficulty = normalizeDifficulty(question?.difficulty);
         const pyqLabel = normalizePyq(question?.pyq);
@@ -808,6 +848,7 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
             explanation,
             difficulty,
             topicId: topicId!,
+            subTopicId: subTopicId,
             pyq: pyqLabel,
           }
         });
@@ -886,6 +927,205 @@ router.get('/topics/:id/questions', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Failed to fetch questions for topic:', error);
     res.status(500).json({ error: 'Failed to fetch questions' });
+  }
+});
+
+// Topic metadata
+router.get('/topics/:id', async (req: Request, res: Response) => {
+  try {
+    const topic = await prisma.topic.findUnique({
+      where: { id: req.params.id },
+      include: { subject: true }
+    });
+    if (!topic) return res.status(404).json({ error: 'Topic not found' });
+    res.json(topic);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch topic' });
+  }
+});
+
+// SubTopic CRUD routes
+router.get('/topics/:id/subtopics', async (req: Request, res: Response) => {
+  try {
+    const topicId = req.params.id;
+    const page = Math.max(1, parseInt(String(req.query.page || '1')));
+    const pageSize = Math.max(1, Math.min(100, parseInt(String(req.query.pageSize || '50'))));
+    const q = String(req.query.q || '').trim();
+
+    const where: Prisma.SubTopicWhereInput = { topicId };
+    if (q) {
+      where.name = { contains: q, mode: 'insensitive' };
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.subTopic.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { questions: true } } }
+      }),
+      prisma.subTopic.count({ where })
+    ]);
+
+    res.json({
+      items,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize))
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch sub-topics' });
+  }
+});
+
+router.post('/subtopics', async (req: Request, res: Response) => {
+  try {
+    const name = String(req.body?.name || '').trim();
+    const topicId = String(req.body?.topicId || '').trim();
+    if (!name || !topicId) {
+      return res.status(400).json({ error: 'name and topicId are required' });
+    }
+    const sub = await prisma.subTopic.create({ data: { name, topicId } });
+    res.json(sub);
+  } catch (e: any) {
+    if (e?.code === 'P2002') {
+      return res.status(409).json({ error: 'Sub-topic already exists in this topic' });
+    }
+    res.status(500).json({ error: 'Failed to create sub-topic' });
+  }
+});
+
+router.put('/subtopics/:id', async (req: Request, res: Response) => {
+  try {
+    const name = String(req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const sub = await prisma.subTopic.update({
+      where: { id: req.params.id },
+      data: { name }
+    });
+    res.json(sub);
+  } catch (e: any) {
+    if (e?.code === 'P2002') {
+      return res.status(409).json({ error: 'Duplicate sub-topic in this topic' });
+    }
+    res.status(500).json({ error: 'Failed to update sub-topic' });
+  }
+});
+
+router.delete('/subtopics/:id', async (req: Request, res: Response) => {
+  try {
+    await prisma.subTopic.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete sub-topic' });
+  }
+});
+
+router.post('/topics/:id/subtopics/bulk', async (req: Request, res: Response) => {
+  try {
+    const topicId = req.params.id;
+    let { names } = req.body as { names: string[] };
+    if (!Array.isArray(names) || names.length === 0) {
+      return res.status(400).json({ error: 'names must be a non-empty array' });
+    }
+    names = Array.from(new Set(names.map(s => String(s || '').trim()).filter(Boolean)));
+    const existing = await prisma.subTopic.findMany({
+      where: { topicId, name: { in: names } },
+      select: { name: true }
+    });
+    const exists = new Set(existing.map(e => e.name));
+    const toCreate = names.filter(n => !exists.has(n));
+    if (toCreate.length) {
+      await prisma.subTopic.createMany({
+        data: toCreate.map(n => ({ name: n, topicId })),
+        skipDuplicates: true
+      });
+    }
+    res.json({
+      success: true,
+      created: toCreate.length,
+      duplicates: names.filter(n => exists.has(n))
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to bulk create sub-topics' });
+  }
+});
+
+// Bulk subjects by names
+router.post('/subjects/bulk', async (req: Request, res: Response) => {
+  try {
+    let { names } = req.body as { names: string[] };
+    if (!Array.isArray(names) || !names.length) {
+      return res.status(400).json({ error: 'names must be a non-empty array' });
+    }
+    names = Array.from(new Set(names.map(n => String(n || '').trim()).filter(Boolean)));
+    const existing = await prisma.subject.findMany({
+      where: { name: { in: names } },
+      select: { name: true }
+    });
+    const exists = new Set(existing.map(s => s.name));
+    const toCreate = names.filter(n => !exists.has(n));
+    if (toCreate.length) {
+      await prisma.subject.createMany({
+        data: toCreate.map(n => ({ name: n })),
+        skipDuplicates: true
+      });
+    }
+    res.json({
+      success: true,
+      created: toCreate.length,
+      duplicates: names.filter(n => exists.has(n))
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to bulk create subjects' });
+  }
+});
+
+// Bulk topics by subjectName + topicName
+router.post('/topics/bulk', async (req: Request, res: Response) => {
+  try {
+    let { rows } = req.body as { rows: Array<{ subjectName: string; topicName: string }> };
+    if (!Array.isArray(rows) || !rows.length) {
+      return res.status(400).json({ error: 'rows must be non-empty' });
+    }
+
+    // Normalize & unique pairs
+    const pairs = Array.from(
+      new Set(rows.map(r => `${String(r.subjectName || '').trim()}::${String(r.topicName || '').trim()}`))
+    ).map(p => {
+      const [s, t] = p.split('::');
+      return { subjectName: s, topicName: t };
+    }).filter(r => r.subjectName && r.topicName);
+
+    let created = 0;
+    const duplicates: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      for (const r of pairs) {
+        const subj = await tx.subject.upsert({
+          where: { name: r.subjectName },
+          update: {},
+          create: { name: r.subjectName }
+        });
+        try {
+          await tx.topic.create({ data: { name: r.topicName, subjectId: subj.id } });
+          created++;
+        } catch (e: any) {
+          if (e?.code === 'P2002') {
+            duplicates.push(`${r.subjectName}::${r.topicName}`);
+          } else {
+            throw e;
+          }
+        }
+      }
+    });
+
+    res.json({ success: true, created, duplicates });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to bulk create topics' });
   }
 });
 
