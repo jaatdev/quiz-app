@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
-import { Plus, Edit, Trash2, BookOpen, FileText, X, Download, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, FileText, X, Download, Loader2, Upload } from 'lucide-react';
 import { API_URL } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
 
@@ -37,6 +37,8 @@ export default function SubjectManagementPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [downloadingTopicId, setDownloadingTopicId] = useState<string | null>(null);
   const { showToast } = useToast();
+  const subjectsFileInputRef = useRef<HTMLInputElement>(null);
+  const topicsFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSubjects();
@@ -167,6 +169,163 @@ export default function SubjectManagementPage() {
     }
   };
 
+  // CSV Export for Subjects
+  const handleExportSubjects = () => {
+    try {
+      const csvContent = [
+        ['Subject Name'].join(','),
+        ...subjects.map(s => [s.name].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `subjects_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast({ variant: 'success', title: 'Subjects exported successfully.' });
+    } catch (error) {
+      console.error('Failed to export subjects:', error);
+      showToast({ variant: 'error', title: 'Failed to export subjects.' });
+    }
+  };
+
+  // CSV Import for Subjects
+  const handleImportSubjects = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        
+        // Skip header if present
+        const start = lines[0]?.toLowerCase().includes('subject') ? 1 : 0;
+        const names = lines.slice(start).map(l => l.replace(/^"|"$/g, '').trim()).filter(Boolean);
+
+        if (names.length === 0) {
+          showToast({ variant: 'error', title: 'No valid subjects found in CSV.' });
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/admin/subjects/bulk`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-clerk-user-id': user!.id,
+          },
+          body: JSON.stringify({ names }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          await fetchSubjects();
+          showToast({ 
+            variant: 'success', 
+            title: `Imported ${data.created} subjects. ${data.duplicates?.length || 0} duplicates skipped.` 
+          });
+        } else {
+          const data = await response.json();
+          showToast({ variant: 'error', title: data?.error || 'Failed to import subjects.' });
+        }
+      } catch (error) {
+        console.error('Failed to import subjects:', error);
+        showToast({ variant: 'error', title: 'Failed to import subjects.' });
+      } finally {
+        // Reset file input
+        if (subjectsFileInputRef.current) {
+          subjectsFileInputRef.current.value = '';
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // CSV Export for Topics
+  const handleExportTopics = () => {
+    try {
+      const rows: string[][] = [['Subject Name', 'Topic Name']];
+      
+      subjects.forEach(subject => {
+        subject.topics.forEach(topic => {
+          rows.push([subject.name, topic.name]);
+        });
+      });
+
+      const csvContent = rows.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `topics_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast({ variant: 'success', title: 'Topics exported successfully.' });
+    } catch (error) {
+      console.error('Failed to export topics:', error);
+      showToast({ variant: 'error', title: 'Failed to export topics.' });
+    }
+  };
+
+  // CSV Import for Topics
+  const handleImportTopics = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        
+        // Skip header if present
+        const start = lines[0]?.toLowerCase().includes('subject') ? 1 : 0;
+        const rows = lines.slice(start).map(line => {
+          const [subjectName, topicName] = line.split(',').map(s => s.replace(/^"|"$/g, '').trim());
+          return { subjectName, topicName };
+        }).filter(r => r.subjectName && r.topicName);
+
+        if (rows.length === 0) {
+          showToast({ variant: 'error', title: 'No valid topics found in CSV.' });
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/admin/topics/bulk`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-clerk-user-id': user!.id,
+          },
+          body: JSON.stringify({ rows }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          await fetchSubjects();
+          showToast({ 
+            variant: 'success', 
+            title: `Imported ${data.created} topics. ${data.duplicates?.length || 0} duplicates skipped.` 
+          });
+        } else {
+          const data = await response.json();
+          showToast({ variant: 'error', title: data?.error || 'Failed to import topics.' });
+        }
+      } catch (error) {
+        console.error('Failed to import topics:', error);
+        showToast({ variant: 'error', title: 'Failed to import topics.' });
+      } finally {
+        // Reset file input
+        if (topicsFileInputRef.current) {
+          topicsFileInputRef.current.value = '';
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -180,10 +339,46 @@ export default function SubjectManagementPage() {
 
       {/* Add Subject Button */}
       <div className="mb-6">
-        <Button onClick={() => setShowSubjectForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Subject
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => setShowSubjectForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Subject
+          </Button>
+          
+          {/* Subjects CSV Actions */}
+          <Button variant="outline" onClick={handleExportSubjects}>
+            <Download className="w-4 h-4 mr-2" />
+            Export Subjects CSV
+          </Button>
+          <Button variant="outline" onClick={() => subjectsFileInputRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import Subjects CSV
+          </Button>
+          <input
+            ref={subjectsFileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleImportSubjects}
+            className="hidden"
+          />
+          
+          {/* Topics CSV Actions */}
+          <Button variant="outline" onClick={handleExportTopics}>
+            <Download className="w-4 h-4 mr-2" />
+            Export Topics CSV
+          </Button>
+          <Button variant="outline" onClick={() => topicsFileInputRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import Topics CSV
+          </Button>
+          <input
+            ref={topicsFileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleImportTopics}
+            className="hidden"
+          />
+        </div>
       </div>
 
       {/* Subjects Grid */}

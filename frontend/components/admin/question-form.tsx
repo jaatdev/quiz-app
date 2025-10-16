@@ -34,6 +34,12 @@ interface Topic {
   };
 }
 
+interface SubTopic {
+  id: string;
+  name: string;
+  topicId: string;
+}
+
 const initialOptions = [
   { id: 'a', text: '' },
   { id: 'b', text: '' },
@@ -48,6 +54,7 @@ const createInitialFormData = (topicId = '') => ({
   explanation: '',
   difficulty: 'medium',
   topicId,
+  subTopicId: '',
   pyq: '',
 });
 
@@ -55,12 +62,21 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
   const { user } = useUser();
   const [formData, setFormData] = useState(createInitialFormData(defaultTopicId));
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [subTopics, setSubTopics] = useState<SubTopic[]>([]);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchTopics();
   }, [user]);
+
+  useEffect(() => {
+    if (formData.topicId) {
+      fetchSubTopics(formData.topicId);
+    } else {
+      setSubTopics([]);
+    }
+  }, [formData.topicId, user]);
 
   useEffect(() => {
     if (question) {
@@ -71,6 +87,7 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
         explanation: question.explanation || '',
         difficulty: question.difficulty,
         topicId: question.topic.id,
+        subTopicId: (question as any).subTopicId || '',
         pyq: question.pyq ?? '',
       });
       return;
@@ -97,6 +114,25 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
     }
   };
 
+  const fetchSubTopics = async (topicId: string) => {
+    if (!user || !topicId) return;
+
+    try {
+      const response = await fetch(`${API_URL}/admin/topics/${topicId}/subtopics`, {
+        headers: {
+          'x-clerk-user-id': user.id,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSubTopics(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch subtopics:', error);
+      setSubTopics([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -116,6 +152,7 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
         },
         body: JSON.stringify({
           ...formData,
+          subTopicId: formData.subTopicId || null,
           pyq: formData.pyq.trim() || null,
         }),
       });
@@ -164,7 +201,7 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
               </label>
               <select
                 value={formData.topicId}
-                onChange={(e) => setFormData({ ...formData, topicId: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, topicId: e.target.value, subTopicId: '' })}
                 className="w-full p-2 border rounded-lg"
                 required
               >
@@ -176,6 +213,26 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
                 ))}
               </select>
             </div>
+
+            {subTopics.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sub-Topic (Optional)
+                </label>
+                <select
+                  value={formData.subTopicId}
+                  onChange={(e) => setFormData({ ...formData, subTopicId: e.target.value })}
+                  className="w-full p-2 border rounded-lg"
+                >
+                  <option value="">Select a sub-topic (optional)</option>
+                  {subTopics.map((subTopic) => (
+                    <option key={subTopic.id} value={subTopic.id}>
+                      {subTopic.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

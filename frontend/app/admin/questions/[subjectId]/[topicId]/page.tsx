@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { Plus, Edit, Trash2, Search, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ArrowLeft, ChevronLeft, ChevronRight, FileJson, X } from 'lucide-react';
 import {
   Card,
   CardHeader,
@@ -108,6 +108,10 @@ export default function TopicQuestionManager() {
     pyq?: string | null;
     topic: { id: string };
   } | null>(null);
+
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkJsonInput, setBulkJsonInput] = useState('');
+  const [bulkImporting, setBulkImporting] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -324,6 +328,71 @@ export default function TopicQuestionManager() {
     setReloadToken((value) => value + 1);
   };
 
+  const handleBulkImport = async () => {
+    if (!user) return;
+
+    try {
+      const questions = JSON.parse(bulkJsonInput);
+      if (!Array.isArray(questions)) {
+        throw new Error('JSON must be an array of questions');
+      }
+
+      setBulkImporting(true);
+
+      const response = await fetch(`${API_URL}/admin/topics/${topicId}/questions/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-clerk-user-id': user.id,
+        },
+        body: JSON.stringify({ questions }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to import questions');
+      }
+
+      const result = await response.json();
+      showToast({
+        variant: 'success',
+        title: `Successfully imported ${result.created || 0} questions. ${result.skipped || 0} skipped.`,
+      });
+
+      setShowBulkImport(false);
+      setBulkJsonInput('');
+      refreshQuestions();
+    } catch (error) {
+      console.error('Bulk import failed:', error);
+      showToast({
+        variant: 'error',
+        title: error instanceof Error ? error.message : 'Failed to import questions',
+      });
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
+  const generateBulkTemplate = () => {
+    const template = [
+      {
+        text: "What is 2 + 2?",
+        options: [
+          { id: "a", text: "3" },
+          { id: "b", text: "4" },
+          { id: "c", text: "5" },
+          { id: "d", text: "6" }
+        ],
+        correctAnswerId: "b",
+        explanation: "2 + 2 equals 4",
+        difficulty: "easy",
+        pyq: "2024",
+        subTopicId: "optional-subtopic-id-here"
+      }
+    ];
+    return JSON.stringify(template, null, 2);
+  };
+
   if (subjectLoading || (questionsLoading && !questionsResponse)) {
     return <Loading />;
   }
@@ -373,10 +442,16 @@ export default function TopicQuestionManager() {
             Manage questions for this topic. Showing {questions.length} of {totalQuestions} questions.
           </p>
         </div>
-        <Button onClick={openCreateForm} className="w-full md:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Add question
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={openCreateForm} className="w-full md:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Add question
+          </Button>
+          <Button onClick={() => setShowBulkImport(true)} variant="outline" className="w-full md:w-auto">
+            <FileJson className="mr-2 h-4 w-4" />
+            Bulk Import JSON
+          </Button>
+        </div>
       </div>
 
       <form
@@ -524,6 +599,70 @@ export default function TopicQuestionManager() {
             refreshQuestions();
           }}
         />
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="relative">
+              <button
+                onClick={() => setShowBulkImport(false)}
+                className="absolute right-4 top-4 p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <CardTitle>Bulk Import Questions (JSON)</CardTitle>
+              <CardDescription>
+                Paste your JSON array of questions below. Each question can include an optional subTopicId.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    JSON Questions
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkJsonInput(generateBulkTemplate())}
+                  >
+                    Load Template
+                  </Button>
+                </div>
+                <textarea
+                  value={bulkJsonInput}
+                  onChange={(e) => setBulkJsonInput(e.target.value)}
+                  className="w-full p-3 border rounded-lg font-mono text-sm"
+                  rows={15}
+                  placeholder='Paste JSON here or click "Load Template"'
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Format: Array of objects with <code className="bg-gray-100 px-1 rounded">text</code>, <code className="bg-gray-100 px-1 rounded">options</code>, <code className="bg-gray-100 px-1 rounded">correctAnswerId</code>, <code className="bg-gray-100 px-1 rounded">difficulty</code>, and optional <code className="bg-gray-100 px-1 rounded">explanation</code>, <code className="bg-gray-100 px-1 rounded">pyq</code>, and <code className="bg-gray-100 px-1 rounded">subTopicId</code>.
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowBulkImport(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleBulkImport}
+                  disabled={bulkImporting || !bulkJsonInput.trim()}
+                >
+                  {bulkImporting ? 'Importing...' : 'Import Questions'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

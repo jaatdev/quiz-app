@@ -6,7 +6,7 @@ import { X, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SubTopic = { id: string; name: string };
-type Topic = { id: string; name: string; subTopics: SubTopic[] };
+type Topic = { id: string; name: string; subTopics?: SubTopic[] };
 type SubjectData = { id: string; name: string; topics: Topic[] };
 
 export function CustomQuizDrawer({
@@ -25,7 +25,7 @@ export function CustomQuizDrawer({
   const [count, setCount] = useState<number>(10);
 
   const allSubTopicIds = useMemo(
-    () => subject.topics.flatMap((t) => t.subTopics.map((st) => st.id)),
+    () => subject.topics.flatMap((t) => (t.subTopics || []).map((st) => st.id)),
     [subject]
   );
 
@@ -42,7 +42,7 @@ export function CustomQuizDrawer({
   };
 
   const toggleTopicAll = (topic: Topic) => {
-    const ids = topic.subTopics.map((st) => st.id);
+    const ids = (topic.subTopics || []).map((st) => st.id);
     const s = new Set(selected);
     const every = ids.every((id) => s.has(id));
     if (every) ids.forEach((id) => s.delete(id));
@@ -113,9 +113,13 @@ export function CustomQuizDrawer({
         {/* Topics & sub-topics */}
         <div className="max-h-[55vh] overflow-auto rounded-lg border p-3">
           {subject.topics.map((t) => {
-            const tIds = t.subTopics.map((st) => st.id);
+            const tIds = (t.subTopics || []).map((st) => st.id);
             const topicAllSelected = tIds.length > 0 && tIds.every((id) => selected.has(id));
             const isOpen = expanded.has(t.id);
+            const hasSubTopics = t.subTopics && t.subTopics.length > 0;
+            
+            if (!hasSubTopics) return null;
+            
             return (
               <div key={t.id} className="mb-3 rounded-lg border p-3 dark:border-gray-700">
                 <div className="flex items-center justify-between">
@@ -131,7 +135,7 @@ export function CustomQuizDrawer({
                 </div>
                 {isOpen && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {t.subTopics.map((st) => {
+                    {(t.subTopics || []).map((st) => {
                       const active = selected.has(st.id);
                       return (
                         <button

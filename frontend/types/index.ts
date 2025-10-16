@@ -6,17 +6,25 @@ export interface Subject {
   updatedAt: string;
 }
 
+export interface SubTopic {
+  id: string;
+  name: string;
+  topicId: string;
+}
+
 export interface Topic {
   id: string;
   name: string;
   subjectId: string;
   notesUrl?: string | null;
+  subTopics?: SubTopic[];
   _count?: {
     questions: number;
   };
 }
 
 export interface QuizSession {
+  id?: string;
   topicId: string;
   topicName: string;
   subjectName: string;

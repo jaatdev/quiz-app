@@ -71,12 +71,17 @@ export const quizService = {
   },
 
   // Start quiz session by multiple subTopicIds
-  async startQuizSessionBySubTopics(subTopicIds: string[], questionCount = 10) {
+  async startQuizSessionBySubTopics(subTopicIds: string[], questionCount = 10): Promise<QuizSession> {
     return api.get('/quiz/session', {
       params: {
         subTopicIds: subTopicIds.join(','),
         count: String(questionCount)
       }
     });
+  },
+
+  // Create custom quiz session (alias for startQuizSessionBySubTopics)
+  async createCustomQuizSession(subTopicIds: string[], questionCount = 10): Promise<QuizSession> {
+    return this.startQuizSessionBySubTopics(subTopicIds, questionCount);
   },
 };

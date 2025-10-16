@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { quizService } from '@/services/quiz.service';
@@ -7,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { Error } from '@/components/ui/error';
-import { ArrowLeft, Target, BookOpen } from 'lucide-react';
+import { ArrowLeft, Target, BookOpen, Settings } from 'lucide-react';
+import { CustomQuizDrawer } from '@/components/subject/CustomQuizDrawer';
 import type { Subject, Topic } from '@/types';
 
 export default function SubjectTopicsPage() {
@@ -15,6 +17,7 @@ export default function SubjectTopicsPage() {
   const router = useRouter();
   const rawParam = params?.subjectName;
   const subjectName = typeof rawParam === 'string' ? decodeURIComponent(rawParam) : '';
+  const [showCustomQuiz, setShowCustomQuiz] = useState(false);
 
   const { data: subject, isLoading, error, refetch } = useQuery<Subject>({
     queryKey: ['subject-by-name', subjectName],
@@ -39,6 +42,20 @@ export default function SubjectTopicsPage() {
     );
   }
 
+  const handleCustomQuizStart = async (subTopicIds: string[], count: number) => {
+    try {
+      // Create custom quiz session
+      const session = await quizService.createCustomQuizSession(subTopicIds, count);
+      setShowCustomQuiz(false);
+      // Use topicId if session doesn't have id
+      const sessionId = session.id || session.topicId || 'custom';
+      router.push(`/quiz/${sessionId}?custom=true&subject=${encodeURIComponent(subject.name)}`);
+    } catch (error) {
+      console.error('Failed to create custom quiz:', error);
+      alert('Failed to create custom quiz. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b sticky top-0 z-30">
@@ -58,7 +75,13 @@ export default function SubjectTopicsPage() {
               </p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowCustomQuiz(true)}>
+              <Settings className="w-4 h-4 mr-2" />
+              Custom Quiz
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/')}>Home</Button>
+          </div>
         </div>
       </header>
 
@@ -99,6 +122,16 @@ export default function SubjectTopicsPage() {
           </div>
         )}
       </main>
+
+      {/* Custom Quiz Drawer */}
+      {subject && (
+        <CustomQuizDrawer
+          subject={subject}
+          open={showCustomQuiz}
+          onClose={() => setShowCustomQuiz(false)}
+          onStart={handleCustomQuizStart}
+        />
+      )}
     </div>
   );
 }
