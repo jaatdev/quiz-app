@@ -64,4 +64,19 @@ export const quizService = {
   async getReviewQuestions(questionIds: string[]): Promise<QuestionWithAnswer[]> {
     return api.post('/quiz/review', { questionIds });
   },
+
+  // Get subtopics metadata by IDs
+  async getSubTopicsMeta(ids: string[]) {
+    return api.get('/subtopics', { params: { ids: ids.join(',') } });
+  },
+
+  // Start quiz session by multiple subTopicIds
+  async startQuizSessionBySubTopics(subTopicIds: string[], questionCount = 10) {
+    return api.get('/quiz/session', {
+      params: {
+        subTopicIds: subTopicIds.join(','),
+        count: String(questionCount)
+      }
+    });
+  },
 };

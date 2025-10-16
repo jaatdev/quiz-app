@@ -31,46 +31,51 @@ export function AnimatedHero() {
         </>
       )}
 
-  <div className="relative grid md:grid-cols-2 gap-6 px-6 py-14 md:px-12 md:py-16 items-center">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="text-center md:text-center"
-        >
-          <span className="inline-flex items-center rounded-full border bg-white/80 px-3 py-1 text-xs font-medium tracking-wide text-gray-700 shadow-sm backdrop-blur dark:bg-gray-800/70 dark:text-gray-200">
-            New • PYQ tagging + Structured admin + Bulk topics
-          </span>
-          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-gray-900 md:text-6xl dark:text-gray-100">
-            Master Any Topic with Beautiful, Interactive Quizzes
-          </h1>
-          <p className="mt-4 max-w-xl text-lg text-gray-700 dark:text-gray-300">
-            Smart randomization, PYQ insights, and powerful analytics — built for speed and delight.
-          </p>
+      <div className="relative px-6 py-14 md:px-12 md:py-16">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 md:grid-cols-[1fr_minmax(0,720px)_1fr] items-center gap-8">
+          {/* TEXT center column */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="md:col-[2] text-center"
+          >
+            <span className="inline-flex items-center rounded-full border bg-white/80 px-3 py-1 text-xs font-medium tracking-wide text-gray-700 shadow-sm backdrop-blur dark:bg-gray-800/70 dark:text-gray-200">
+              New • Sub-Topics + Custom Quiz Builder + CSV Import/Export
+            </span>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button className="h-11 px-6" onClick={() => router.push('/stats')}>
-              View Your Stats
-            </Button>
-            <Button variant="outline" className="h-11 px-6" onClick={() => router.push('/leaderboard')}>
-              Explore Leaderboard
-            </Button>
-          </div>
-        </motion.div>
+            <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-gray-900 md:text-6xl dark:text-gray-100">
+              Master Any Topic with Beautiful, Interactive Quizzes
+            </h1>
 
-        {/* Lottie accent (hidden on small screens) */}
-        {!prefersReducedMotion && (
-          <div className="hidden md:block">
-            <div className="mx-auto max-w-md">
-              <Lottie
-                animationData={heroLottie}
-                loop
-                autoplay
-                style={{ width: '100%', height: '100%' }}
-              />
+            <p className="mx-auto mt-4 max-w-xl text-lg text-gray-700 dark:text-gray-300">
+              Smart randomization, PYQ insights, and powerful analytics — built for speed and delight.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button className="h-11 px-6" onClick={() => router.push('/stats')}>
+                View Your Stats
+              </Button>
+              <Button variant="outline" className="h-11 px-6" onClick={() => router.push('/leaderboard')}>
+                Explore Leaderboard
+              </Button>
             </div>
-          </div>
-        )}
+          </motion.div>
+
+          {/* LOTTIE right column */}
+          {!prefersReducedMotion && (
+            <div className="hidden md:block md:col-[3]">
+              <div className="mx-auto max-w-md">
+                <Lottie
+                  animationData={heroLottie}
+                  loop
+                  autoplay
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
