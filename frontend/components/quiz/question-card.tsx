@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle } from 'lucide-react';
 import type { Question, Option } from '@/types';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface QuestionCardProps {
   question: Question;
@@ -100,10 +101,13 @@ export function QuestionCard({
       <CardContent>
         <div className="space-y-3">
           {question.options.map((option) => (
-            <button
+            <motion.button
               key={option.id}
               onClick={() => handleSelect(option.id)}
               disabled={disabled}
+              whileHover={{ scale: disabled ? 1 : 1.01 }}
+              whileTap={{ scale: disabled ? 1 : 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className={cn(
                 'w-full p-4 text-left rounded-lg border-2 transition-all duration-200',
                 'flex items-center justify-between',
@@ -118,7 +122,7 @@ export function QuestionCard({
                 <span className="text-base font-medium">{option.text}</span>
               </div>
               {getOptionIcon(option.id)}
-            </button>
+            </motion.button>
           ))}
         </div>
       </CardContent>

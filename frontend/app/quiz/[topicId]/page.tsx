@@ -24,6 +24,7 @@ import {
 import { X } from 'lucide-react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useToast } from '@/providers/toast-provider';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { QuizSubmission, AchievementUnlock, Topic } from '@/types';
 
 const DEFAULT_SECONDS_PER_QUESTION = 30;
@@ -271,6 +272,7 @@ export default function QuizPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
   const computeTimeSpent = useCallback(() => {
     if (startTime === null) return 0;
@@ -476,15 +478,18 @@ export default function QuizPage() {
   // Navigation functions
   const goToQuestion = useCallback((index: number) => {
     if (index >= 0 && index < (session?.questions.length || 0)) {
+      setSlideDirection(index > currentQuestionIndex ? 'left' : 'right');
       setCurrentQuestionIndex(index);
     }
-  }, [session]);
+  }, [session, currentQuestionIndex]);
 
   const goToPrevious = useCallback(() => {
+    setSlideDirection('right');
     goToQuestion(currentQuestionIndex - 1);
   }, [currentQuestionIndex, goToQuestion]);
 
   const goToNext = useCallback(() => {
+    setSlideDirection('left');
     goToQuestion(currentQuestionIndex + 1);
   }, [currentQuestionIndex, goToQuestion]);
 
@@ -798,13 +803,36 @@ export default function QuizPage() {
               />
             </div>
 
-            <QuestionCard
-              question={currentQuestion}
-              questionNumber={currentQuestionIndex + 1}
-              totalQuestions={session.questions.length}
-              selectedAnswer={answers.get(currentQuestion.id)}
-              onAnswerSelect={(optionId) => handleAnswerSelect(currentQuestion.id, optionId)}
-            />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={currentQuestion.id}
+                initial={{
+                  x: slideDirection === 'left' ? 300 : -300,
+                  opacity: 0,
+                }}
+                animate={{
+                  x: 0,
+                  opacity: 1,
+                }}
+                exit={{
+                  x: slideDirection === 'left' ? -300 : 300,
+                  opacity: 0,
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 260,
+                  damping: 30,
+                }}
+              >
+                <QuestionCard
+                  question={currentQuestion}
+                  questionNumber={currentQuestionIndex + 1}
+                  totalQuestions={session.questions.length}
+                  selectedAnswer={answers.get(currentQuestion.id)}
+                  onAnswerSelect={(optionId) => handleAnswerSelect(currentQuestion.id, optionId)}
+                />
+              </motion.div>
+            </AnimatePresence>
 
             <QuizNavigation
               currentQuestion={currentQuestionIndex + 1}
