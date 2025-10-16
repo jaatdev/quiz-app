@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useToast } from '@/providers/toast-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
@@ -18,6 +19,7 @@ export default function AdminSubTopicsPage() {
   const params = useParams();
   const router = useRouter();
   const topicId = params.topicId as string;
+  const { showToast } = useToast();
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(12);
@@ -237,7 +239,7 @@ export default function AdminSubTopicsPage() {
               variant="outline"
               onClick={async () => {
                 const all = await fetchAllSubTopics();
-                if (!all.length) return alert('No sub-topics found');
+                if (!all.length) { showToast({ variant: 'info', title: 'No sub-topics to export.' }); return; }
                 const csv = toCSV(all);
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
@@ -246,6 +248,7 @@ export default function AdminSubTopicsPage() {
                 a.download = 'subtopics.csv';
                 a.click();
                 URL.revokeObjectURL(url);
+                showToast({ variant: 'success', title: 'Sub-topics exported.' });
               }}
             >
               Export CSV
@@ -262,15 +265,15 @@ export default function AdminSubTopicsPage() {
                     if (!file) return;
                     const text = await file.text();
                     const lines = text.split('\n').filter(Boolean);
-                    if (lines.length <= 1) return alert('Empty CSV');
+                    if (lines.length <= 1) { showToast({ variant: 'error', title: 'Empty CSV' }); return; }
                     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
                     const nameIdx = headers.indexOf('name');
-                    if (nameIdx === -1) return alert('CSV must contain column "name"');
+                    if (nameIdx === -1) { showToast({ variant: 'error', title: 'CSV must contain "name" column' }); return; }
                     const names = Array.from(new Set(lines.slice(1).map(line => {
                       const cols = line.split(',');
                       return (cols[nameIdx] || '').replace(/^"|"$/g, '').trim();
                     }).filter(Boolean)));
-                    if (!names.length) return alert('No valid names');
+                    if (!names.length) { showToast({ variant: 'error', title: 'No valid names in CSV' }); return; }
                     const res = await fetch(`${API}/admin/topics/${topicId}/subtopics/bulk`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', 'x-clerk-user-id': user?.id || '' },
@@ -280,9 +283,9 @@ export default function AdminSubTopicsPage() {
                     if (!res.ok) throw new window.Error(data?.error || 'Import failed');
                     setPage(1);
                     refetch();
-                    alert(`Created: ${data.created}${data.duplicates?.length ? ` | Duplicates: ${data.duplicates.length}` : ''}`);
+                    showToast({ variant: 'success', title: `Created: ${data.created}${data.duplicates?.length ? ` • Duplicates: ${data.duplicates.length}` : ''}` });
                   } catch (err: any) {
-                    alert(err?.message || 'Failed to import CSV');
+                    showToast({ variant: 'error', title: err?.message || 'Failed to import CSV' });
                   } finally {
                     e.target.value = '';
                   }

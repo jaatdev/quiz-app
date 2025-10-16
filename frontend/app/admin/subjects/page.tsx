@@ -271,6 +271,68 @@ export default function SubjectManagementPage() {
     }
   };
 
+  // CSV Export for ALL Sub-Topics across ALL subjects
+  const handleExportAllSubTopics = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/subjects-with-topics`, {
+        headers: { 'x-clerk-user-id': user!.id },
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error('Failed to fetch subjects');
+      const subjects = await res.json();
+
+      const rows: Array<{ subjectName: string; topicName: string; subTopicId: string; subTopicName: string; questionsCount: number }>= [];
+      for (const s of subjects || []) {
+        for (const t of (s.topics || [])) {
+          let page = 1;
+          const pageSize = 200;
+          let totalPages = 1;
+          while (page <= totalPages) {
+            const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+            const stRes = await fetch(`${API_URL}/admin/topics/${t.id}/subtopics?` + params.toString(), {
+              headers: { 'x-clerk-user-id': user!.id },
+              cache: 'no-store',
+            });
+            if (!stRes.ok) break;
+            const stData = await stRes.json();
+            totalPages = stData.totalPages || 1;
+            (stData.items || []).forEach((st: any) => {
+              rows.push({
+                subjectName: s.name,
+                topicName: t.name,
+                subTopicId: st.id,
+                subTopicName: st.name,
+                questionsCount: st._count?.questions || 0,
+              });
+            });
+            page++;
+          }
+        }
+      }
+
+      if (!rows.length) {
+        showToast({ variant: 'info', title: 'No sub-topics to export.' });
+        return;
+      }
+
+      const headers = ['subjectName','topicName','subTopicId','subTopicName','questionsCount'];
+      const esc = (s: any) => s == null ? '' : /[",\n]/.test(String(s)) ? `"${String(s).replace(/"/g, '""')}"` : String(s);
+      const csv = [headers.join(','), ...rows.map(r => headers.map(h => esc((r as any)[h])).join(','))].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `all-subtopics_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast({ variant: 'success', title: 'Sub-Topics exported successfully.' });
+    } catch (error) {
+      console.error('Failed to export sub-topics:', error);
+      showToast({ variant: 'error', title: 'Failed to export sub-topics.' });
+    }
+  };
+
   // CSV Import for Topics
   const handleImportTopics = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -367,6 +429,10 @@ export default function SubjectManagementPage() {
           <Button variant="outline" onClick={handleExportTopics}>
             <Download className="w-4 h-4 mr-2" />
             Export Topics CSV
+          </Button>
+          <Button variant="outline" onClick={handleExportAllSubTopics}>
+            <Download className="w-4 h-4 mr-2" />
+            Export ALL Sub-Topics CSV
           </Button>
           <Button variant="outline" onClick={() => topicsFileInputRef.current?.click()}>
             <Upload className="w-4 h-4 mr-2" />
