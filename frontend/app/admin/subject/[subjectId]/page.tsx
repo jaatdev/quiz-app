@@ -15,7 +15,7 @@ import { API_URL } from '@/lib/config';
 import type { Subject, Topic } from '@/types';
 
 interface PaginatedTopics {
-  items: (Topic & { _count?: { questions: number } })[];
+  items: (Topic & { _count?: { questions: number; subTopics?: number } })[];
   total: number;
   page: number;
   pageSize: number;
@@ -422,7 +422,7 @@ export default function AdminSubjectPage() {
                         </div>
                         <div className="mt-2 text-sm text-gray-700 inline-flex items-center gap-1">
                           <Target className="w-4 h-4" />
-                          {topic._count?.questions || 0} questions
+                          {topic._count?.questions || 0} questions • {topic._count?.subTopics || 0} Sub-topics
                         </div>
                         <div className="mt-3">
                           <Button
@@ -433,6 +433,14 @@ export default function AdminSubjectPage() {
                             }
                           >
                             Manage questions
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-2"
+                            onClick={() => router.push(`/admin/topics/${topic.id}/subtopics`)}
+                          >
+                            Sub-Topics
                           </Button>
                         </div>
                       </>

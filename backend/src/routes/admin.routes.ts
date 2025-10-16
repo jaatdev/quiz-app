@@ -131,7 +131,7 @@ router.get('/subjects', async (req: Request, res: Response) => {
             name: true,
             subjectId: true,
             notesUrl: true,
-            _count: { select: { questions: true } }
+            _count: { select: { questions: true, subTopics: true } }
           },
           orderBy: { name: 'asc' }
         }
@@ -152,7 +152,7 @@ router.get('/subjects-with-topics', async (_req: Request, res: Response) => {
         topics: {
           orderBy: { name: 'asc' },
           include: {
-            _count: { select: { questions: true } },
+            _count: { select: { questions: true, subTopics: true } },
           },
         },
         _count: { select: { topics: true } },
@@ -173,7 +173,7 @@ router.get('/subjects/:id', async (req: Request, res: Response) => {
       include: {
         topics: {
           include: {
-            _count: { select: { questions: true } }
+            _count: { select: { questions: true, subTopics: true } }
           },
           orderBy: { name: 'asc' }
         },
@@ -290,7 +290,7 @@ router.get('/subjects/:id/topics', async (req: Request, res: Response) => {
         skip,
         take: pageSize,
         orderBy: { name: 'asc' },
-        include: { _count: { select: { questions: true } } }
+        include: { _count: { select: { questions: true, subTopics: true } } }
       }),
       prisma.topic.count({ where })
     ]);

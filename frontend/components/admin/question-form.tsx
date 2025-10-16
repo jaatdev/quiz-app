@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ const createInitialFormData = (topicId = '') => ({
 
 export function QuestionForm({ question, defaultTopicId, onClose, onSave }: QuestionFormProps) {
   const { user } = useUser();
+  const router = useRouter();
   const [formData, setFormData] = useState(createInitialFormData(defaultTopicId));
   const [topics, setTopics] = useState<Topic[]>([]);
   const [subTopics, setSubTopics] = useState<SubTopic[]>([]);
@@ -125,7 +127,9 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
       });
       if (response.ok) {
         const data = await response.json();
-        setSubTopics(data);
+        // Support both array payloads and paginated { items } payloads
+        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        setSubTopics(items);
       }
     } catch (error) {
       console.error('Failed to fetch subtopics:', error);
@@ -214,15 +218,16 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
               </select>
             </div>
 
-            {subTopics.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sub-Topic (Optional)
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sub-Topic (Optional)
+              </label>
+              <div className="flex items-center gap-2">
                 <select
                   value={formData.subTopicId}
                   onChange={(e) => setFormData({ ...formData, subTopicId: e.target.value })}
                   className="w-full p-2 border rounded-lg"
+                  disabled={!formData.topicId}
                 >
                   <option value="">Select a sub-topic (optional)</option>
                   {subTopics.map((subTopic) => (
@@ -231,8 +236,17 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
                     </option>
                   ))}
                 </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => formData.topicId && router.push(`/admin/topics/${formData.topicId}/subtopics`)}
+                  disabled={!formData.topicId}
+                  title="Manage sub-topics for this topic"
+                >
+                  Manage
+                </Button>
               </div>
-            )}
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -22,6 +22,7 @@ interface Topic {
   notesUrl?: string | null;
   _count?: {
     questions: number;
+    subTopics?: number;
   };
 }
 
@@ -436,7 +437,7 @@ export default function SubjectManagementPage() {
                         <FileText className="w-4 h-4 text-gray-600" />
                         <span className="font-medium text-gray-900">{topic.name}</span>
                         <span className="text-sm text-gray-500">
-                          {topic._count?.questions || 0} questions
+                          {topic._count?.questions || 0} questions • {topic._count?.subTopics || 0} Sub-topics
                         </span>
                         <span
                           className={`text-xs font-medium ${notesAvailable ? 'text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full' : 'text-gray-400 italic'}`}
@@ -445,6 +446,13 @@ export default function SubjectManagementPage() {
                         </span>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/admin/topics/${topic.id}/subtopics`)}
+                        >
+                          Sub-Topics
+                        </Button>
                         {notesAvailable && (
                           <Button
                             variant="outline"
