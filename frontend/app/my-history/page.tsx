@@ -127,8 +127,8 @@ export default function MyHistoryPage() {
               <p className="text-sm text-gray-600">View all your quiz attempts</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => router.push('/dashboard')} variant="outline">
-                Dashboard
+              <Button onClick={() => router.push('/stats')} variant="outline">
+                My Stats
               </Button>
               <Button onClick={() => router.push('/')} variant="outline">
                 <Home className="w-4 h-4 mr-2" />

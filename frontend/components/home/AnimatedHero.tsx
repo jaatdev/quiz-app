@@ -4,9 +4,18 @@ import { motion, useReducedMotion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-import heroLottie from '@/public/lottie/hero.json';
+// Dynamically import Lottie and hero animation
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+
+// Safe import with error handling
+let heroLottie: any = null;
+try {
+  heroLottie = require('@/public/lottie/hero.json');
+} catch (e) {
+  console.warn('Lottie animation not found, hero will render without animation');
+}
 
 export function AnimatedHero() {
   const router = useRouter();
@@ -63,7 +72,7 @@ export function AnimatedHero() {
           </motion.div>
 
           {/* LOTTIE right column */}
-          {!prefersReducedMotion && (
+          {!prefersReducedMotion && heroLottie && (
             <div className="hidden md:block md:col-[3]">
               <div className="mx-auto max-w-md">
                 <Lottie

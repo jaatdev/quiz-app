@@ -3,31 +3,47 @@ import { NextResponse } from 'next/server';
 
 const isPublicRoute = createRouteMatcher([
   '/',
+  '/leaderboard',
+  '/history',
+  '/stats',
+  '/subject(.*)',
+  '/quiz(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/stats',
-  '/history',
-  '/leaderboard',
+  '/welcome',
+  '/api/(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
-  
-  // If user is trying to access admin and is not signed in
-  if (req.nextUrl.pathname.startsWith('/admin') && !userId) {
+  const path = req.nextUrl.pathname;
+
+  // If accessing admin and not logged in -> go to sign-in with deep-link back to admin
+  if (path.startsWith('/admin') && !userId) {
     const signInUrl = new URL('/sign-in', req.url);
-    signInUrl.searchParams.set('redirect_url', req.nextUrl.pathname);
+    signInUrl.searchParams.set('redirect_url', path + req.nextUrl.search);
     return NextResponse.redirect(signInUrl);
   }
 
-  // Protect non-public routes by redirecting to sign-in
-  if (!isPublicRoute(req) && !userId) {
-    const signInUrl = new URL('/sign-in', req.url);
-    signInUrl.searchParams.set('redirect_url', req.nextUrl.pathname);
-    return NextResponse.redirect(signInUrl);
+  // Don't protect public routes
+  if (!isPublicRoute(req)) {
+    // For non-public, non-admin routes, only redirect if not logged in
+    if (!userId) {
+      const signInUrl = new URL('/sign-in', req.url);
+      signInUrl.searchParams.set('redirect_url', path);
+      return NextResponse.redirect(signInUrl);
+    }
   }
+
+  // Otherwise do nothing (no forced redirect to /dashboard)
+  return NextResponse.next();
 });
 
 export const config = {
-  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    // Run middleware for all routes except static files and _next
+    '/((?!.+\\.[\\w]+$|_next).*)',
+    '/',
+    '/(api|trpc)(.*)',
+  ],
 };
