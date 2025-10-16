@@ -4,22 +4,26 @@ import { motion, useReducedMotion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Dynamically import Lottie and hero animation
+// Dynamically import Lottie
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
-// Safe import with error handling
-let heroLottie: any = null;
-try {
-  heroLottie = require('@/public/lottie/hero.json');
-} catch (e) {
-  console.warn('Lottie animation not found, hero will render without animation');
-}
+// Import hero animation data
+import heroLottieData from '@/public/lottie/hero.json';
 
 export function AnimatedHero() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
+  const [hasLottie, setHasLottie] = useState(true);
+
+  // Check if Lottie data is available
+  useEffect(() => {
+    if (!heroLottieData) {
+      setHasLottie(false);
+      console.warn('Lottie animation not found');
+    }
+  }, []);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
@@ -72,11 +76,11 @@ export function AnimatedHero() {
           </motion.div>
 
           {/* LOTTIE right column */}
-          {!prefersReducedMotion && heroLottie && (
+          {!prefersReducedMotion && hasLottie && heroLottieData && (
             <div className="hidden md:block md:col-[3]">
               <div className="mx-auto max-w-md">
                 <Lottie
-                  animationData={heroLottie}
+                  animationData={heroLottieData}
                   loop
                   autoplay
                   style={{ width: '100%', height: '100%' }}
