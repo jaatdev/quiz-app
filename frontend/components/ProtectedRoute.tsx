@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/hooks/useAuth';
+import { PRIMARY_ADMIN_EMAIL } from '@/lib/config-admin';
 import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -47,7 +48,12 @@ export function AdminRoute({ children, isAdmin = false, fallback }: AdminRoutePr
   const { isSignedIn, isLoaded, user } = useAuth();
   const router = useRouter();
 
-  const userIsAdmin = user?.unsafeMetadata?.role === 'admin' || isAdmin;
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const userIsAdmin =
+    user?.unsafeMetadata?.role === 'admin' ||
+    user?.publicMetadata?.role === 'admin' ||
+    email === PRIMARY_ADMIN_EMAIL ||
+    isAdmin;
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {

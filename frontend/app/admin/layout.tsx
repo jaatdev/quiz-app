@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
+import { PRIMARY_ADMIN_EMAIL } from '@/lib/config-admin';
 
 export default function AdminLayout({
   children,
@@ -30,6 +31,14 @@ export default function AdminLayout({
   const checkAdminStatus = async () => {
     if (!user) {
       // Don't redirect here - let middleware handle it
+      setIsLoading(false);
+      return;
+    }
+
+    // Primary admin bypass on client: trusted email
+    const email = user.primaryEmailAddress?.emailAddress;
+    if (email && email === PRIMARY_ADMIN_EMAIL) {
+      setIsAdmin(true);
       setIsLoading(false);
       return;
     }

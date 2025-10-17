@@ -11,6 +11,7 @@ import {
 import { format } from 'date-fns';
 import { API_URL } from '@/lib/config';
 import { AdminRoute } from '@/components/ProtectedRoute';
+import { PRIMARY_ADMIN_EMAIL } from '@/lib/config-admin';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 interface AdminStats {
@@ -222,7 +223,10 @@ function AdminDashboardContent() {
 
 export default function AdminDashboard() {
   const { user: authUser } = useAuth();
-  const isAdmin = authUser?.publicMetadata?.role === 'admin';
+  const isAdmin =
+    authUser?.publicMetadata?.role === 'admin' ||
+    authUser?.unsafeMetadata?.role === 'admin' ||
+    authUser?.primaryEmailAddress?.emailAddress === PRIMARY_ADMIN_EMAIL;
   
   return (
     <AdminRoute isAdmin={isAdmin}>

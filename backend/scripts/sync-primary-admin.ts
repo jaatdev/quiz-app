@@ -31,16 +31,26 @@ async function syncPrimaryAdmin(clerkId: string) {
       console.log(`\n⚠️  User already exists in database`);
       console.log(`   Name: ${existingUser.name || 'Not set'}`);
       console.log(`   Role: ${existingUser.role}`);
+      console.log(`   Current Clerk ID: ${existingUser.clerkId || '(none)'}`);
       
+      const updateData: Record<string, any> = {};
       if (existingUser.role !== 'admin') {
-        console.log(`\n🔄 Updating role to admin...`);
+        updateData.role = 'admin';
+        console.log(`\n🔄 Queued: Update role to admin`);
+      }
+      if (existingUser.clerkId !== clerkId) {
+        updateData.clerkId = clerkId;
+        console.log(`\n🔄 Queued: Update Clerk ID → ${clerkId}`);
+      }
+
+      if (Object.keys(updateData).length > 0) {
         await prisma.user.update({
           where: { id: existingUser.id },
-          data: { role: 'admin' }
+          data: updateData
         });
-        console.log(`✅ Role updated to admin`);
+        console.log(`✅ Primary admin updated successfully`);
       } else {
-        console.log(`✅ Already has admin role`);
+        console.log(`✅ No updates needed (already correct)`);
       }
       return;
     }
