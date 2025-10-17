@@ -4,6 +4,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { ToastProvider } from "@/providers/toast-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClientShell } from '@/components/layout/ClientShell';
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 export const metadata: Metadata = {
   title: "Quiz App - Test Your Knowledge",
@@ -21,18 +22,20 @@ export default function RootLayout({
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
         </head>
         <body className="font-sans">
-          <ToastProvider>
-            <QueryProvider>
-              <ClientShell>
-                <div className="min-h-screen bg-gray-50">
-                  {children}
-                </div>
-              </ClientShell>
-            </QueryProvider>
-          </ToastProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              <QueryProvider>
+                <ClientShell>
+                  <div className="min-h-screen bg-gray-50">
+                    {children}
+                  </div>
+                </ClientShell>
+              </QueryProvider>
+            </ToastProvider>
+          </LanguageProvider>
         </body>
       </html>
     </ClerkProvider>

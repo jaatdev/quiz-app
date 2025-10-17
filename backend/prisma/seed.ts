@@ -299,6 +299,186 @@ async function main() {
   console.log(`📚 Created ${await prisma.subject.count()} subjects`);
   console.log(`📑 Created ${await prisma.topic.count()} topics`);
   console.log(`❓ Created ${await prisma.question.count()} questions`);
+
+  // Create multilingual quizzes
+  console.log('\n🌍 Creating multilingual quizzes...');
+
+  const indiaGKQuiz = await prisma.multilingualQuiz.create({
+    data: {
+      title: {
+        en: 'India General Knowledge',
+        hi: 'भारत सामान्य ज्ञान',
+        es: 'Conocimiento General de India',
+        fr: 'Connaissances Générales sur l\'Inde'
+      },
+      description: {
+        en: 'Test your knowledge about India - geography, history, culture, and more!',
+        hi: 'भारत के बारे में अपने ज्ञान का परीक्षण करें - भूगोल, इतिहास, संस्कृति और बहुत कुछ!',
+        es: '¡Prueba tus conocimientos sobre India - geografía, historia, cultura y más!',
+        fr: 'Testez vos connaissances sur l\'Inde - géographie, histoire, culture et bien plus!'
+      },
+      category: 'Geography',
+      difficulty: 'medium',
+      timeLimit: 10,
+      availableLanguages: ['en', 'hi', 'es', 'fr'],
+      defaultLanguage: 'en',
+      tags: ['india', 'general-knowledge', 'geography', 'history'],
+      createdBy: 'system',
+      questions: {
+        create: [
+          {
+            sequenceNumber: 1,
+            question: {
+              en: 'What is the capital of India?',
+              hi: 'भारत की राजधानी क्या है?',
+              es: '¿Cuál es la capital de India?',
+              fr: 'Quelle est la capitale de l\'Inde?'
+            },
+            options: {
+              en: ['Mumbai', 'New Delhi', 'Kolkata', 'Chennai'],
+              hi: ['मुंबई', 'नई दिल्ली', 'कोलकाता', 'चेन्नई'],
+              es: ['Bombay', 'Nueva Delhi', 'Calcuta', 'Chennai'],
+              fr: ['Bombay', 'Nouvelle Delhi', 'Calcutta', 'Chennai']
+            },
+            correctAnswer: 1,
+            explanation: {
+              en: 'New Delhi has been the capital of India since 1911.',
+              hi: 'नई दिल्ली 1911 से भारत की राजधानी है।',
+              es: 'Nueva Delhi ha sido la capital de India desde 1911.',
+              fr: 'Nouvelle Delhi est la capitale de l\'Inde depuis 1911.'
+            },
+            points: 10,
+            category: 'Geography'
+          },
+          {
+            sequenceNumber: 2,
+            question: {
+              en: 'In which year did India gain independence?',
+              hi: 'भारत को किस वर्ष आजादी मिली?',
+              es: '¿En qué año ganó independencia India?',
+              fr: 'En quelle année l\'Inde a-t-elle obtenu son indépendance?'
+            },
+            options: {
+              en: ['1945', '1947', '1950', '1952'],
+              hi: ['1945', '1947', '1950', '1952'],
+              es: ['1945', '1947', '1950', '1952'],
+              fr: ['1945', '1947', '1950', '1952']
+            },
+            correctAnswer: 1,
+            explanation: {
+              en: 'India gained independence on August 15, 1947.',
+              hi: 'भारत को 15 अगस्त 1947 को आजादी मिली।',
+              es: 'India ganó la independencia el 15 de agosto de 1947.',
+              fr: 'L\'Inde a obtenu l\'indépendance le 15 août 1947.'
+            },
+            points: 10,
+            category: 'History'
+          },
+          {
+            sequenceNumber: 3,
+            question: {
+              en: 'What is the national flower of India?',
+              hi: 'भारत का राष्ट्रीय फूल क्या है?',
+              es: '¿Cuál es la flor nacional de India?',
+              fr: 'Quelle est la fleur nationale de l\'Inde?'
+            },
+            options: {
+              en: ['Rose', 'Lotus', 'Jasmine', 'Marigold'],
+              hi: ['गुलाब', 'कमल', 'चमेली', 'गेंदा'],
+              es: ['Rosa', 'Loto', 'Jazmín', 'Caléndula'],
+              fr: ['Rose', 'Lotus', 'Jasmin', 'Calendula']
+            },
+            correctAnswer: 1,
+            explanation: {
+              en: 'The Lotus is the national flower of India, symbolizing purity and enlightenment.',
+              hi: 'कमल भारत का राष्ट्रीय फूल है, जो शुद्धता और ज्ञान का प्रतीक है।',
+              es: 'El loto es la flor nacional de India, simbolizando pureza e iluminación.',
+              fr: 'Le lotus est la fleur nationale de l\'Inde, symbolisant la pureté et l\'illumination.'
+            },
+            points: 10,
+            category: 'Culture'
+          }
+        ]
+      }
+    }
+  });
+
+  const mathQuiz = await prisma.multilingualQuiz.create({
+    data: {
+      title: {
+        en: 'Mathematics Basics',
+        hi: 'गणित मूलभूत',
+        es: 'Conceptos Básicos de Matemáticas',
+        fr: 'Concepts Mathématiques de Base'
+      },
+      description: {
+        en: 'Test your mathematical skills with basic arithmetic problems.',
+        hi: 'बुनियादी अंकगणित समस्याओं के साथ अपने गणितीय कौशल का परीक्षण करें।',
+        es: 'Prueba tus habilidades matemáticas con problemas aritméticos básicos.',
+        fr: 'Testez vos compétences en mathématiques avec des problèmes arithmétiques de base.'
+      },
+      category: 'Mathematics',
+      difficulty: 'easy',
+      timeLimit: 5,
+      availableLanguages: ['en', 'hi', 'es', 'fr'],
+      defaultLanguage: 'en',
+      tags: ['mathematics', 'arithmetic', 'easy'],
+      createdBy: 'system',
+      questions: {
+        create: [
+          {
+            sequenceNumber: 1,
+            question: {
+              en: 'What is 7 × 8?',
+              hi: '7 × 8 क्या है?',
+              es: '¿Cuánto es 7 × 8?',
+              fr: 'Combien font 7 × 8?'
+            },
+            options: {
+              en: ['54', '56', '58', '60'],
+              hi: ['54', '56', '58', '60'],
+              es: ['54', '56', '58', '60'],
+              fr: ['54', '56', '58', '60']
+            },
+            correctAnswer: 1,
+            explanation: {
+              en: '7 multiplied by 8 equals 56.',
+              hi: '7 को 8 से गुणा करने पर 56 बराबर होता है।',
+              es: '7 multiplicado por 8 es igual a 56.',
+              fr: '7 multiplié par 8 est égal à 56.'
+            },
+            points: 10
+          },
+          {
+            sequenceNumber: 2,
+            question: {
+              en: 'What is 100 ÷ 5?',
+              hi: '100 ÷ 5 क्या है?',
+              es: '¿Cuánto es 100 ÷ 5?',
+              fr: 'Combien font 100 ÷ 5?'
+            },
+            options: {
+              en: ['15', '20', '25', '30'],
+              hi: ['15', '20', '25', '30'],
+              es: ['15', '20', '25', '30'],
+              fr: ['15', '20', '25', '30']
+            },
+            correctAnswer: 1,
+            explanation: {
+              en: '100 divided by 5 equals 20.',
+              hi: '100 को 5 से भाग देने पर 20 बराबर होता है।',
+              es: '100 dividido entre 5 es igual a 20.',
+              fr: '100 divisé par 5 est égal à 20.'
+            },
+            points: 10
+          }
+        ]
+      }
+    }
+  });
+
+  console.log(`✅ Created ${await prisma.multilingualQuiz.count()} multilingual quizzes`);
+  console.log(`📝 Created ${await prisma.multilingualQuestion.count()} multilingual questions`);
 }
 
 main()

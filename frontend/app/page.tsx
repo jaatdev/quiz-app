@@ -143,6 +143,29 @@ export default function HomePage() {
           />
         </div>
 
+        {/* Multilingual Quizzes Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.35 }}
+          className="mt-12 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-3xl">🌍</span>
+            <h2 className="text-3xl font-bold">Multilingual Quizzes</h2>
+          </div>
+          <p className="text-lg mb-6 text-blue-100">
+            Take quizzes in your preferred language - English, Hindi, Spanish, or French
+          </p>
+          <Button
+            onClick={() => router.push('/quiz/multilingual')}
+            className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg"
+          >
+            Explore Multilingual Quizzes →
+          </Button>
+        </motion.div>
+
         <div className="mt-8">
           <LogoMarquee />
         </div>

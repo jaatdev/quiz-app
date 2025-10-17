@@ -6,6 +6,7 @@
   --color-background: #ffffff;
   --color-foreground: #171717;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-devanagari: 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, monospace;
 }
 
@@ -172,4 +173,13 @@ body {
 
 .admin-panel .table-cell {
   color: rgb(31 41 55); /* text-gray-800 */
+}
+
+/* Multilingual Font Classes */
+.font-inter {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.font-noto-sans-devanagari {
+  font-family: 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
 }

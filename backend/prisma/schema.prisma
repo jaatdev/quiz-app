@@ -15,17 +15,18 @@ datasource db {
 
 // User model - linked to Clerk authentication
 model User {
-  id            String        @id @default(cuid())
-  clerkId       String        @unique
-  email         String        @unique
-  name          String?
-  avatar        String?
-  role          String        @default("user") // "user" or "admin"
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                  String                @id @default(cuid())
+  clerkId             String                @unique
+  email               String                @unique
+  name                String?
+  avatar              String?
+  role                String                @default("user") // "user" or "admin"
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
   
-  quizAttempts  QuizAttempt[]
-  achievements  Achievement[]
+  quizAttempts        QuizAttempt[]
+  achievements        Achievement[]
+  achievementProgress AchievementProgress?
 }
 
 model Subject {
@@ -124,4 +125,91 @@ model Achievement {
   
   @@unique([userId, type])
   @@index([userId])
+}
+
+// Achievement Progress model - tracks user's achievement progress data
+model AchievementProgress {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Store achievements data as JSON
+  unlocked    String[] @default([]) // array of achievement types
+  progress    Json     @default("{}")  // { achievement_type: { progress, maxProgress }, ... }
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// Multilingual Quiz model - for multilingual quizzes with language-specific content
+model MultilingualQuiz {
+  id                   String                    @id @default(cuid())
+  title                Json                      // { en: string, hi: string, es: string, fr: string }
+  description          Json                      // { en: string, hi: string, es: string, fr: string }
+  category             String
+  difficulty           String                    // easy, medium, hard
+  timeLimit            Int                       // in minutes
+  availableLanguages   String[]                  @default(["en", "hi", "es", "fr"]) // array of language codes
+  defaultLanguage      String                    @default("en")
+  tags                 String[]                  @default([])
+  
+  questions            MultilingualQuestion[]
+  attempts             MultilingualQuizAttempt[]
+  
+  createdBy            String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  
+  @@index([category])
+  @@index([difficulty])
+  @@index([createdAt])
+}
+
+// Multilingual Question model - questions with language-specific content
+model MultilingualQuestion {
+  id               String              @id @default(cuid())
+  quizId           String
+  quiz             MultilingualQuiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  question         Json                // { en: string, hi: string, es: string, fr: string }
+  options          Json                // { en: [string, string, string, string], hi: [...], es: [...], fr: [...] }
+  correctAnswer    Int                 // 0-3 (zero-indexed)
+  explanation      Json                // { en: string, hi: string, es: string, fr: string }
+  
+  points           Int                 @default(10)
+  category         String?
+  sequenceNumber   Int                 // order in quiz (1-based)
+  
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  
+  @@index([quizId])
+  @@index([sequenceNumber])
+}
+
+// Multilingual Quiz Attempt - tracks user attempts on multilingual quizzes
+model MultilingualQuizAttempt {
+  id                  String              @id @default(cuid())
+  userId              String
+  quizId              String
+  quiz                MultilingualQuiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  languageCode        String              // en, hi, es, fr - language user took quiz in
+  
+  score               Int
+  totalQuestions      Int
+  correctAnswers      Int
+  percentage          Float
+  timeSpent           Int                 // in seconds
+  
+  userAnswers         Json                // { questionId: number (0-3), questionId: number, ... }
+  
+  completedAt         DateTime            @default(now())
+  
+  @@index([userId])
+  @@index([quizId])
+  @@index([languageCode])
+  @@index([completedAt])
 }
