@@ -88,9 +88,11 @@ export default function BulkImportPage() {
     try {
       if (importType === 'json') {
         const json = JSON.parse(text);
-        const normalized = Array.isArray(json) ? json : [json];
+        const questions = Array.isArray(json)
+          ? json
+          : (Array.isArray(json?.questions) ? json.questions : [json]);
         setPreviewData(
-          normalized.slice(0, 3).map((item) => ({
+          questions.slice(0, 3).map((item: any) => ({
             ...item,
             pyq: typeof item?.pyq === 'string' ? item.pyq : '',
           }))
@@ -142,6 +144,22 @@ export default function BulkImportPage() {
     }
     result.push(current.trim());
     return result;
+  };
+
+  // Helper to display text from either a plain string or a multilingual object
+  const getDisplayText = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      // Prefer English, then Hindi, then first string value
+      if (typeof value.en === 'string' && value.en.trim()) return value.en;
+      if (typeof value.hi === 'string' && value.hi.trim()) return value.hi;
+      for (const k of Object.keys(value)) {
+        const v = (value as any)[k];
+        if (typeof v === 'string' && v.trim()) return v;
+      }
+    }
+    return '';
   };
 
   const downloadTemplate = () => {
@@ -252,7 +270,17 @@ export default function BulkImportPage() {
 
       if (importType === 'json') {
         const parsed = JSON.parse(text);
-        records = Array.isArray(parsed) ? parsed : [parsed];
+        if (Array.isArray(parsed)) {
+          records = parsed;
+        } else if (Array.isArray(parsed?.questions)) {
+          // Full quiz object; extract questions array
+          records = parsed.questions;
+        } else if (parsed && typeof parsed === 'object') {
+          // Single question object
+          records = [parsed];
+        } else {
+          throw new Error('Unsupported JSON structure');
+        }
       } else {
         const lines = text.split('\n').filter(Boolean);
         if (!lines.length) throw new Error('CSV file is empty');
@@ -461,7 +489,9 @@ export default function BulkImportPage() {
             <div className="space-y-3">
               {previewData.map((item, index) => (
                 <div key={index} className="rounded-lg bg-gray-50 p-3">
-                  <p className="font-medium text-gray-900">{item.text || item.question || 'Untitled question'}</p>
+                  <p className="font-medium text-gray-900">
+                    {getDisplayText(item.text ?? item.question) || 'Untitled question'}
+                  </p>
                   <p className="mt-1 text-sm text-gray-600">
                     Subject: {item.subjectName || item.subject || '—'} · Topic: {item.topicName || item.topic || item.topicId || '—'} · Difficulty: {item.difficulty || 'medium'}
                     {item.pyq && (
