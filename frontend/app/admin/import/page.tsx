@@ -33,6 +33,7 @@ export default function BulkImportPage() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importType, setImportType] = useState<'json' | 'csv'>('json');
+  const [jsonFormat, setJsonFormat] = useState<'old' | 'new'>('old');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
@@ -145,41 +146,89 @@ export default function BulkImportPage() {
 
   const downloadTemplate = () => {
     if (importType === 'json') {
-      const json = [
-        {
-          text: "Which planet is known as the 'Red Planet'?",
-          options: [
-            { id: 'a', text: 'Jupiter' },
-            { id: 'b', text: 'Mars' },
-            { id: 'c', text: 'Venus' },
-            { id: 'd', text: 'Saturn' },
-          ],
-          correctAnswerId: 'b',
-          explanation: 'Mars appears red due to iron oxide on its surface.',
-          difficulty: 'easy',
-          subjectName: 'General Knowledge',
-          topicName: 'Planets',
-          pyq: '[2019]',
-        },
-        {
-          text: "Who painted the 'Mona Lisa'?",
-          options: [
-            { id: 'a', text: 'Vincent van Gogh' },
-            { id: 'b', text: 'Pablo Picasso' },
-            { id: 'c', text: 'Leonardo da Vinci' },
-            { id: 'd', text: 'Claude Monet' },
-          ],
-          correctAnswerId: 'c',
-          difficulty: 'medium',
-          topicId: 'YOUR_TOPIC_ID_HERE',
-          pyq: 'Art Olympiad 2021',
-        },
-      ];
+      let json: any[] = [];
+      if (jsonFormat === 'old') {
+        json = [
+          {
+            text: "Which planet is known as the 'Red Planet'?",
+            options: [
+              { id: 'a', text: 'Jupiter' },
+              { id: 'b', text: 'Mars' },
+              { id: 'c', text: 'Venus' },
+              { id: 'd', text: 'Saturn' },
+            ],
+            correctAnswerId: 'b',
+            explanation: 'Mars appears red due to iron oxide on its surface.',
+            difficulty: 'easy',
+            subjectName: 'General Knowledge',
+            topicName: 'Planets',
+            pyq: '[2019]',
+          },
+          {
+            text: "Who painted the 'Mona Lisa'?",
+            options: [
+              { id: 'a', text: 'Vincent van Gogh' },
+              { id: 'b', text: 'Pablo Picasso' },
+              { id: 'c', text: 'Leonardo da Vinci' },
+              { id: 'd', text: 'Claude Monet' },
+            ],
+            correctAnswerId: 'c',
+            difficulty: 'medium',
+            topicId: 'YOUR_TOPIC_ID_HERE',
+            pyq: 'Art Olympiad 2021',
+          },
+        ];
+      } else {
+        // New multilingual JSON format template
+        json = [
+          {
+            question: {
+              en: "Which planet is known as the 'Red Planet'?",
+              hi: 'कौन सा ग्रह “लाल ग्रह” के रूप में जाना जाता है?'
+            },
+            options: {
+              en: ['Jupiter', 'Mars', 'Venus', 'Saturn'],
+              hi: ['बृहस्पति', 'मंगल', 'शुक्र', 'शनि']
+            },
+            correctAnswer: 1, // 0=a, 1=b, 2=c, 3=d
+            explanation: {
+              en: 'Mars appears red due to iron oxide on its surface.',
+              hi: 'मंगल की सतह पर आयरन ऑक्साइड होने से यह लाल दिखाई देता है।'
+            },
+            difficulty: 'easy',
+            subjectName: 'General Knowledge',
+            topicName: 'Planets',
+            pyq: '[2019]'
+          },
+          {
+            question: {
+              en: "Who painted the 'Mona Lisa'?",
+              hi: '“मोना लिसा” पेंटिंग किसने बनाई?'
+            },
+            options: {
+              en: ['Vincent van Gogh', 'Pablo Picasso', 'Leonardo da Vinci', 'Claude Monet'],
+              hi: ['विन्सेंट वैन गॉग', 'पाब्लो पिकासो', 'लियोनार्डो दा विंची', 'क्लाउड मोने']
+            },
+            correctAnswer: 2,
+            explanation: {
+              en: 'A Renaissance masterpiece.',
+              hi: 'एक पुनर्जागरण की उत्कृष्ट कृति।'
+            },
+            difficulty: 'medium',
+            // You can provide either per-row placement (subject/topic names)
+            subjectName: 'Art',
+            topicName: 'Renaissance',
+            // Or use a direct topicId if you already know the target
+            // topicId: 'YOUR_TOPIC_ID_HERE',
+            pyq: 'Art Olympiad 2021'
+          }
+        ];
+      }
       const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'quiz-template.json';
+      link.download = jsonFormat === 'new' ? 'quiz-template-new.json' : 'quiz-template.json';
       link.click();
     } else {
       const csv = `text,optionA,optionB,optionC,optionD,correctAnswerId,explanation,difficulty,subjectName,topicName,topicId,pyq\n"Which planet is known as the 'Red Planet'?","Jupiter","Mars","Venus","Saturn","b","Mars appears red due to iron oxide.","easy","General Knowledge","Planets",,"[2019]"\n"Who painted the 'Mona Lisa'?","Vincent van Gogh","Pablo Picasso","Leonardo da Vinci","Claude Monet","c","A Renaissance masterpiece.","medium",,,"YOUR_TOPIC_ID_HERE","Art Olympiad 2021"`;
@@ -336,9 +385,34 @@ export default function BulkImportPage() {
               <p className="mt-1 text-sm text-gray-600">Great for spreadsheet workflows.</p>
             </button>
           </div>
+          {importType === 'json' && (
+            <div className="mt-4 flex flex-col gap-2">
+              <span className="text-sm font-medium text-gray-800">JSON schema</span>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="old"
+                    checked={jsonFormat === 'old'}
+                    onChange={() => setJsonFormat('old')}
+                  />
+                  <span className="text-gray-900">Old format (text + options array)</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="new"
+                    checked={jsonFormat === 'new'}
+                    onChange={() => setJsonFormat('new')}
+                  />
+                  <span className="text-gray-900">New format (multilingual + index answer)</span>
+                </label>
+              </div>
+            </div>
+          )}
           <Button variant="outline" className="mt-4" onClick={downloadTemplate}>
             <Download className="mr-2 h-4 w-4" />
-            Download {importType.toUpperCase()} template
+            Download {importType.toUpperCase()} template{importType === 'json' ? ` (${jsonFormat})` : ''}
           </Button>
         </CardContent>
       </Card>
