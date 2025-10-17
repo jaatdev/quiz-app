@@ -635,6 +635,30 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
     const allowedDifficulties = new Set(['easy', 'medium', 'hard']);
     const defaultOptionIds = ['a', 'b', 'c', 'd'];
 
+    // Helper: get preferred language code array
+    const preferredLangs = ['en', 'hi'];
+
+    // Helper: pick a string from multilingual or plain string
+    const pickLangString = (value: unknown): string => {
+      if (typeof value === 'string') return value.trim();
+      if (value && typeof value === 'object') {
+        const obj = value as Record<string, unknown>;
+        for (const lang of preferredLangs) {
+          const v = obj[lang];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+        }
+        // fall back to first string value
+        for (const k of Object.keys(obj)) {
+          const v = obj[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+        }
+      }
+      return '';
+    };
+
+    // Helper: map 0..3 to a..d
+    const indexToOptionId = (idx: number): string => defaultOptionIds[idx] ?? String(idx);
+
     const normalizeDifficulty = (value: unknown) => {
       const difficulty = String(value ?? 'medium').toLowerCase();
       return allowedDifficulties.has(difficulty) ? difficulty : 'medium';
@@ -648,6 +672,30 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
             text: typeof option?.text === 'string' ? option.text.trim() : ''
           }))
           .filter((option: { id: string; text: string }) => option.text.length > 0);
+      }
+
+      // NEW FORMAT: options as multilingual object { en: [..], hi: [..] }
+      if (question?.options && typeof question.options === 'object') {
+        const obj = question.options as Record<string, unknown>;
+        // choose a language array
+        let list: unknown = undefined;
+        for (const lang of preferredLangs) {
+          if (Array.isArray((obj as any)[lang])) { list = (obj as any)[lang]; break; }
+        }
+        if (!list) {
+          // pick first array in object
+          for (const k of Object.keys(obj)) {
+            if (Array.isArray((obj as any)[k])) { list = (obj as any)[k]; break; }
+          }
+        }
+        if (Array.isArray(list)) {
+          return (list as unknown[])
+            .map((text, index) => ({
+              id: defaultOptionIds[index] ?? `option${index + 1}`,
+              text: typeof text === 'string' ? text.trim() : String(text ?? '').trim(),
+            }))
+            .filter((o) => o.text.length > 0);
+        }
       }
 
       const fallbackOptions = defaultOptionIds
@@ -785,8 +833,15 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
       }
 
       for (const question of questions) {
-        const textSource = typeof question?.text === 'string' ? question.text : question?.question;
-        const text = typeof textSource === 'string' ? textSource.trim() : '';
+        // Accept both old and new (multilingual) formats
+        let text = '';
+        if (typeof question?.text === 'string') {
+          text = question.text.trim();
+        } else if (typeof question?.question === 'string') {
+          text = question.question.trim();
+        } else if (question?.question && typeof question.question === 'object') {
+          text = pickLangString(question.question);
+        }
         if (!text) {
           throw new ImportValidationError('Each question must include text');
         }
@@ -796,7 +851,21 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
           throw new ImportValidationError(`Question "${text.slice(0, 50)}" must include at least one option with text`);
         }
 
-        const suppliedAnswer = String(question?.correctAnswerId ?? question?.correctAnswer ?? '').trim().toLowerCase();
+        // Accept correctAnswerId (a,b,...) or correctAnswer (0..3 or '0'..'3')
+        let suppliedAnswer = '';
+        if (typeof question?.correctAnswerId === 'string') {
+          suppliedAnswer = question.correctAnswerId.trim().toLowerCase();
+        } else if (typeof question?.correctAnswer === 'number') {
+          suppliedAnswer = indexToOptionId(question.correctAnswer);
+        } else if (typeof question?.correctAnswer === 'string') {
+          const trimmed = question.correctAnswer.trim();
+          if (/^\d+$/.test(trimmed)) {
+            suppliedAnswer = indexToOptionId(parseInt(trimmed, 10));
+          } else {
+            suppliedAnswer = trimmed.toLowerCase();
+          }
+        }
+
         if (!suppliedAnswer) {
           throw new ImportValidationError(`Question "${text.slice(0, 50)}" is missing correctAnswerId`);
         }
@@ -837,7 +906,13 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
           }
         }
 
-        const explanation = typeof question?.explanation === 'string' ? question.explanation.trim() : null;
+        let explanation: string | null = null;
+        if (typeof question?.explanation === 'string') {
+          explanation = question.explanation.trim();
+        } else if (question?.explanation && typeof question.explanation === 'object') {
+          const picked = pickLangString(question.explanation);
+          explanation = picked ? picked : null;
+        }
         const difficulty = normalizeDifficulty(question?.difficulty);
         const pyqLabel = normalizePyq(question?.pyq);
 
