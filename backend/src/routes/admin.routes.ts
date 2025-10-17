@@ -3,6 +3,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import multer, { FileFilterCallback } from 'multer';
 import fs from 'fs';
 import { requireAdmin } from '../middleware/admin';
+import { PRIMARY_ADMIN_EMAIL, isPrimaryAdmin } from '../config/admin.config';
 import {
   getNotesDir,
   buildNotesUrl,
@@ -1155,12 +1156,35 @@ router.put('/users/:id/role', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
+    // Fetch the user to check their email
+    const targetUser = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // 🛡️ PROTECTION: Prevent revoking PRIMARY_ADMIN status
+    if (isPrimaryAdmin(targetUser.email) && role !== 'admin') {
+      return res.status(403).json({
+        error: 'Cannot revoke admin status from primary admin',
+        details: `${PRIMARY_ADMIN_EMAIL} is the permanent primary administrator and cannot be downgraded`,
+        code: 'PRIMARY_ADMIN_PROTECTED'
+      });
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: { role }
     });
+
+    // Log admin role changes for audit trail
+    console.log(`[AUDIT] User role updated: ${targetUser.email} → ${role}`);
+
     res.json(user);
   } catch (error) {
+    console.error('Error updating user role:', error);
     res.status(500).json({ error: 'Failed to update user role' });
   }
 });
