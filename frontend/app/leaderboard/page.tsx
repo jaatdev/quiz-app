@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Trophy, Medal, Crown, TrendingUp, TrendingDown, 
-  Home, Filter, User
+  Home, Filter, User, Lock
 } from 'lucide-react';
 import { useToast } from '@/providers/toast-provider';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface LeaderboardUser {
   id: string;
@@ -34,8 +36,9 @@ interface QuizAttempt {
   timeSpent: number;
 }
 
-export default function LeaderboardPage() {
+function LeaderboardPageContent() {
   const router = useRouter();
+  const { displayName } = useAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'all'>('all');
   const [currentUserId] = useState('current-user'); // In real app, get from auth
@@ -234,16 +237,17 @@ export default function LeaderboardPage() {
       {/* Header */}
       <header className="bg-white border-b-2 sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <Trophy className="w-8 h-8 text-yellow-500" />
-              <h1 className="text-2xl font-bold text-gray-900">Leaderboard</h1>
+              <h1 className="text-2xl font-bold text-gray-900">🏆 Leaderboard</h1>
             </div>
             <Button onClick={() => router.push('/')} variant="outline" className="font-bold">
               <Home className="w-4 h-4 mr-2" />
               Home
             </Button>
           </div>
+          <p className="text-sm text-gray-700">Hey, <span className="font-semibold">{displayName}</span>! Climb the ranks and compete with others</p>
         </div>
       </header>
 
@@ -434,5 +438,13 @@ export default function LeaderboardPage() {
             </Card>
       </div>
     </div>
+  );
+}
+
+export default function LeaderboardPage() {
+  return (
+    <ProtectedRoute>
+      <LeaderboardPageContent />
+    </ProtectedRoute>
   );
 }

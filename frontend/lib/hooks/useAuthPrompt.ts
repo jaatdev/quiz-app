@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { AuthModal } from '@/components/AuthModal';
 
 interface UseAuthPromptOptions {
   title?: string;
@@ -20,15 +19,16 @@ export function useAuthPrompt() {
   const [modalConfig, setModalConfig] = useState<UseAuthPromptOptions>({});
 
   const requireAuth = useCallback(
-    (options: UseAuthPromptOptions = {}) => {
-      if (!isLoaded) return false;
+    (callback: () => void, options: UseAuthPromptOptions = {}) => {
+      if (!isLoaded) return;
 
       if (!isSignedIn) {
         setModalConfig(options);
         setShowModal(true);
-        return false;
+        return;
       }
-      return true;
+      // User is authenticated, run the callback
+      callback();
     },
     [isSignedIn, isLoaded]
   );

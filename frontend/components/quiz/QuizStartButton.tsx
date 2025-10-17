@@ -12,11 +12,14 @@ export function QuizStartButton() {
   const { requireAuth, showModal, setShowModal, modalState } = useAuthPrompt();
 
   const handleStartQuiz = () => {
-    if (requireAuth({ message: 'Sign in to start taking quizzes and track your progress!' })) {
+    requireAuth(() => {
       // User is authenticated - proceed with quiz
       console.log('Starting quiz...');
       // Your quiz start logic here
-    }
+    }, { 
+      message: 'Sign in to start taking quizzes and track your progress!',
+      title: 'Ready to Take a Quiz?'
+    });
   };
 
   return (

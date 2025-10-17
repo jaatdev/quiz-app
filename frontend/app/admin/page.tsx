@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { 
   Users, BookOpen, FileText, Trophy, 
-  Activity 
+  Activity, Lock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { API_URL } from '@/lib/config';
+import { AdminRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface AdminStats {
   totalUsers: number;
@@ -40,8 +42,9 @@ interface AdminStats {
   }>;
 }
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const { user } = useUser();
+  const { displayName, user: authUser } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -89,8 +92,8 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-700">Manage your quiz platform</p>
+        <h1 className="text-3xl font-bold text-gray-900">⚙️ Admin Dashboard</h1>
+        <p className="text-gray-700">Welcome, <span className="font-semibold">{displayName}</span>! Manage your quiz platform</p>
       </div>
 
       {/* Stats Grid */}
@@ -214,5 +217,16 @@ export default function AdminDashboard() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  const { user: authUser } = useAuth();
+  const isAdmin = authUser?.publicMetadata?.role === 'admin';
+  
+  return (
+    <AdminRoute isAdmin={isAdmin}>
+      <AdminDashboardContent />
+    </AdminRoute>
   );
 }

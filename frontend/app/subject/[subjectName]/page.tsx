@@ -12,8 +12,10 @@ import { Error } from '@/components/ui/error';
 import { Card, CardContent } from '@/components/ui/card';
 import { CustomQuizDrawer } from '@/components/subject/CustomQuizDrawer';
 import { motion } from 'framer-motion';
-import { Target, Search, Plus, BookOpen } from 'lucide-react';
+import { Target, Search, Plus, BookOpen, Lock } from 'lucide-react';
 import type { Subject, Topic } from '@/types';
+import { useAuthPrompt } from '@/lib/hooks/useAuthPrompt';
+import { AuthModal } from '@/components/AuthModal';
 
 // Import subject animation (reuse hero animation or use a different one)
 import subjectAnim from '@/public/lottie/hero.json';
@@ -21,6 +23,7 @@ import subjectAnim from '@/public/lottie/hero.json';
 export default function SubjectTopicsPage() {
   const params = useParams();
   const router = useRouter();
+  const { requireAuth, showModal, setShowModal } = useAuthPrompt();
   const rawParam = params?.subjectName;
   const subjectName = typeof rawParam === 'string' ? decodeURIComponent(rawParam) : '';
   const [showCustomQuiz, setShowCustomQuiz] = useState(false);
@@ -124,15 +127,17 @@ export default function SubjectTopicsPage() {
             {totals.allSubTopicIds.length > 0 && (
               <Button
                 variant="outline"
-                onClick={async () => {
-                  try {
-                    const session = await quizService.createCustomQuizSession(totals.allSubTopicIds, questionCount);
-                    const sessionId = session.id || session.topicId || 'custom';
-                    router.push(`/quiz/${sessionId}?custom=true&subject=${encodeURIComponent(subject.name)}`);
-                  } catch (error) {
-                    console.error('Failed to create quiz:', error);
-                    alert('Failed to start quiz. Please try again.');
-                  }
+                onClick={() => {
+                  requireAuth(async () => {
+                    try {
+                      const session = await quizService.createCustomQuizSession(totals.allSubTopicIds, questionCount);
+                      const sessionId = session.id || session.topicId || 'custom';
+                      router.push(`/quiz/${sessionId}?custom=true&subject=${encodeURIComponent(subject.name)}`);
+                    } catch (error) {
+                      console.error('Failed to create quiz:', error);
+                      alert('Failed to start quiz. Please try again.');
+                    }
+                  });
                 }}
               >
                 <BookOpen className="h-4 w-4 mr-1" />
@@ -140,7 +145,11 @@ export default function SubjectTopicsPage() {
               </Button>
             )}
 
-            <Button onClick={() => setShowCustomQuiz(true)}>
+            <Button onClick={() => {
+              requireAuth(() => {
+                setShowCustomQuiz(true);
+              });
+            }}>
               <Plus className="h-4 w-4 mr-1" /> Build Custom Quiz
             </Button>
           </div>
@@ -182,7 +191,11 @@ export default function SubjectTopicsPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    onClick={() => router.push(`/quiz/${topic.id}?topic=${encodeURIComponent(topic.name)}&subject=${encodeURIComponent(subject.name)}&count=${questionCount}`)}
+                    onClick={() => {
+                      requireAuth(() => {
+                        router.push(`/quiz/${topic.id}?topic=${encodeURIComponent(topic.name)}&subject=${encodeURIComponent(subject.name)}&count=${questionCount}`);
+                      });
+                    }}
                   >
                     <Target className="h-4 w-4 mr-1" />
                     Start Quiz
@@ -211,6 +224,9 @@ export default function SubjectTopicsPage() {
           onStart={handleCustomQuizStart}
         />
       )}
+
+      {/* Auth Modal */}
+      <AuthModal open={showModal} onClose={() => setShowModal(false)} />
     </div>
   );
 }

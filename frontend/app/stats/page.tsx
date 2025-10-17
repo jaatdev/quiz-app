@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Trophy, TrendingUp, Clock, Target, Calendar, 
-  BarChart3, Home, Download, Filter,
+  BarChart3, Home, Download, Filter, Lock,
   Brain, Zap, Award, BookOpen
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useToast } from '@/providers/toast-provider';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface QuizAttempt {
   id: string;
@@ -26,8 +28,9 @@ interface QuizAttempt {
   difficulty?: string;
 }
 
-export default function StatsPage() {
+function StatsPageContent() {
   const router = useRouter();
+  const { displayName } = useAuth();
   const [history, setHistory] = useState<QuizAttempt[]>([]);
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
@@ -299,12 +302,12 @@ export default function StatsPage() {
       {/* Header */}
       <header className="bg-white border-b shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <BarChart3 className="w-8 h-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Statistics Dashboard</h1>
-                <p className="text-sm text-gray-700">Track your learning progress</p>
+                <h1 className="text-2xl font-bold text-gray-900">📊 Statistics Dashboard</h1>
+                <p className="text-sm text-gray-700">Hey, <span className="font-semibold">{displayName}</span>! Track your learning progress</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -634,5 +637,13 @@ export default function StatsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StatsPage() {
+  return (
+    <ProtectedRoute>
+      <StatsPageContent />
+    </ProtectedRoute>
   );
 }

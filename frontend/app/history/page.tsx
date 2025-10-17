@@ -6,12 +6,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Clock, Trash2, Download, Eye, Search, 
-  ChevronLeft, ChevronRight, Home, FileJson
+  ChevronLeft, ChevronRight, Home, FileJson, Lock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateGrade } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/providers/toast-provider';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface QuizAttempt {
   id: string;
@@ -29,9 +31,10 @@ interface QuizAttempt {
   answers?: Record<string, string>;
 }
 
-export default function HistoryPage() {
+function HistoryPageContent() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { displayName } = useAuth();
   const [history, setHistory] = useState<QuizAttempt[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<QuizAttempt[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -212,8 +215,8 @@ export default function HistoryPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Quiz History</h1>
-              <p className="text-sm text-gray-700">Manage your quiz attempts</p>
+              <h1 className="text-2xl font-bold text-gray-900">📚 Quiz History</h1>
+              <p className="text-sm text-gray-700">Hey, <span className="font-semibold">{displayName}</span>! Here are your quiz attempts</p>
             </div>
             <Button onClick={() => router.push('/')} variant="outline">
               <Home className="w-4 h-4 mr-2" />
@@ -554,5 +557,13 @@ export default function HistoryPage() {
         variant="danger"
       />
     </div>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <ProtectedRoute>
+      <HistoryPageContent />
+    </ProtectedRoute>
   );
 }

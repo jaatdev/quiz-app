@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface AuthModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
   title?: string;
   message?: string;
@@ -19,11 +20,14 @@ interface AuthModalProps {
  */
 export function AuthModal({
   isOpen,
+  open,
   onClose,
   title = 'Authentication Required',
   message = 'You need to login to access this feature',
   feature = 'this feature',
 }: AuthModalProps) {
+  // Support both isOpen and open props
+  const modalOpen = isOpen ?? open ?? false;
   const router = useRouter();
 
   const handleLogin = () => {
@@ -38,7 +42,7 @@ export function AuthModal({
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {modalOpen && (
         <>
           {/* Backdrop */}
           <motion.div
@@ -69,7 +73,7 @@ export function AuthModal({
 
               {/* Icon */}
               <div className="flex justify-center mb-4">
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-full shadow-lg">
+                <div className="bg-gradient-to-br from-blue-600 via-purple-500 to-pink-500 p-4 rounded-full shadow-lg animate-pulse">
                   <Lock className="w-12 h-12 text-white" />
                 </div>
               </div>
@@ -88,24 +92,24 @@ export function AuthModal({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleLogin}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  Login to Continue
+                  ✨ Login to Start Quiz
                 </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSignup}
-                  className="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white py-3 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
+                  className="w-full bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 text-purple-700 dark:text-purple-200 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 border-2 border-purple-300 dark:border-purple-700"
                 >
-                  Create New Account
+                  🚀 Create Account
                 </motion.button>
               </div>
 
               {/* Decorative element */}
               <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                🎯 Join now to track your progress and compete!
+                � Join now to unlock unlimited quizzes and track progress!
               </div>
             </motion.div>
           </div>

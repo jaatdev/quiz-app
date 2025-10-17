@@ -20,14 +20,18 @@ const nav: NavItem[] = [
   { label: 'Stats', href: '/stats', protected: true },
   { label: 'History', href: '/history', protected: true },
   { label: 'Leaderboard', href: '/leaderboard', protected: true },
+  { label: 'Admin', href: '/admin', protected: true },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, user, displayName } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
+  
+  // Check if user is admin
+  const isAdmin = user?.publicMetadata?.role === 'admin';
 
   const handleProtectedClick = (e: React.MouseEvent, item: NavItem) => {
     if (item.protected && !isSignedIn) {
@@ -90,9 +94,21 @@ export function SiteHeader() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {!isLoaded && (
               <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+            )}
+            {isLoaded && isSignedIn && (
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <span className="px-2 py-1 bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900 dark:to-orange-900 text-red-700 dark:text-red-200 text-xs font-bold rounded-full border border-red-300 dark:border-red-700 flex items-center gap-1">
+                    ⚡ Admin
+                  </span>
+                )}
+                <span className="hidden sm:inline text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {displayName}
+                </span>
+              </div>
             )}
             {isLoaded && <UserButton />}
           </div>
