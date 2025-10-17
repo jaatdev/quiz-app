@@ -1265,3 +1265,191 @@ router.put('/users/:id/role', async (req: Request, res: Response) => {
 });
 
 export default router;
+// ==========================
+// Multilingual Quiz Import
+// ==========================
+// POST /admin/multilingual/import
+// Accepts a flexible multilingual quiz payload and stores it into MultilingualQuiz tables.
+// Requirements:
+// - Detect at least two languages across title/description/question/options/explanation
+// - Normalize answers to zero-based index
+// - Preserve timeLimit (minutes) and include total questions in response
+router.post('/multilingual/import', async (req: Request, res: Response) => {
+  try {
+    const body = req.body ?? {};
+
+    // Helper: collect language keys from a multilingual object { en: string | string[], hi: ... }
+    const collectLangs = (value: unknown): Set<string> => {
+      const langs = new Set<string>();
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+          if (typeof v === 'string') {
+            if (v.trim()) langs.add(k);
+          } else if (Array.isArray(v)) {
+            if ((v as unknown[]).length) langs.add(k);
+          } else if (v && typeof v === 'object') {
+            // Nested objects aren't expected here, but be permissive
+            langs.add(k);
+          }
+        }
+      }
+      return langs;
+    };
+
+    // Helper: normalize string or multilingual object into object form
+    const toMultilangObject = (value: unknown): Record<string, unknown> => {
+      if (typeof value === 'string') return { en: value };
+      if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+      return { en: '' };
+    };
+
+    // Helper: ensure value conforms to Prisma JSON input type
+    const toInputJson = (val: unknown) => val as unknown as Prisma.InputJsonValue;
+
+    // Helper: normalize options into { en: string[], hi: string[], ... }
+    const normalizeOptions = (value: unknown): Record<string, string[]> => {
+      if (Array.isArray(value)) {
+        return { en: (value as unknown[]).map((v) => String(v ?? '').trim()).filter(Boolean) };
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const result: Record<string, string[]> = {};
+        for (const [lang, arr] of Object.entries(value as Record<string, unknown>)) {
+          if (Array.isArray(arr)) {
+            result[lang] = arr.map((v) => String(v ?? '').trim()).filter(Boolean);
+          }
+        }
+        return result;
+      }
+      return { en: [] };
+    };
+
+    // Helper: map a|b|c|d or numeric to zero-based index
+    const toAnswerIndex = (ans: unknown): number => {
+      if (typeof ans === 'number' && Number.isFinite(ans)) return Math.max(0, Math.floor(ans));
+      if (typeof ans === 'string') {
+        const s = ans.trim().toLowerCase();
+        if (/^\d+$/.test(s)) return Math.max(0, parseInt(s, 10));
+        const map: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
+        if (s in map) return map[s];
+      }
+      return 0; // default to first option if ambiguous
+    };
+
+    // Extract quiz-level fields (flexible)
+  const title = toMultilangObject(body.title ?? { en: 'Imported Quiz' });
+  const description = toMultilangObject(body.description ?? { en: 'Imported multilingual quiz' });
+    const category = typeof body.category === 'string' && body.category.trim() ? body.category.trim() : 'General';
+    const allowedDifficulties = new Set(['easy', 'medium', 'hard']);
+    const difficultyRaw = String(body.difficulty ?? 'medium').toLowerCase();
+    const difficulty = allowedDifficulties.has(difficultyRaw) ? difficultyRaw : 'medium';
+    const timeLimit = Number.isFinite(body.timeLimit) ? Number(body.timeLimit) : 30; // minutes
+    const tags: string[] = Array.isArray(body.tags) ? (body.tags as unknown[]).map((t) => String(t)).slice(0, 30) : [];
+
+    // Questions can be at body.questions or body itself might be an array
+    const questionsInput: any[] = Array.isArray(body)
+      ? body
+      : Array.isArray(body.questions)
+        ? body.questions
+        : [];
+
+    if (!questionsInput.length) {
+      return res.status(400).json({ error: 'questions array is required for multilingual import' });
+    }
+
+    // Detect languages across quiz metadata and questions
+    const langSet = new Set<string>();
+    for (const l of collectLangs(title)) langSet.add(l);
+    for (const l of collectLangs(description)) langSet.add(l);
+
+    for (const q of questionsInput) {
+      // question: object or text
+      const qValue = q?.question ?? q?.text ?? '';
+      if (qValue && typeof qValue === 'object' && !Array.isArray(qValue)) {
+        for (const l of collectLangs(qValue)) langSet.add(l);
+      }
+      // options: arrays per language or single array
+      if (q?.options) {
+        const o = q.options;
+        if (o && typeof o === 'object' && !Array.isArray(o)) {
+          for (const l of collectLangs(o)) langSet.add(l);
+        }
+      }
+      // explanation
+      if (q?.explanation && typeof q.explanation === 'object' && !Array.isArray(q.explanation)) {
+        for (const l of collectLangs(q.explanation)) langSet.add(l);
+      }
+    }
+
+    // If availableLanguages explicitly provided, union it
+    if (Array.isArray(body.availableLanguages)) {
+      for (const l of body.availableLanguages as string[]) {
+        if (typeof l === 'string' && l.trim()) langSet.add(l.trim());
+      }
+    }
+
+    const availableLanguages = Array.from(langSet);
+    if (availableLanguages.length < 2) {
+      return res.status(400).json({ error: 'At least two languages must be present to import as multilingual quiz' });
+    }
+
+    const defaultLanguage = availableLanguages.includes('en') ? 'en' : availableLanguages[0];
+
+    // Create quiz and questions in a transaction
+    const quiz = await prisma.$transaction(async (tx) => {
+      const createdQuiz = await tx.multilingualQuiz.create({
+        data: {
+          title: toInputJson(title),
+          description: toInputJson(description),
+          category,
+          difficulty,
+          timeLimit,
+          availableLanguages,
+          defaultLanguage,
+          tags,
+          createdBy: (req as any).user?.id || null,
+        },
+      });
+
+      // Create questions with sequence numbers
+      let sequence = 1;
+      for (const q of questionsInput) {
+        const questionObj = toMultilangObject(q?.question ?? q?.text ?? { en: '' });
+        const optionsObj = normalizeOptions(q?.options ?? []);
+        const explanationObj = toMultilangObject(q?.explanation ?? { en: '' });
+        const correctIndex = toAnswerIndex(q?.correctAnswer ?? q?.correctAnswerId);
+
+        await tx.multilingualQuestion.create({
+          data: {
+            quizId: createdQuiz.id,
+            sequenceNumber: sequence++,
+            question: toInputJson(questionObj),
+            options: toInputJson(optionsObj),
+            correctAnswer: correctIndex,
+            explanation: toInputJson(explanationObj),
+            points: typeof q?.points === 'number' ? q.points : 10,
+            category: typeof q?.category === 'string' ? q.category : null,
+          },
+        });
+      }
+
+      return createdQuiz;
+    });
+
+    const totalQuestions = await prisma.multilingualQuestion.count({ where: { quizId: quiz.id } });
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        quizId: quiz.id,
+        timeLimit: quiz.timeLimit,
+        totalQuestions,
+        availableLanguages: quiz.availableLanguages,
+        difficulty: quiz.difficulty,
+      },
+      message: `Imported multilingual quiz with ${totalQuestions} questions (${availableLanguages.join(', ')})`,
+    });
+  } catch (error) {
+    console.error('Multilingual import error:', error);
+    return res.status(500).json({ error: 'Failed to import multilingual quiz' });
+  }
+});

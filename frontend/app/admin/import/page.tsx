@@ -46,6 +46,8 @@ export default function BulkImportPage() {
   const [createTopic, setCreateTopic] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newTopicName, setNewTopicName] = useState('');
+  const [wantMultilingual, setWantMultilingual] = useState(false);
+  const [detectedMultilingual, setDetectedMultilingual] = useState<{eligible: boolean; languages: string[]; timeLimit?: number; total?: number} | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -88,7 +90,8 @@ export default function BulkImportPage() {
     try {
       if (importType === 'json') {
         const json = JSON.parse(text);
-        const questions = Array.isArray(json)
+        const isArrayRoot = Array.isArray(json);
+        const questions = isArrayRoot
           ? json
           : (Array.isArray(json?.questions) ? json.questions : [json]);
         setPreviewData(
@@ -97,6 +100,34 @@ export default function BulkImportPage() {
             pyq: typeof item?.pyq === 'string' ? item.pyq : '',
           }))
         );
+
+        // Detect multilingual quiz eligibility (>=2 language keys across common fields)
+        try {
+          const collectLangs = (obj: any): string[] => {
+            if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return [];
+            const langs: string[] = [];
+            for (const [k, v] of Object.entries(obj)) {
+              if (typeof v === 'string' && v.trim()) langs.push(k);
+              else if (Array.isArray(v) && v.length) langs.push(k);
+            }
+            return Array.from(new Set(langs));
+          };
+
+          const langSet = new Set<string>();
+          if (!isArrayRoot && json?.title) collectLangs(json.title).forEach(l => langSet.add(l));
+          if (!isArrayRoot && json?.description) collectLangs(json.description).forEach(l => langSet.add(l));
+          for (const q of questions) {
+            if (q?.question && typeof q.question === 'object') collectLangs(q.question).forEach(l => langSet.add(l));
+            if (q?.options && typeof q.options === 'object' && !Array.isArray(q.options)) collectLangs(q.options).forEach(l => langSet.add(l));
+            if (q?.explanation && typeof q.explanation === 'object') collectLangs(q.explanation).forEach(l => langSet.add(l));
+          }
+          const languages = Array.from(langSet);
+          const eligible = languages.length >= 2;
+          const timeLimit = !isArrayRoot && typeof json?.timeLimit === 'number' ? json.timeLimit : undefined;
+          setDetectedMultilingual({ eligible, languages, timeLimit, total: questions.length });
+        } catch {
+          setDetectedMultilingual(null);
+        }
       } else {
         const lines = text.split('\n').filter(Boolean);
         if (!lines.length) return setPreviewData([]);
@@ -120,6 +151,7 @@ export default function BulkImportPage() {
     } catch (error) {
       console.error('Failed to preview file:', error);
       setPreviewData([]);
+      setDetectedMultilingual(null);
       showToast({
         variant: 'error',
         title: 'Failed to preview file.',
@@ -330,13 +362,47 @@ export default function BulkImportPage() {
         }
       }
 
-      const response = await fetch(`${API_URL}/admin/questions/bulk`, {
+      // Decide endpoint: multilingual import vs standard bulk
+      const useMultilingual = importType === 'json' && wantMultilingual && detectedMultilingual?.eligible;
+      const endpoint = useMultilingual ? `${API_URL}/admin/multilingual/import` : `${API_URL}/admin/questions/bulk`;
+
+      // If using multilingual and root has quiz metadata, send full root
+      let bodyData: any = payload;
+      if (useMultilingual) {
+        try {
+          const root = JSON.parse(text);
+          if (root && typeof root === 'object' && !Array.isArray(root)) {
+            bodyData = root;
+          } else {
+            // Fallback: wrap records with minimal quiz meta
+            bodyData = {
+              title: { en: 'Imported Quiz' },
+              description: { en: 'Imported multilingual quiz' },
+              category: 'General',
+              difficulty: 'medium',
+              timeLimit: 30,
+              questions: records,
+            };
+          }
+        } catch {
+          bodyData = {
+            title: { en: 'Imported Quiz' },
+            description: { en: 'Imported multilingual quiz' },
+            category: 'General',
+            difficulty: 'medium',
+            timeLimit: 30,
+            questions: records,
+          };
+        }
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-clerk-user-id': user.id,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(useMultilingual ? bodyData : payload),
       });
 
       const data = await response.json().catch(() => null);
@@ -345,7 +411,7 @@ export default function BulkImportPage() {
         throw new Error(data?.error || 'Import failed');
       }
 
-      const successMessage = data?.message || `Imported ${data?.created ?? records.length} questions`;
+      const successMessage = data?.message || `Imported ${data?.created ?? records.length} ${useMultilingual ? 'multilingual ' : ''}questions`;
       setResult({
         success: true,
         created: data?.created,
@@ -353,6 +419,7 @@ export default function BulkImportPage() {
       });
       setSelectedFile(null);
       setPreviewData([]);
+      setDetectedMultilingual(null);
       showToast({
         variant: 'success',
         title: 'Import complete.',
@@ -513,6 +580,23 @@ export default function BulkImportPage() {
           <CardDescription>Select how the questions should be placed in your catalog.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {importType === 'json' && detectedMultilingual?.eligible && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={wantMultilingual}
+                  onChange={(e) => setWantMultilingual(e.target.checked)}
+                />
+                <div>
+                  <p className="font-medium text-blue-900">Also create a Multilingual Quiz</p>
+                  <p className="text-sm text-blue-800">
+                    Detected languages: {detectedMultilingual.languages.join(', ')}{detectedMultilingual.total ? ` · ${detectedMultilingual.total} questions` : ''}{detectedMultilingual.timeLimit ? ` · time limit: ${detectedMultilingual.timeLimit}m` : ''}
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
           <div className="flex flex-col gap-2 md:flex-row md:items-center">
             <label className="flex items-center gap-2">
               <input
@@ -662,12 +746,12 @@ export default function BulkImportPage() {
         <Button
           size="lg"
           onClick={handleImport}
-          disabled={!selectedFile || importing || !canSubmitOverride}
+          disabled={!selectedFile || importing || (!wantMultilingual && !canSubmitOverride)}
         >
           {importing ? 'Importing…' : (
             <>
               <Upload className="mr-2 h-4 w-4" />
-              Import questions
+              Import {wantMultilingual ? 'multilingual quiz' : 'questions'}
             </>
           )}
         </Button>
