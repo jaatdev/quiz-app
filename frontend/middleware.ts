@@ -1,41 +1,55 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
+// Public routes - accessible to everyone
 const isPublicRoute = createRouteMatcher([
   '/',
-  '/leaderboard',
-  '/history',
-  '/stats',
-  '/subject(.*)',
-  '/quiz(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/welcome',
   '/api/(.*)',
+  '/_next(.*)',
+  '/favicon.ico',
+]);
+
+// Protected routes - require authentication
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/quiz(.*)',
+  '/my-history(.*)',
+  '/user-info(.*)',
+]);
+
+// Admin-only routes - require authentication + admin role
+const isAdminRoute = createRouteMatcher([
+  '/admin(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
   const path = req.nextUrl.pathname;
 
-  // If accessing admin and not logged in -> go to sign-in with deep-link back to admin
-  if (path.startsWith('/admin') && !userId) {
-    const signInUrl = new URL('/sign-in', req.url);
-    signInUrl.searchParams.set('redirect_url', path + req.nextUrl.search);
-    return NextResponse.redirect(signInUrl);
-  }
-
-  // Don't protect public routes
-  if (!isPublicRoute(req)) {
-    // For non-public, non-admin routes, only redirect if not logged in
+  // Check if route is admin-only
+  if (isAdminRoute(req)) {
     if (!userId) {
       const signInUrl = new URL('/sign-in', req.url);
-      signInUrl.searchParams.set('redirect_url', path);
+      signInUrl.searchParams.set('redirect_url', path + req.nextUrl.search);
+      return NextResponse.redirect(signInUrl);
+    }
+    // Note: Role checking should be done on the client-side for now
+    // You can add server-side role checking via user metadata
+  }
+
+  // Check if route is protected
+  if (isProtectedRoute(req)) {
+    if (!userId) {
+      const signInUrl = new URL('/sign-in', req.url);
+      signInUrl.searchParams.set('redirect_url', path + req.nextUrl.search);
       return NextResponse.redirect(signInUrl);
     }
   }
 
-  // Otherwise do nothing (no forced redirect to /dashboard)
+  // Allow public routes to proceed
   return NextResponse.next();
 });
 
