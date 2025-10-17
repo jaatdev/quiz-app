@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { FilterBar } from '@/components/i18n/FilterBar'
+import { FilterBar } from '@/src/components/i18n/FilterBar'
 
 // Mock Framer Motion to avoid animation issues in tests
 jest.mock('framer-motion', () => ({
