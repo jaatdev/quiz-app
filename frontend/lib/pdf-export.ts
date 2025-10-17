@@ -182,7 +182,7 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
       // Question number and status
       pdf.setFontSize(12);
       pdf.setTextColor(52, 73, 94);
-      pdf.setFont(undefined, 'bold');
+      pdf.setFont('helvetica', 'bold');
       
       const statusIcon = isCorrect ? '✓' : '✗';
       const statusColor = isCorrect ? [16, 185, 129] : [239, 68, 68]; // green or red
@@ -193,7 +193,7 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
       yPosition += lineHeight;
       
       // Question text
-      pdf.setFont(undefined, 'normal');
+      pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(52, 73, 94);
       const questionLines = pdf.splitTextToSize(question.text, maxWidth - 8);
@@ -206,12 +206,12 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
 
       if (question.pyqLabel && question.pyqLabel.trim()) {
         checkAddPage();
-        pdf.setFont(undefined, 'bold');
+        pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(10);
         pdf.setTextColor(217, 119, 6);
         pdf.text(`PYQ: ${question.pyqLabel.trim()}`, marginLeft + 2, yPosition);
         yPosition += lineHeight;
-        pdf.setFont(undefined, 'normal');
+        pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(52, 73, 94);
       }
       
@@ -265,9 +265,9 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
         }
         
         if (isBold) {
-          pdf.setFont(undefined, 'bold');
+          pdf.setFont('helvetica', 'bold');
         } else {
-          pdf.setFont(undefined, 'normal');
+          pdf.setFont('helvetica', 'normal');
         }
         
         pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
@@ -281,7 +281,7 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
         pdf.text(option.text, textX, yPosition);
         yPosition += lineHeight;
         
-        pdf.setFont(undefined, 'normal');
+        pdf.setFont('helvetica', 'normal');
       });
       
       // Add bottom padding
@@ -292,13 +292,13 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
         checkAddPage();
         pdf.setFontSize(9);
         pdf.setTextColor(100, 116, 139);
-        pdf.setFont(undefined, 'italic');
+        pdf.setFont('helvetica', 'italic');
         const userOption = question.options.find(opt => opt.id === question.userAnswerId);
         if (userOption) {
           pdf.text(`Your answer: ${userOption.text}`, marginLeft + 5, yPosition);
           yPosition += lineHeight;
         }
-        pdf.setFont(undefined, 'normal');
+        pdf.setFont('helvetica', 'normal');
       }
       
       // Explanation
@@ -308,11 +308,11 @@ export function generateSimpleQuizPDF(result: QuizResultData) {
         
         pdf.setFontSize(10);
         pdf.setTextColor(59, 130, 246); // blue
-        pdf.setFont(undefined, 'bold');
+        pdf.setFont('helvetica', 'bold');
         pdf.text('Explanation:', marginLeft + 5, yPosition);
         yPosition += lineHeight;
         
-        pdf.setFont(undefined, 'normal');
+        pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(71, 85, 105);
         const explanationLines = pdf.splitTextToSize(question.explanation, maxWidth - 10);
         explanationLines.forEach((line: string) => {
