@@ -1,0 +1,10 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+*.log
+/.turbo/
+/.pnpm-debug.log
+/.pnp.cjs.next
+node_modules
