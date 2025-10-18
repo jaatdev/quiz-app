@@ -1,7 +1,8 @@
-// Tailwind CSS v4: use the dedicated PostCSS plugin package
-import tailwindcss from '@tailwindcss/postcss';
-import autoprefixer from 'autoprefixer';
-
+// Next.js requires PostCSS plugins to be provided as strings
+// Tailwind CSS v4 uses the dedicated PostCSS plugin package
 export default {
-  plugins: [tailwindcss, autoprefixer],
+  plugins: [
+    '@tailwindcss/postcss',
+    'autoprefixer',
+  ],
 };
