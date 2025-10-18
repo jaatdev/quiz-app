@@ -183,3 +183,20 @@ body {
 .font-noto-sans-devanagari {
   font-family: 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
 }
+
+/* Exam mode: hide chrome and disable scrolling */
+body.exam-mode {
+  overflow: hidden;
+  background: #0b1020;
+}
+
+body.exam-mode .site-header,
+body.exam-mode .site-footer {
+  display: none !important;
+}
+
+/* Make quiz container full height */
+.exam-fullscreen {
+  height: 100vh;
+  width: 100vw;
+}
