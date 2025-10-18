@@ -9,6 +9,7 @@ import {
   buildNotesUrl,
   resolveAbsoluteFromUrl,
 } from '../utils/uploads';
+import { listAuditLogs } from '../controllers/audit.controller';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -213,6 +214,11 @@ router.post('/subjects', async (req: Request, res: Response) => {
     console.error('Error creating subject:', error);
     res.status(500).json({ error: 'Failed to create subject' });
   }
+});
+
+// Audit logs list
+router.get('/audit-logs', async (req: Request, res: Response) => {
+  return listAuditLogs(req, res);
 });
 
 router.put('/subjects/:id', async (req: Request, res: Response) => {
@@ -1219,6 +1225,151 @@ router.get('/users', async (req: Request, res: Response) => {
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Admin: List all quizzes (for admin bulk convert UI)
+router.get('/quizzes', async (req: Request, res: Response) => {
+  try {
+    const quizzes = await prisma.multilingualQuiz.findMany({
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        availableLanguages: true,
+        defaultLanguage: true,
+        timeLimit: true,
+        difficulty: true,
+        category: true,
+        questions: {
+          select: { id: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // map to a shape convenient for the frontend
+    const mapped = quizzes.map((q) => ({
+      id: q.id,
+      quizId: q.id,
+      title: typeof q.title === 'string' ? q.title : ((q as any).title?.en || (q as any).title?.hi || 'Untitled'),
+      description: q.description,
+      availableLanguages: q.availableLanguages || [],
+      defaultLanguage: q.defaultLanguage,
+      timeLimit: q.timeLimit,
+      difficulty: q.difficulty,
+      category: q.category,
+      isMultilingual: Array.isArray(q.availableLanguages) && q.availableLanguages.includes('en') && q.availableLanguages.includes('hi'),
+      questions: (q as any).questions || []
+    }));
+
+    res.json({ success: true, quizzes: mapped });
+  } catch (e) {
+    console.error('Failed to list admin quizzes:', e);
+    res.status(500).json({ success: false, error: 'Failed to fetch quizzes' });
+  }
+});
+
+// Admin: Bulk convert quizzes server-side
+router.post('/quizzes/convert-bulk', async (req: Request, res: Response) => {
+  try {
+    const { quizIds = [], to = 'multi', lang = 'en' } = req.body ?? {};
+    if (!Array.isArray(quizIds) || quizIds.length === 0) {
+      return res.status(400).json({ success:false, message:'quizIds[] required' });
+    }
+
+    if (to === 'single' && !['en','hi'].includes(lang)) {
+      return res.status(400).json({ success:false, message:'lang must be en or hi' });
+    }
+
+  const results: Array<any> = [];
+  const overallStart = Date.now();
+
+    for (const id of quizIds) {
+      const perStart = Date.now();
+      // find by quizId first, fall back to id
+      const quiz = await prisma.multilingualQuiz.findUnique({ where: { id: String(id) } });
+
+      if (!quiz) { results.push({ quizId: id, ok: false, error: 'Not found' }); continue; }
+
+      if (to === 'multi') {
+        // ensure every question has en & hi fields
+        const questions = await prisma.multilingualQuestion.findMany({ where: { quizId: quiz.id } });
+        for (const q of questions) {
+          const question = q.question as any || {};
+          const options = q.options as any || {};
+          const explanation = q.explanation as any || {};
+
+          const newQuestion = { en: question?.en || question?.hi || '', hi: question?.hi || question?.en || '' };
+          const newOptions = {
+            en: (Array.isArray(options?.en) && options.en.length) ? options.en : (Array.isArray(options?.hi) ? options.hi : []),
+            hi: (Array.isArray(options?.hi) && options.hi.length) ? options.hi : (Array.isArray(options?.en) ? options.en : []),
+          };
+          const newExplanation = { en: explanation?.en || explanation?.hi || '', hi: explanation?.hi || explanation?.en || '' };
+
+          await prisma.multilingualQuestion.update({ where: { id: q.id }, data: { question: newQuestion, options: newOptions, explanation: newExplanation } });
+        }
+        await prisma.multilingualQuiz.update({ where: { id: quiz.id }, data: { availableLanguages: ['en','hi'], defaultLanguage: 'en' } });
+        // Audit: bulk convert to multilingual (record pruned languages, question count and time taken)
+        try {
+          if ((prisma as any).auditLog) {
+            const questionCount = questions.length;
+            const languagesFound = Array.isArray(quiz.availableLanguages) ? quiz.availableLanguages : [];
+            const languagesPruned = (languagesFound || []).filter((l: string) => !['en', 'hi'].includes(l));
+            const perEnd = Date.now();
+            await (prisma as any).auditLog.create({
+              data: {
+                event: 'QUIZ_BULK_CONVERT',
+                actorId: (req as any).user?.id || null,
+                actorEmail: (req as any).user?.email || null,
+                quizId: quiz.id,
+                originalQuizId: quiz.id,
+                languagesFound,
+                languagesPruned,
+                forcedMultilingual: false,
+                meta: { to: 'multi', questionCount, timeTakenMs: perEnd - perStart },
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Audit log write skipped (bulk convert):', (e as any)?.message || e);
+        }
+      } else {
+        // single
+          await prisma.multilingualQuiz.update({ where: { id: quiz.id }, data: { availableLanguages: [lang], defaultLanguage: lang } });
+        // Audit: bulk convert to single language (record pruned languages, question count and time taken)
+        try {
+          if ((prisma as any).auditLog) {
+            const questionCount = await prisma.multilingualQuestion.count({ where: { quizId: quiz.id } });
+            const languagesFound = Array.isArray(quiz.availableLanguages) ? quiz.availableLanguages : [];
+            const languagesPruned = (languagesFound || []).filter((l: string) => l !== lang);
+            const perEnd = Date.now();
+            await (prisma as any).auditLog.create({
+              data: {
+                event: 'QUIZ_BULK_CONVERT',
+                actorId: (req as any).user?.id || null,
+                actorEmail: (req as any).user?.email || null,
+                quizId: quiz.id,
+                originalQuizId: quiz.id,
+                languagesFound,
+                languagesPruned,
+                forcedMultilingual: false,
+                meta: { to: 'single', lang, questionCount, timeTakenMs: perEnd - perStart },
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Audit log write skipped (bulk convert single):', (e as any)?.message || e);
+        }
+      }
+
+      results.push({ quizId: id, ok: true });
+    }
+
+    res.json({ success: true, results });
+  } catch (e) {
+    console.error('Bulk convert error:', e);
+    res.status(500).json({ success:false, message:(e as any)?.message || 'Bulk convert failed' });
   }
 });
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, BookOpen, FileText, Users, 
-  Upload, Settings, ChevronRight, Menu, X 
+  Upload, Settings, ChevronRight, Menu, X, ArrowRightLeft 
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -101,6 +101,7 @@ export default function AdminLayout({
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/subjects', label: 'Subjects', icon: BookOpen },
     { href: '/admin/questions', label: 'Questions', icon: FileText },
+  { href: '/admin/bulk-convert', label: 'Bulk Convert', icon: ArrowRightLeft },
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/import', label: 'Bulk Import', icon: Upload },
     { href: '/admin/settings', label: 'Settings', icon: Settings },

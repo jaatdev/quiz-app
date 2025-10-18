@@ -24,6 +24,8 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
   const [showResults, setShowResults] = useState(false);
   const [selectedLanguageForQuiz, setSelectedLanguageForQuiz] = useState<LanguageCode | null>(null);
 
+  const { setExamMode } = useExamMode();
+
   // Initialize selected language from quiz available languages
   useEffect(() => {
     if (quiz.availableLanguages.includes(language)) {
@@ -87,8 +89,6 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
   if (!selectedLanguageForQuiz) {
     return <div>Loading...</div>;
   }
-
-  const { setExamMode } = useExamMode();
 
   // helper fullscreen
   const enterFullscreen = async () => {
@@ -339,7 +339,7 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
             <div className="space-y-4">
               {options.map((option, index) => (
                 <motion.button
-                  key={index}
+                  key={`${currentQ.questionId}-opt-${index}`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleAnswerSelect(index)}

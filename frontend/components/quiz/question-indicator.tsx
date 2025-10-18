@@ -21,7 +21,7 @@ export function QuestionIndicator({
       <div className="grid grid-cols-5 gap-2">
         {Array.from({ length: totalQuestions }, (_, i) => (
           <button
-            key={i}
+            key={`qnav-${i}`}
             onClick={() => onQuestionClick?.(i)}
             className={cn(
               'w-10 h-10 rounded-lg border-2 text-sm font-medium transition-all',

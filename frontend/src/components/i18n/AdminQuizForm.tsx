@@ -334,7 +334,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
                     Options ({LANGUAGES[selectedLanguage].nativeName})
                   </label>
                   {question.options[selectedLanguage].map((option, oIndex) => (
-                    <div key={oIndex} className="flex items-center gap-3">
+                    <div key={`${question.questionId}-opt-${oIndex}`} className="flex items-center gap-3">
                       <input
                         type="radio"
                         name={`correct_${qIndex}`}
@@ -402,7 +402,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
                   <h3 className="font-semibold text-red-900 dark:text-red-300">Validation Errors</h3>
                   <ul className="mt-2 space-y-1">
                     {validationErrors.map((error, idx) => (
-                      <li key={idx} className="text-sm text-red-700 dark:text-red-200">
+                      <li key={`${error.field}-${idx}`} className="text-sm text-red-700 dark:text-red-200">
                         {error.field}: {error.message}
                       </li>
                     ))}
@@ -476,7 +476,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
 
                   <div className="space-y-4">
                     {quiz.questions.slice(0, 2).map((q, idx) => (
-                      <div key={idx} className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <div key={`${q.questionId}-preview-${idx}`} className="border-t border-gray-200 dark:border-gray-700 pt-4">
                         <p className="font-medium text-gray-900 dark:text-white mb-2">
                           {getLocalizedContent(q.question, selectedLanguage)}
                         </p>

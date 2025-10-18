@@ -167,6 +167,25 @@ model MultilingualQuiz {
   @@index([createdAt])
 }
 
+// Audit log for important admin actions (language pruning, conversions)
+model AuditLog {
+  id               String   @id @default(cuid())
+  event            String
+  actorId          String?
+  actorEmail       String?
+  quizId           String?
+  originalQuizId   String?
+  languagesFound   String[] @default([])
+  languagesPruned  String[] @default([])
+  forcedMultilingual Boolean @default(false)
+  meta             Json?
+  createdAt        DateTime @default(now())
+
+  @@index([quizId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
 // Multilingual Question model - questions with language-specific content
 model MultilingualQuestion {
   id               String              @id @default(cuid())

@@ -2,18 +2,21 @@
 // Lightweight TypeScript helpers
 type LangMap = { [lang: string]: any };
 
+const SUPPORTED_LANGS = ['en', 'hi'];
 const hasDevanagari = (s = '') => /[\u0900-\u097F]/.test(String(s));
 const isStr = (v: unknown) => typeof v === 'string' && v.trim().length > 0;
 
+// splitBi accepts strings like 'English / हिंदी' or 'हिंदी / English' and returns {en, hi}
 const splitBi = (text = ''): { en: string; hi: string } => {
   if (!isStr(text)) return { en: '', hi: '' };
-  const parts = String(text).split(' / ').map((p) => p.trim());
+  const parts = String(text).split('/').map((p) => p.trim());
   if (parts.length === 2) {
     const [p1, p2] = parts;
     const p1Hi = hasDevanagari(p1);
     return p1Hi ? { hi: p1, en: p2 } : { en: p1, hi: p2 };
   }
-  return hasDevanagari(text) ? { hi: text, en: text } : { en: text, hi: text };
+  // single language -> duplicate so UI stays consistent
+  return { en: String(text), hi: String(text) };
 };
 
 const answerMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
@@ -22,7 +25,7 @@ const normalizeQuestion = (q: any, idx: number) => {
   const nq: any = { ...(q || {}) };
   nq.questionId = nq.questionId || `q${idx + 1}`;
 
-  // question text
+  // question text -> clamp to en/hi only
   if (nq.question && typeof nq.question === 'object' && !Array.isArray(nq.question)) {
     nq.question = { en: String(nq.question.en || '').trim(), hi: String(nq.question.hi || '').trim() };
   } else if (isStr(nq.text)) {
@@ -51,7 +54,12 @@ const normalizeQuestion = (q: any, idx: number) => {
     nq.options = { en: [], hi: [] };
   }
 
+  // Ensure options arrays are both present: duplicate missing one
+  if ((!nq.options.en || nq.options.en.length === 0) && (nq.options.hi && nq.options.hi.length > 0)) nq.options.en = [...nq.options.hi];
+  if ((!nq.options.hi || nq.options.hi.length === 0) && (nq.options.en && nq.options.en.length > 0)) nq.options.hi = [...nq.options.en];
+
   // explanation/hint
+
   if (isStr(nq.explanation)) nq.explanation = splitBi(nq.explanation);
   else if (nq.explanation && typeof nq.explanation === 'object') nq.explanation = { en: String(nq.explanation.en || ''), hi: String(nq.explanation.hi || '') };
   else nq.explanation = { en: '', hi: '' };
@@ -96,7 +104,9 @@ const detectAvailableLanguages = (quiz: any) => {
   const langs: string[] = [];
   if (hasEn) langs.push('en');
   if (hasHi) langs.push('hi');
-  return langs.length ? langs : ['en'];
+  // Only allow supported langs
+  const filtered = langs.filter((l) => SUPPORTED_LANGS.includes(l));
+  return filtered.length ? filtered : ['en'];
 };
 
 export const normalizeQuiz = (quiz: any) => {
@@ -110,8 +120,9 @@ export const normalizeQuiz = (quiz: any) => {
   else out.description = { en: '', hi: '' };
 
   out.questions = (out.questions || []).map((q: any, idx: number) => normalizeQuestion(q, idx));
-  out.availableLanguages = detectAvailableLanguages(out);
-  out.isMultilingual = out.availableLanguages.length > 1;
+  out.availableLanguages = detectAvailableLanguages(out).filter((l: string) => SUPPORTED_LANGS.includes(l));
+  // Strict: multilingual only when both en and hi are present
+  out.isMultilingual = out.availableLanguages.length === 2 && out.availableLanguages.includes('en') && out.availableLanguages.includes('hi');
   out.defaultLanguage = out.defaultLanguage || (out.availableLanguages.includes('en') ? 'en' : out.availableLanguages[0]);
   out.totalPoints = out.questions.reduce((s: number, q: any) => s + (q.points || 10), 0);
   out.difficulty = out.difficulty || 'medium';
