@@ -1,6 +1,5 @@
 {
   "framework": null,
-  "installCommand": "pnpm install --no-frozen-lockfile --prefix ./frontend",
-  "buildCommand": "pnpm --prefix ./frontend run build",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "frontend/.next"
 }
