@@ -362,7 +362,7 @@ const BulkUploadComponent: React.FC<{
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         >
-            {(['csv', 'json'] as const).map((method) => (
+          {(['csv', 'json'] as const).map((method) => (
             <motion.button
               key={method}
               onClick={() => setUploadMethod(method)}
@@ -529,7 +529,7 @@ const BulkUploadComponent: React.FC<{
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {previewData.map((quiz, index) => (
                 <motion.div
-                  key={`preview-quiz-${index}-${quiz?.title?.en?.slice(0,10) ?? 'untitled'}`}
+                  key={index}
                   layout
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -668,7 +668,7 @@ const BulkUploadComponent: React.FC<{
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {uploadResult.errors.map((error, idx) => (
                     <motion.div
-                      key={`upload-error-${error.row}-${idx}`}
+                      key={idx}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3"
@@ -678,7 +678,7 @@ const BulkUploadComponent: React.FC<{
                       </p>
                       <ul className="space-y-1 text-sm text-red-800 dark:text-red-200">
                         {error.issues.map((issue, i) => (
-                          <li key={`issue-${error.row}-${i}`} className="flex items-start gap-2">
+                          <li key={i} className="flex items-start gap-2">
                             <span>•</span>
                             <span>{issue.field}: {issue.message}</span>
                           </li>

@@ -115,7 +115,7 @@ export const RecommendationsContainer: React.FC<RecommendationsContainerProps> =
           >
             {[...Array(limit)].map((_, i) => (
               <div
-                key={`skeleton-${variant}-${i}`}
+                key={i}
                 className="h-64 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse"
               />
             ))}

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getLocalizedContent, getLocalizedArray } from '@/lib/i18n/utils';
 import { LanguageSelector } from '@/src/components/i18n/LanguageSelector';
-import { useExamMode } from '../../context/ExamModeContext';
 import { LanguageToggle } from '@/src/components/i18n/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronRight, RotateCcw } from 'lucide-react';
@@ -23,8 +22,6 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
   const [answers, setAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [selectedLanguageForQuiz, setSelectedLanguageForQuiz] = useState<LanguageCode | null>(null);
-
-  const { setExamMode } = useExamMode();
 
   // Initialize selected language from quiz available languages
   useEffect(() => {
@@ -90,24 +87,6 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
     return <div>Loading...</div>;
   }
 
-  // helper fullscreen
-  const enterFullscreen = async () => {
-    const el = document.documentElement;
-    try {
-      if (el.requestFullscreen) await el.requestFullscreen();
-      else if ((el as any).webkitRequestFullscreen) await (el as any).webkitRequestFullscreen();
-      else if ((el as any).msRequestFullscreen) await (el as any).msRequestFullscreen();
-    } catch {}
-  };
-
-  const exitFullscreen = async () => {
-    try {
-      if (document.exitFullscreen) await document.exitFullscreen();
-      else if ((document as any).webkitExitFullscreen) await (document as any).webkitExitFullscreen();
-      else if ((document as any).msExitFullscreen) await (document as any).msExitFullscreen();
-    } catch {}
-  };
-
   // Quiz not started - show intro
   if (!quizStarted) {
     return (
@@ -171,12 +150,7 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={async () => {
-                // user gesture: enter fullscreen and set exam mode
-                await enterFullscreen();
-                setExamMode(true);
-                setQuizStarted(true);
-              }}
+              onClick={() => setQuizStarted(true)}
               className="w-full mt-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl text-xl font-bold shadow-lg hover:shadow-2xl transition-all duration-300"
             >
               {selectedLanguageForQuiz === 'hi' ? '🚀 क्विज़ शुरू करें' : selectedLanguageForQuiz === 'es' ? '🚀 Comenzar Quiz' : selectedLanguageForQuiz === 'fr' ? '🚀 Commencer le Quiz' : '🚀 Start Quiz'}
@@ -271,13 +245,7 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={async () => {
-                // exit exam mode and fullscreen
-                setQuizStarted(false);
-                setExamMode(false);
-                await exitFullscreen();
-                handleRestart();
-              }}
+              onClick={handleRestart}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl text-xl font-bold shadow-lg hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-5 h-5" />
@@ -339,7 +307,7 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
             <div className="space-y-4">
               {options.map((option, index) => (
                 <motion.button
-                  key={`${currentQ.questionId}-opt-${index}`}
+                  key={index}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleAnswerSelect(index)}

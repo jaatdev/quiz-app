@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import WhyEnHiModal from '@/components/WhyEnHiModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, FileJson, FileText, Download, AlertCircle, CheckCircle, Info, Lock } from 'lucide-react';
+import { Upload, FileJson, FileText, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
 import { useToast } from '@/providers/toast-provider';
@@ -49,59 +48,6 @@ export default function BulkImportPage() {
   const [newTopicName, setNewTopicName] = useState('');
   const [wantMultilingual, setWantMultilingual] = useState(false);
   const [detectedMultilingual, setDetectedMultilingual] = useState<{eligible: boolean; languages: string[]; timeLimit?: number; total?: number} | null>(null);
-
-  // language scanning + UI state
-  const [langInfo, setLangInfo] = useState<{ found: string[]; extra: string[]; hasEN: boolean; hasHI: boolean }>({ found: [], extra: [], hasEN: false, hasHI: false });
-  const [showLangPruneTip, setShowLangPruneTip] = useState<boolean>(() => {
-    try { return !localStorage.getItem('hideLangPruneTip'); } catch { return true; }
-  });
-  const [whyEnHiOpen, setWhyEnHiOpen] = useState<boolean>(() => {
-    try { return !localStorage.getItem('hideWhyEnHi'); } catch { return true; }
-  });
-  const [importAsMulti, setImportAsMulti] = useState<boolean>(false);
-  const [lockMulti, setLockMulti] = useState<boolean>(false);
-
-  const scanLanguages = (data: any) => {
-    const found = new Set<string>();
-    const known = ['en','hi','es','fr','de','ar','bn','ta','te','mr','gu','kn','ml','pa','ur','zh','ru','ja'];
-    const checkLangObj = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      Object.keys(obj).forEach((k) => { if (known.includes(k)) found.add(k); });
-    };
-
-    if (!data) return { found: [], extra: [], hasEN: false, hasHI: false };
-    if (data.title) checkLangObj(data.title);
-    if (data.description) checkLangObj(data.description);
-
-    const qs = Array.isArray(data.questions) ? data.questions : (Array.isArray(data) ? data : []);
-    qs.forEach((q: any) => {
-      if (q.question) checkLangObj(q.question);
-      if (q.options && typeof q.options === 'object' && !Array.isArray(q.options)) checkLangObj(q.options);
-      if (q.explanation) checkLangObj(q.explanation);
-      if (q.hint) checkLangObj(q.hint);
-    });
-
-    const foundArr = Array.from(found);
-    const hasEN = foundArr.includes('en');
-    const hasHI = foundArr.includes('hi');
-    const extra = foundArr.filter((l) => !['en','hi'].includes(l));
-    return { found: foundArr, extra, hasEN, hasHI };
-  };
-
-  const dismissLangPruneTip = () => {
-    try { localStorage.setItem('hideLangPruneTip', '1'); } catch {}
-    setShowLangPruneTip(false);
-  };
-
-  // Auto-enable multilingual import when both English and Hindi are detected
-  useEffect(() => {
-    if (!detectedMultilingual?.eligible) return;
-    if (wantMultilingual) return; // respect user's explicit choice
-    const langs = detectedMultilingual.languages.map((l) => String(l).toLowerCase());
-    if (langs.includes('en') && langs.includes('hi')) {
-      setWantMultilingual(true);
-    }
-  }, [detectedMultilingual, wantMultilingual]);
 
   useEffect(() => {
     if (!user) return;
@@ -179,15 +125,6 @@ export default function BulkImportPage() {
           const eligible = languages.length >= 2;
           const timeLimit = !isArrayRoot && typeof json?.timeLimit === 'number' ? json.timeLimit : undefined;
           setDetectedMultilingual({ eligible, languages, timeLimit, total: questions.length });
-          try {
-            const scan = scanLanguages(json);
-            setLangInfo(scan);
-            const mustBeMulti = scan.hasEN && scan.hasHI;
-            setImportAsMulti(mustBeMulti);
-            setLockMulti(mustBeMulti);
-          } catch (e) {
-            // ignore
-          }
         } catch {
           setDetectedMultilingual(null);
         }
@@ -425,8 +362,8 @@ export default function BulkImportPage() {
         }
       }
 
-  // Decide endpoint: multilingual import vs standard bulk
-  const useMultilingual = importType === 'json' && importAsMulti && detectedMultilingual?.eligible;
+      // Decide endpoint: multilingual import vs standard bulk
+      const useMultilingual = importType === 'json' && wantMultilingual && detectedMultilingual?.eligible;
       const endpoint = useMultilingual ? `${API_URL}/admin/multilingual/import` : `${API_URL}/admin/questions/bulk`;
 
       // If using multilingual and root has quiz metadata, send full root
@@ -506,88 +443,6 @@ export default function BulkImportPage() {
       (createTopic ? newTopicName.trim().length > 0 : selectedTopicId)
     : true;
 
-  // Download a full EN+HI quiz template (JSON)
-  const downloadFullEnHiTemplate = () => {
-    const template: any = {
-      quizId: "your_quiz_id_here",
-      title: { en: "Quiz Title (English)", hi: "क्विज़ शीर्षक (हिंदी)" },
-      description: { en: "Quiz description (English)", hi: "क्विज़ विवरण (हिंदी)" },
-      category: "indian-polity",
-      difficulty: "medium",
-      availableLanguages: ["en", "hi"],
-      defaultLanguage: "en",
-      timeLimit: 900,
-      passingScore: 60,
-      isPublished: true,
-      tags: ["tag1", "tag2"],
-      questions: [
-        {
-          questionId: "q1",
-          question: { en: "Question 1 in English?", hi: "प्रश्न 1 हिंदी में?" },
-          options: {
-            en: ["Option A", "Option B", "Option C", "Option D"],
-            hi: ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"]
-          },
-          correctAnswer: 0,
-          explanation: {
-            en: "Explain the correct answer (English).",
-            hi: "सही उत्तर की व्याख्या (हिंदी)।"
-          },
-          points: 10,
-          difficulty: "easy",
-          hint: { en: "Hint (EN)", hi: "संकेत (HI)" },
-          topicId: "topic_key_optional"
-        },
-        {
-          questionId: "q2",
-          question: { en: "Question 2 in English?", hi: "प्रश्न 2 हिंदी में?" },
-          options: {
-            en: ["Option A", "Option B", "Option C", "Option D"],
-            hi: ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"]
-          },
-          correctAnswer: 1,
-          explanation: { en: "", hi: "" },
-          points: 10,
-          difficulty: "medium"
-        },
-        {
-          questionId: "q3",
-          question: { en: "Question 3 in English?", hi: "प्रश्न 3 हिंदी में?" },
-          options: {
-            en: ["Option A", "Option B", "Option C", "Option D"],
-            hi: ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"]
-          },
-          correctAnswer: 2,
-          explanation: { en: "", hi: "" },
-          points: 10,
-          difficulty: "hard"
-        }
-      ],
-      settings: {
-        shuffleQuestions: false,
-        shuffleOptions: true,
-        showExplanation: true,
-        showHints: true,
-        allowReview: true,
-        showCorrectAnswers: true,
-        instantFeedback: false
-      },
-      metadata: {
-        subjectName: "Subject",
-        topicName: "Topic",
-        version: "1.0"
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'full-quiz-template-en-hi.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div>
       <div className="mb-8">
@@ -650,61 +505,12 @@ export default function BulkImportPage() {
               </div>
             </div>
           )}
-          <div className="mt-4 flex items-center gap-3">
-            <Button variant="outline" onClick={downloadTemplate}>
-              <Download className="mr-2 h-4 w-4" />
-              Download {importType.toUpperCase()} template{importType === 'json' ? ` (${jsonFormat})` : ''}
-            </Button>
-
-            {importType === 'json' && (
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" onClick={downloadFullEnHiTemplate} className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-2 rounded-md shadow-sm flex items-center">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Full EN+HI Template
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setWhyEnHiOpen(true)}
-                  className="text-sm text-gray-600 hover:underline"
-                >
-                  Why EN+HI?
-                </button>
-              </div>
-            )}
-          </div>
+          <Button variant="outline" className="mt-4" onClick={downloadTemplate}>
+            <Download className="mr-2 h-4 w-4" />
+            Download {importType.toUpperCase()} template{importType === 'json' ? ` (${jsonFormat})` : ''}
+          </Button>
         </CardContent>
       </Card>
-
-      {/* Language pruning info + forced multilingual control */}
-      {showLangPruneTip && langInfo.extra.length > 0 && (
-        <div className="mb-4 p-4 rounded-lg border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-          <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-amber-600 dark:text-amber-300 mt-0.5" />
-            <div className="flex-1">
-              <div className="font-semibold text-amber-800 dark:text-amber-200">We only support English (en) and Hindi (hi)</div>
-              <div className="text-sm text-amber-700 dark:text-amber-300 mt-1">The following languages will be removed during import: {langInfo.extra.join(', ')}. Your quiz will be normalized to EN+HI only for consistent rendering.</div>
-            </div>
-            <button onClick={dismissLangPruneTip} className="ml-2 text-amber-700 dark:text-amber-300 hover:underline text-sm">Don’t show again</button>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-6 flex items-center gap-3 p-3 rounded-lg border bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600">
-        <input
-          id="importAsMulti"
-          type="checkbox"
-          checked={importAsMulti}
-          onChange={(e) => { if (lockMulti && !e.target.checked) return; setImportAsMulti(e.target.checked); }}
-          disabled={lockMulti}
-          className="w-4 h-4"
-        />
-        <label htmlFor="importAsMulti" className="text-sm text-gray-800 dark:text-gray-200">Import as Multilingual (EN+HI)</label>
-        {lockMulti && (
-          <span className="inline-flex items-center gap-1 text-xs text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30 px-2 py-0.5 rounded-full ml-3">
-            <Lock className="w-4 h-4" /> Forced: EN+HI detected
-          </span>
-        )}
-      </div>
 
       <Card className="mb-6">
         <CardHeader>
@@ -748,10 +554,8 @@ export default function BulkImportPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {previewData.map((item, index) => {
-                const stableKey = item?.id ?? item?.questionId ?? item?.pyq ?? `preview-${index}`
-                return (
-                  <div key={stableKey} className="rounded-lg bg-gray-50 p-3">
+              {previewData.map((item, index) => (
+                <div key={index} className="rounded-lg bg-gray-50 p-3">
                   <p className="font-medium text-gray-900">
                     {getDisplayText(item.text ?? item.question) || 'Untitled question'}
                   </p>
@@ -764,8 +568,7 @@ export default function BulkImportPage() {
                     )}
                   </p>
                 </div>
-                )
-              })}
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -789,9 +592,6 @@ export default function BulkImportPage() {
                   <p className="font-medium text-blue-900">Also create a Multilingual Quiz</p>
                   <p className="text-sm text-blue-800">
                     Detected languages: {detectedMultilingual.languages.join(', ')}{detectedMultilingual.total ? ` · ${detectedMultilingual.total} questions` : ''}{detectedMultilingual.timeLimit ? ` · time limit: ${detectedMultilingual.timeLimit}m` : ''}
-                  </p>
-                  <p className="mt-1 text-xs text-blue-700">
-                    Note: On import the system enforces English (en) and Hindi (hi) only — any other languages found will be removed.
                   </p>
                 </div>
               </label>
@@ -834,7 +634,7 @@ export default function BulkImportPage() {
                       }}
                       className="w-full rounded-lg border p-2 text-gray-900"
                     >
-                      <option key="select-subject" value="">Select an existing subject</option>
+                      <option value="">Select an existing subject</option>
                       {subjects.map((subject) => (
                         <option key={subject.id} value={subject.id}>
                           {subject.name}
@@ -882,7 +682,7 @@ export default function BulkImportPage() {
                       disabled={createSubject || (!selectedSubjectId && !newSubjectName.trim())}
                       className="w-full rounded-lg border p-2 text-gray-900"
                     >
-                      <option key="select-topic" value="">Select an existing topic</option>
+                      <option value="">Select an existing topic</option>
                       {(currentSubject?.topics || []).map((topic) => (
                         <option key={topic.id} value={topic.id}>
                           {topic.name}
@@ -956,19 +756,6 @@ export default function BulkImportPage() {
           )}
         </Button>
       </div>
-      <WhyEnHiModal
-        open={whyEnHiOpen}
-        onClose={() => {
-          // if user checked 'Don't show again' inside modal we already wrote to localStorage
-          try {
-            const hidden = !!localStorage.getItem('hideWhyEnHi');
-            if (hidden) setWhyEnHiOpen(false);
-            else setWhyEnHiOpen(false);
-          } catch {
-            setWhyEnHiOpen(false);
-          }
-        }}
-      />
     </div>
   );
 }

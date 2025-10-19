@@ -5,7 +5,6 @@ import { ToastProvider } from "@/providers/toast-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ClientShell } from '@/components/layout/ClientShell';
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
-import { ExamModeProvider } from '@/src/context/ExamModeContext';
 
 export const metadata: Metadata = {
   title: "Quiz App - Test Your Knowledge",
@@ -29,13 +28,11 @@ export default function RootLayout({
           <LanguageProvider>
             <ToastProvider>
               <QueryProvider>
-                  <ExamModeProvider>
-                    <ClientShell>
-                      <div className="min-h-screen bg-gray-50">
-                        {children}
-                      </div>
-                    </ClientShell>
-                  </ExamModeProvider>
+                <ClientShell>
+                  <div className="min-h-screen bg-gray-50">
+                    {children}
+                  </div>
+                </ClientShell>
               </QueryProvider>
             </ToastProvider>
           </LanguageProvider>

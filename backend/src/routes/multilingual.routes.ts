@@ -1,30 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { normalizeQuiz } from '../utils/quizNormalizer';
-
-// Helper to scan language keys present in quiz payload
-const scanLanguageKeys = (data: any) => {
-  const found = new Set<string>();
-  const known = ['en','hi','es','fr','de','ar','bn','ta','te','mr','gu','kn','ml','pa','ur','zh','ru','ja'];
-  const checkObj = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return;
-    Object.keys(obj).forEach(k => { if (known.includes(k)) found.add(k); });
-  };
-
-  if (!data) return { found: [], extra: [], hasEN: false, hasHI: false };
-  if (data.title) checkObj(data.title);
-  if (data.description) checkObj(data.description);
-  const qs = Array.isArray(data.questions) ? data.questions : (Array.isArray(data) ? data : []);
-  qs.forEach((q: any) => {
-    if (q.question) checkObj(q.question);
-    if (q.options && typeof q.options === 'object' && !Array.isArray(q.options)) checkObj(q.options);
-    if (q.explanation) checkObj(q.explanation);
-    if (q.hint) checkObj(q.hint);
-  });
-  const foundArr = Array.from(found);
-  const extra = foundArr.filter(l => !['en','hi'].includes(l));
-  return { found: foundArr, extra, hasEN: foundArr.includes('en'), hasHI: foundArr.includes('hi') };
-};
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -212,16 +187,7 @@ router.get('/quizzes/multilingual/:quizId', async (req: Request, res: Response) 
  */
 router.post('/quizzes/multilingual', authenticateUser, async (req: Request, res: Response) => {
   try {
-    let payload = req.body ?? {};
-    // If old format (array) provided, wrap
-    if (Array.isArray(payload)) payload = { title: { en: 'Imported Quiz' }, description: { en: '' }, questions: payload };
-
-  const scan = scanLanguageKeys(payload);
-  const normalized = normalizeQuiz(payload as any);
-  // Enforce only en/hi
-  normalized.availableLanguages = (normalized.availableLanguages || []).filter((l: string) => ['en', 'hi'].includes(l));
-  normalized.isMultilingual = normalized.availableLanguages.length === 2;
-  const { title, description, category, difficulty, timeLimit, questions, availableLanguages } = normalized;
+    const { title, description, category, difficulty, timeLimit, questions, availableLanguages } = req.body;
 
     // Validate required fields
     if (!title || !description || !category || !difficulty || !timeLimit) {
@@ -247,24 +213,24 @@ router.post('/quizzes/multilingual', authenticateUser, async (req: Request, res:
       return res.status(403).json({ success: false, error: 'Only admins can create quizzes' });
     }
 
-  // Create quiz with normalized questions
+    // Create quiz with questions
     const quiz = await prisma.multilingualQuiz.create({
       data: {
-        title: title as any,
-        description: description as any,
+        title,
+        description,
         category,
         difficulty,
         timeLimit,
-        availableLanguages,
-        defaultLanguage: normalized.defaultLanguage,
+        availableLanguages: availableLanguages || ['en', 'hi', 'es', 'fr'],
+        defaultLanguage: 'en',
         createdBy: (req as any).userId,
         questions: {
-          create: (questions || []).map((q: any, index: number) => ({
+          create: questions.map((q: any, index: number) => ({
             sequenceNumber: index + 1,
-            question: q.question as any,
-            options: q.options as any,
+            question: q.question,
+            options: q.options,
             correctAnswer: q.correctAnswer,
-            explanation: q.explanation as any,
+            explanation: q.explanation,
             points: q.points || 10,
             category: q.category
           }))
@@ -274,27 +240,6 @@ router.post('/quizzes/multilingual', authenticateUser, async (req: Request, res:
         questions: true
       }
     });
-
-    // Audit log when any languages pruned
-    if ((scan.extra || []).length > 0) {
-      try {
-        await (prisma as any).auditLog.create({
-          data: {
-            event: 'QUIZ_LANG_PRUNE',
-            actorId: (req as any).userId,
-            actorEmail: user?.email,
-            quizId: quiz.id,
-            originalQuizId: (payload as any)?.quizId || null,
-            languagesFound: scan.found,
-            languagesPruned: scan.extra,
-            forcedMultilingual: !!(scan.hasEN && scan.hasHI),
-            meta: { questions: quiz.questions?.length || 0 }
-          }
-        });
-      } catch (e) {
-        console.error('Failed to write audit log:', e);
-      }
-    }
 
     res.status(201).json({
       success: true,
@@ -314,17 +259,7 @@ router.post('/quizzes/multilingual', authenticateUser, async (req: Request, res:
 router.put('/quizzes/multilingual/:quizId', authenticateUser, async (req: Request, res: Response) => {
   try {
     const { quizId } = req.params;
-    let payload = req.body ?? {};
-    // Merge existing with incoming and normalize
-    const existing = await prisma.multilingualQuiz.findUnique({ where: { id: quizId }, include: { questions: true } });
-    if (!existing) return res.status(404).json({ success: false, error: 'Quiz not found' });
-
-  const merged = { ...existing, ...payload, questions: payload.questions ?? existing.questions };
-  const scan = scanLanguageKeys(payload);
-  const normalized = normalizeQuiz(merged as any);
-  normalized.availableLanguages = (normalized.availableLanguages || []).filter((l: string) => ['en', 'hi'].includes(l));
-  normalized.isMultilingual = normalized.availableLanguages.length === 2;
-    const { title, description, category, difficulty, timeLimit, questions } = normalized;
+    const { title, description, category, difficulty, timeLimit, questions } = req.body;
 
     // Check if user is admin
     const user = await prisma.user.findUnique({
@@ -335,41 +270,20 @@ router.put('/quizzes/multilingual/:quizId', authenticateUser, async (req: Reques
       return res.status(403).json({ success: false, error: 'Only admins can update quizzes' });
     }
 
-    // Update quiz metadata
+    // Update quiz
     const quiz = await prisma.multilingualQuiz.update({
       where: { id: quizId },
       data: {
-        title: title as any,
-        description: description as any,
-        category,
-        difficulty,
-        timeLimit,
-        availableLanguages: normalized.availableLanguages,
-        defaultLanguage: normalized.defaultLanguage
+        ...(title && { title }),
+        ...(description && { description }),
+        ...(category && { category }),
+        ...(difficulty && { difficulty }),
+        ...(timeLimit && { timeLimit })
       },
-      include: { questions: true }
-    });
-
-    // Audit log when any languages pruned on update
-    if ((scan.extra || []).length > 0) {
-      try {
-        await (prisma as any).auditLog.create({
-          data: {
-            event: 'QUIZ_LANG_PRUNE',
-            actorId: (req as any).userId,
-            actorEmail: user?.email,
-            quizId: quiz.id,
-            originalQuizId: (payload as any)?.quizId || null,
-            languagesFound: scan.found,
-            languagesPruned: scan.extra,
-            forcedMultilingual: !!(scan.hasEN && scan.hasHI),
-            meta: { questions: questions?.length || 0 }
-          }
-        });
-      } catch (e) {
-        console.error('Failed to write audit log (update):', e);
+      include: {
+        questions: true
       }
-    }
+    });
 
     // Update questions if provided
     if (questions && questions.length > 0) {
@@ -401,51 +315,6 @@ router.put('/quizzes/multilingual/:quizId', authenticateUser, async (req: Reques
   } catch (error) {
     console.error('Error updating quiz:', error);
     res.status(500).json({ success: false, error: 'Failed to update quiz' });
-  }
-});
-
-/**
- * POST /api/quizzes/multilingual/:quizId/convert
- * Convert stored quiz between multilingual and single-language modes
- */
-router.post('/quizzes/multilingual/:quizId/convert', authenticateUser, async (req: Request, res: Response) => {
-  try {
-    const { quizId } = req.params;
-    const { to = 'multi', lang = 'en' } = req.body;
-
-    const quiz = await prisma.multilingualQuiz.findUnique({ where: { id: quizId }, include: { questions: true } });
-    if (!quiz) return res.status(404).json({ success: false, error: 'Quiz not found' });
-
-    if (to === 'single') {
-      // Set availableLanguages to single and leave content (frontend can render single language)
-      const updated = await prisma.multilingualQuiz.update({ where: { id: quizId }, data: { availableLanguages: [lang], defaultLanguage: lang } });
-      return res.json({ success: true, data: updated });
-    }
-
-    if (to === 'multi') {
-      // Ensure questions have both en/hi: duplicate missing values
-      for (const q of quiz.questions) {
-        const question = q.question as any;
-        const options = q.options as any;
-        const explanation = q.explanation as any;
-        const newQuestion = { en: question?.en || question?.hi || '', hi: question?.hi || question?.en || '' };
-        const newOptions = {
-          en: (options?.en && options.en.length ? options.en : (options?.hi || []) ),
-          hi: (options?.hi && options.hi.length ? options.hi : (options?.en || []) ),
-        };
-        const newExplanation = { en: explanation?.en || explanation?.hi || '', hi: explanation?.hi || explanation?.en || '' };
-
-        await prisma.multilingualQuestion.update({ where: { id: q.id }, data: { question: newQuestion, options: newOptions, explanation: newExplanation } });
-      }
-
-      const updated = await prisma.multilingualQuiz.update({ where: { id: quizId }, data: { availableLanguages: ['en', 'hi'], defaultLanguage: 'en' } });
-      return res.json({ success: true, data: updated });
-    }
-
-    return res.status(400).json({ success: false, error: 'Invalid conversion target' });
-  } catch (e) {
-    console.error('Conversion error:', e);
-    return res.status(500).json({ success: false, error: 'Conversion failed' });
   }
 });
 

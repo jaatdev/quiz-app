@@ -95,9 +95,9 @@ export default function BulkUploadPage() {
             >
               <h2 className="text-2xl font-bold mb-4">Recently Imported ({importedQuizzes.length})</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {importedQuizzes.slice(-6).map((quiz) => (
+                {importedQuizzes.slice(-6).map((quiz, idx) => (
                   <motion.div
-                    key={quiz.quizId ?? quiz.title.en ?? `imported-${Math.random().toString(36).slice(2,8)}`}
+                    key={idx}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.05 }}
