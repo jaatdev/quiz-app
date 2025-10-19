@@ -1,4 +1,4 @@
 {
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm run build"
+  "installCommand": "pnpm -C frontend install --no-frozen-lockfile",
+  "buildCommand": "pnpm -C frontend run build"
 }
