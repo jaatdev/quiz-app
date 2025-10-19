@@ -1,5 +1,5 @@
 {
   "framework": null,
-  "buildCommand": "bash build.sh",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "frontend/.next"
 }
