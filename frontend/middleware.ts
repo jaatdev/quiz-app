@@ -1,13 +1,12 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
-
-// Use the simplest possible middleware configuration for Edge compatibility
-export default clerkMiddleware();
+// frontend/middleware.ts
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export const config = {
-  matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
-  ],
+  // run on all routes except assets and _next
+  matcher: ['/((?!_next|.*\\..*|api/.*).*)'],
 };
+
+export default function middleware(_req: NextRequest) {
+  return NextResponse.next();
+}

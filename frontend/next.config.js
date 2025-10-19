@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   eslint: {
     // Avoid failing the build due to lint errors/warnings in CI
@@ -8,6 +10,7 @@ const nextConfig = {
     // Allow production builds to successfully complete even if there are type errors
     ignoreBuildErrors: true,
   },
+  outputFileTracingRoot: path.join(__dirname, '..'), // monorepo root
   async rewrites() {
     return [
       {
