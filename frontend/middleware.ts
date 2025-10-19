@@ -1,25 +1,10 @@
-// frontend/middleware.ts
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/admin(.*)',
-  '/quiz(.*)',
-  '/history(.*)',
-  '/leaderboard(.*)',
-]);
-
-export default clerkMiddleware((auth, req) => {
-  if (isProtectedRoute(req)) {
-    auth().protect(); // redirects to /sign-in when not signed in
-  }
-});
-
-// Exclude assets and _next
 export const config = {
-  matcher: [
-    '/((?!.+\\.[\\w]+$|_next).*)',
-    '/',
-    '/(api|trpc)(.*)',
-  ],
+  matcher: ['/((?!_next|.*\\..*|api/.*).*)'],
 };
+
+export default function middleware(_req: NextRequest) {
+  return NextResponse.next();
+}
