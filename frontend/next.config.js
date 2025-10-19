@@ -8,6 +8,19 @@ const nextConfig = {
     // Allow production builds to successfully complete even if there are type errors
     ignoreBuildErrors: true,
   },
+  experimental: {
+    // Enable serverActions for Clerk compatibility
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+  // Configure webpack to handle Clerk's dependencies in Edge runtime
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('@clerk/shared/buildAccountsBaseUrl');
+    }
+    return config;
+  },
   async rewrites() {
     return [
       {
