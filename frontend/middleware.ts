@@ -1,37 +1,13 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware } from '@clerk/nextjs/server';
 
-// Public routes - accessible to everyone
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/welcome',
-  '/api/(.*)',
-  '/_next(.*)',
-  '/favicon.ico',
-]);
-
-// Protected routes - require authentication
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/quiz(.*)',
-  '/my-history(.*)',
-  '/user-info(.*)',
-  '/admin(.*)',
-]);
-
-export default clerkMiddleware((auth, req) => {
-  // Protect all routes that are not public
-  if (!isPublicRoute(req)) {
-    auth().protect();
-  }
-});
+// Use the simplest possible middleware configuration for Edge compatibility
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
-    // Run middleware for all routes except static files and _next
-    '/((?!.+\\.[\\w]+$|_next).*)',
-    '/',
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
     '/(api|trpc)(.*)',
   ],
 };
