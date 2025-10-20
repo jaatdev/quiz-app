@@ -24,11 +24,11 @@ export class QuizController {
     try {
       const { topicId } = req.params;
       const topic = await quizService.getTopicById(topicId);
-      
+
       if (!topic) {
         return res.status(404).json({ error: 'Topic not found' });
       }
-      
+
       res.json(topic);
     } catch (error) {
       console.error('Error fetching topic:', error);
@@ -77,11 +77,12 @@ export class QuizController {
       }
 
       const baseName = topic.name || 'notes';
-      const sanitizedName = baseName
-        .replace(/[\r\n\t]/g, ' ')
-        .replace(/[^a-zA-Z0-9._-]+/g, '_')
-        .replace(/_{2,}/g, '_')
-        .replace(/^_+|_+$/g, '') || 'notes';
+      const sanitizedName =
+        baseName
+          .replace(/[\r\n\t]/g, ' ')
+          .replace(/[^a-zA-Z0-9._-]+/g, '_')
+          .replace(/_{2,}/g, '_')
+          .replace(/^_+|_+$/g, '') || 'notes';
       const filename = `${sanitizedName}.pdf`;
 
       res.setHeader('Content-Type', 'application/pdf');
@@ -136,11 +137,21 @@ export class QuizController {
       const topicIdsParam = req.query.topicIds;
       const additionalTopicIds: string[] = [];
       if (typeof topicIdsParam === 'string') {
-        additionalTopicIds.push(...topicIdsParam.split(',').map((id: string) => id.trim()).filter(Boolean));
+        additionalTopicIds.push(
+          ...topicIdsParam
+            .split(',')
+            .map((id: string) => id.trim())
+            .filter(Boolean)
+        );
       } else if (Array.isArray(topicIdsParam)) {
         topicIdsParam.forEach((value) => {
           if (typeof value === 'string') {
-            additionalTopicIds.push(...value.split(',').map((id: string) => id.trim()).filter(Boolean));
+            additionalTopicIds.push(
+              ...value
+                .split(',')
+                .map((id: string) => id.trim())
+                .filter(Boolean)
+            );
           }
         });
       }
@@ -150,11 +161,11 @@ export class QuizController {
         includeTopicIds: additionalTopicIds,
         durationSeconds,
       });
-      
+
       if (session.questions.length === 0) {
         return res.status(404).json({ error: 'No questions found for this topic' });
       }
-      
+
       res.json(session);
     } catch (error) {
       if (error instanceof Error && error.message === 'TOPIC_NOT_FOUND') {
@@ -169,7 +180,10 @@ export class QuizController {
   async getSubTopicsByIds(req: Request, res: Response) {
     try {
       const raw = String(req.query.ids || '');
-      const ids = raw.split(',').map(s => s.trim()).filter(Boolean);
+      const ids = raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (!ids.length) return res.json([]);
       const subs = await quizService.getSubTopicsByIds(ids);
       res.json(subs);
@@ -182,17 +196,23 @@ export class QuizController {
   // GET /api/quiz/session (with subTopicIds support)
   async startCustomQuizSession(req: Request, res: Response) {
     try {
-      const subTopicIds = String(req.query.subTopicIds || '').split(',').map(s => s.trim()).filter(Boolean);
+      const subTopicIds = String(req.query.subTopicIds || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       const count = parseInt(String(req.query.count || '10'));
-      
+
       if (subTopicIds.length) {
-        const session = await quizService.getQuizBySubTopics(subTopicIds, isNaN(count) ? 10 : count);
+        const session = await quizService.getQuizBySubTopics(
+          subTopicIds,
+          isNaN(count) ? 10 : count
+        );
         if (session.questions.length === 0) {
           return res.status(404).json({ error: 'No questions for these sub-topics' });
         }
         return res.json(session);
       }
-      
+
       return res.status(400).json({ error: 'Provide subTopicIds' });
     } catch (e) {
       console.error(e);
@@ -204,12 +224,12 @@ export class QuizController {
   async submitQuiz(req: Request, res: Response) {
     try {
       const submission = req.body;
-      
+
       // Validate submission
       if (!submission.topicId || !submission.answers || !Array.isArray(submission.answers)) {
         return res.status(400).json({ error: 'Invalid submission format' });
       }
-      
+
       const result = await quizService.submitQuiz(submission);
       res.json(result);
     } catch (error) {
@@ -222,11 +242,11 @@ export class QuizController {
   async getReviewQuestions(req: Request, res: Response) {
     try {
       const { questionIds } = req.body;
-      
+
       if (!Array.isArray(questionIds) || questionIds.length === 0) {
         return res.status(400).json({ error: 'Invalid question IDs' });
       }
-      
+
       const questions = await quizService.getQuestionsForReview(questionIds);
       res.json(questions);
     } catch (error) {

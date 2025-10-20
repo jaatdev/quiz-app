@@ -24,7 +24,7 @@ async function listUsers() {
     }
 
     console.log('\n📋 Registered Users:\n');
-    console.log('=' .repeat(80));
+    console.log('='.repeat(80));
     users.forEach((user, index) => {
       console.log(`${index + 1}. ${user.email}`);
       console.log(`   Name: ${user.name || 'Not set'}`);
@@ -35,7 +35,6 @@ async function listUsers() {
     console.log(`\nTotal: ${users.length} user(s)\n`);
     console.log('💡 To make a user admin, run:');
     console.log('   npx tsx scripts/make-admin.ts <email>\n');
-
   } catch (error) {
     console.error('❌ Error listing users:', error);
   } finally {

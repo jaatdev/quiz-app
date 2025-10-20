@@ -52,9 +52,10 @@ async function syncAllClerkUsers() {
           continue;
         }
 
-        const name = clerkUser.firstName && clerkUser.lastName
-          ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-          : clerkUser.firstName || clerkUser.username || 'Anonymous';
+        const name =
+          clerkUser.firstName && clerkUser.lastName
+            ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+            : clerkUser.firstName || clerkUser.username || 'Anonymous';
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({
@@ -122,7 +123,6 @@ async function syncAllClerkUsers() {
       console.log(`   Joined: ${user.createdAt.toLocaleDateString()}`);
       console.log();
     });
-
   } catch (error) {
     console.error('❌ Sync failed:', error);
     if (error instanceof Error) {

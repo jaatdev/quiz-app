@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const unique = <T,>(items: T[]): T[] => {
+const unique = <T>(items: T[]): T[] => {
   const seen = new Set<T>();
   const result: T[] = [];
   for (const item of items) {

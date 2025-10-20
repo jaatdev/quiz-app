@@ -8,7 +8,7 @@ async function makeAdmin(email: string) {
       where: { email },
       data: { role: 'admin' },
     });
-    
+
     console.log(`✅ User ${user.email} is now an admin!`);
     console.log(`   Name: ${user.name || 'Not set'}`);
     console.log(`   Role: ${user.role}`);

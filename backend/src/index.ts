@@ -15,13 +15,10 @@ const notesDir = getNotesDir();
 
 // CORS configuration for production
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? [
-        process.env.FRONTEND_URL || '',
-        'https://vercel.app',
-        /\.vercel\.app$/,
-      ]
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin:
+    process.env.NODE_ENV === 'production'
+      ? [process.env.FRONTEND_URL || '', 'https://vercel.app', /\.vercel\.app$/]
+      : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   optionsSuccessStatus: 200,
 };

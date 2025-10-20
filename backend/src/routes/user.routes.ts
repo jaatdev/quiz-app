@@ -14,7 +14,7 @@ const achievementService = new AchievementService(prisma);
 router.post('/sync', async (req: Request, res: Response) => {
   try {
     const { clerkId, email, name, avatar } = req.body;
-    
+
     if (!clerkId || !email) {
       return res.status(400).json({ error: 'ClerkId and email are required' });
     }
@@ -32,11 +32,11 @@ router.get('/profile/:clerkId', async (req: Request, res: Response) => {
   try {
     const { clerkId } = req.params;
     const user = await userService.getUserByClerkId(clerkId);
-    
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     res.json(user);
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -48,13 +48,13 @@ router.get('/profile/:clerkId', async (req: Request, res: Response) => {
 router.post('/quiz-attempt', async (req: Request, res: Response) => {
   try {
     const { clerkId, ...attemptData } = req.body;
-    
+
     if (!clerkId) {
       return res.status(400).json({ error: 'User authentication required' });
     }
 
-  const { attempt, achievements } = await userService.saveQuizAttempt(clerkId, attemptData);
-  res.json({ attempt, achievements });
+    const { attempt, achievements } = await userService.saveQuizAttempt(clerkId, attemptData);
+    res.json({ attempt, achievements });
   } catch (error) {
     console.error('Error saving quiz attempt:', error);
     res.status(500).json({ error: 'Failed to save quiz attempt' });
@@ -78,11 +78,11 @@ router.get('/stats/:clerkId', async (req: Request, res: Response) => {
   try {
     const { clerkId } = req.params;
     const stats = await userService.getUserStats(clerkId);
-    
+
     if (!stats) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     res.json(stats);
   } catch (error) {
     console.error('Error fetching stats:', error);
@@ -93,7 +93,7 @@ router.get('/stats/:clerkId', async (req: Request, res: Response) => {
 // Get global leaderboard
 router.get('/leaderboard', async (req: Request, res: Response) => {
   try {
-    const period = req.query.period as 'weekly' | 'monthly' | 'allTime' || 'allTime';
+    const period = (req.query.period as 'weekly' | 'monthly' | 'allTime') || 'allTime';
     const leaderboard = await leaderboardService.getGlobalLeaderboard(period);
     res.json(leaderboard);
   } catch (error) {
@@ -106,7 +106,7 @@ router.get('/leaderboard', async (req: Request, res: Response) => {
 router.get('/leaderboard/:subject', async (req: Request, res: Response) => {
   try {
     const { subject } = req.params;
-    const period = req.query.period as 'weekly' | 'monthly' | 'allTime' || 'allTime';
+    const period = (req.query.period as 'weekly' | 'monthly' | 'allTime') || 'allTime';
     const leaderboard = await leaderboardService.getSubjectLeaderboard(subject, period);
     res.json(leaderboard);
   } catch (error) {
@@ -119,13 +119,13 @@ router.get('/leaderboard/:subject', async (req: Request, res: Response) => {
 router.get('/achievements/:clerkId', async (req: Request, res: Response) => {
   try {
     const { clerkId } = req.params;
-    
+
     // Get user by clerkId
     const user = await userService.getUserByClerkId(clerkId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     const achievements = await achievementService.getUserAchievements(user.id);
     res.json(achievements);
   } catch (error) {

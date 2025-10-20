@@ -14,12 +14,12 @@ export class QuizService {
             name: true,
             notesUrl: true,
             _count: {
-              select: { questions: true }
-            }
-          }
-        }
+              select: { questions: true },
+            },
+          },
+        },
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -34,8 +34,8 @@ export class QuizService {
             _count: { select: { questions: true } },
             subTopics: {
               orderBy: { name: 'asc' },
-              include: { _count: { select: { questions: true } } }
-            }
+              include: { _count: { select: { questions: true } } },
+            },
           },
           orderBy: { name: 'asc' },
         },
@@ -50,9 +50,9 @@ export class QuizService {
       where: { id: { in: ids } },
       include: {
         topic: {
-          include: { subject: true }
-        }
-      }
+          include: { subject: true },
+        },
+      },
     });
   }
 
@@ -60,13 +60,13 @@ export class QuizService {
   async getQuizBySubTopics(subTopicIds: string[], count = 10) {
     const questions = await this.prisma.question.findMany({
       where: { subTopicId: { in: subTopicIds } },
-      select: { id: true, text: true, options: true, difficulty: true, pyq: true }
+      select: { id: true, text: true, options: true, difficulty: true, pyq: true },
     });
     const selected = this.shuffleArray(questions).slice(0, Math.min(count, questions.length));
-    
+
     return {
       subTopicIds,
-      questions: selected.map(q => ({
+      questions: selected.map((q) => ({
         id: q.id,
         text: q.text,
         options: this.shuffleArray(q.options as unknown as Option[]),
@@ -82,9 +82,9 @@ export class QuizService {
       include: {
         subject: true,
         _count: {
-          select: { questions: true }
-        }
-      }
+          select: { questions: true },
+        },
+      },
     });
   }
 
@@ -138,9 +138,10 @@ export class QuizService {
     const shuffledQuestions = this.shuffleArray(questions);
 
     const requestedCount = options?.questionCount ?? 10;
-    const limit = requestedCount === 'all'
-      ? shuffledQuestions.length
-      : Math.min(requestedCount, shuffledQuestions.length);
+    const limit =
+      requestedCount === 'all'
+        ? shuffledQuestions.length
+        : Math.min(requestedCount, shuffledQuestions.length);
 
     const selectedQuestions = shuffledQuestions.slice(0, limit);
 
@@ -155,17 +156,17 @@ export class QuizService {
       .map((id) => topicLookup.get(id)?.name)
       .filter((name): name is string => Boolean(name));
 
-    const derivedDurationSeconds = options?.durationSeconds && options.durationSeconds > 0
-      ? options.durationSeconds
-      : Math.max(1, limit) * 30;
+    const derivedDurationSeconds =
+      options?.durationSeconds && options.durationSeconds > 0
+        ? options.durationSeconds
+        : Math.max(1, limit) * 30;
 
     const primary = topicLookup.get(topicId) ?? topics[0];
 
     return {
       topicId,
-      topicName: resolvedTopicNames.length === 1
-        ? resolvedTopicNames[0]
-        : resolvedTopicNames.join(', '),
+      topicName:
+        resolvedTopicNames.length === 1 ? resolvedTopicNames[0] : resolvedTopicNames.join(', '),
       subjectName: primary.subject.name,
       notesUrl: resolvedTopicNames.length === 1 ? primary.notesUrl : null,
       durationSeconds: derivedDurationSeconds,
@@ -179,28 +180,26 @@ export class QuizService {
   // Submit quiz and calculate results
   async submitQuiz(submission: QuizSubmission): Promise<QuizResult> {
     // Get all questions with correct answers
-    const questionIds = submission.answers.map(a => a.questionId);
+    const questionIds = submission.answers.map((a) => a.questionId);
     const questions = await this.prisma.question.findMany({
       where: {
-        id: { in: questionIds }
+        id: { in: questionIds },
       },
       select: {
         id: true,
         correctAnswerId: true,
-        explanation: true
-      }
+        explanation: true,
+      },
     });
 
     // Create a map for quick lookup
-    const correctAnswersMap = new Map(
-      questions.map(q => [q.id, q.correctAnswerId])
-    );
+    const correctAnswersMap = new Map(questions.map((q) => [q.id, q.correctAnswerId]));
 
     // Calculate score
     let correctCount = 0;
     const incorrectAnswers: any[] = [];
 
-    submission.answers.forEach(answer => {
+    submission.answers.forEach((answer) => {
       const correctAnswerId = correctAnswersMap.get(answer.questionId);
       if (answer.selectedOptionId === correctAnswerId) {
         correctCount++;
@@ -208,14 +207,14 @@ export class QuizService {
         incorrectAnswers.push({
           questionId: answer.questionId,
           selectedOptionId: answer.selectedOptionId,
-          correctAnswerId
+          correctAnswerId,
         });
       }
     });
 
     // Calculate score with negative marking
     const incorrectCount = submission.answers.length - correctCount;
-    const score = correctCount - (incorrectCount * 0.25);
+    const score = correctCount - incorrectCount * 0.25;
     const percentage = (score / submission.answers.length) * 100;
 
     return {
@@ -223,7 +222,7 @@ export class QuizService {
       totalQuestions: submission.answers.length,
       correctAnswers: correctCount,
       incorrectAnswers,
-      percentage: Math.max(0, percentage)
+      percentage: Math.max(0, percentage),
     };
   }
 
@@ -231,11 +230,11 @@ export class QuizService {
   async getQuestionsForReview(questionIds: string[]): Promise<QuestionWithAnswer[]> {
     const questions = await this.prisma.question.findMany({
       where: {
-        id: { in: questionIds }
-      }
+        id: { in: questionIds },
+      },
     });
 
-    return questions.map(q => ({
+    return questions.map((q) => ({
       id: q.id,
       text: q.text,
       options: q.options as unknown as Option[],

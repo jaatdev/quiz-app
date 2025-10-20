@@ -12,13 +12,13 @@ async function testConnection() {
     console.log('🔍 Testing database connection...');
     console.log('📝 DATABASE_URL exists:', !!process.env.DATABASE_URL);
     console.log('📝 DATABASE_URL value:', process.env.DATABASE_URL?.substring(0, 30) + '...');
-    
+
     await prisma.$connect();
     console.log('✅ Connected to database');
-    
+
     const count = await prisma.subject.count();
     console.log(`📊 Found ${count} subjects`);
-    
+
     await prisma.$disconnect();
     console.log('✅ Test completed successfully');
   } catch (error) {

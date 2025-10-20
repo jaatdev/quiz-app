@@ -7,7 +7,7 @@ export class LeaderboardService {
   async getGlobalLeaderboard(period: 'weekly' | 'monthly' | 'allTime' = 'allTime') {
     let dateFilter = {};
     const now = new Date();
-    
+
     if (period === 'weekly') {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       dateFilter = { completedAt: { gte: weekAgo } };
@@ -34,25 +34,27 @@ export class LeaderboardService {
     });
 
     // Get user details
-    const userIds = userScores.map(score => score.userId);
+    const userIds = userScores.map((score) => score.userId);
     const users = await this.prisma.user.findMany({
       where: { id: { in: userIds } },
     });
 
     // Combine and sort
-    const leaderboard = userScores.map(score => {
-      const user = users.find(u => u.id === score.userId);
-      return {
-        userId: score.userId,
-        userName: user?.name || 'Anonymous',
-        userEmail: user?.email,
-        userAvatar: user?.avatar,
-        totalQuizzes: score._count.id,
-        averageScore: score._avg.percentage || 0,
-        totalPoints: score._sum.score || 0,
-        totalCorrect: score._sum.correctAnswers || 0,
-      };
-    }).sort((a, b) => b.totalPoints - a.totalPoints);
+    const leaderboard = userScores
+      .map((score) => {
+        const user = users.find((u) => u.id === score.userId);
+        return {
+          userId: score.userId,
+          userName: user?.name || 'Anonymous',
+          userEmail: user?.email,
+          userAvatar: user?.avatar,
+          totalQuizzes: score._count.id,
+          averageScore: score._avg.percentage || 0,
+          totalPoints: score._sum.score || 0,
+          totalCorrect: score._sum.correctAnswers || 0,
+        };
+      })
+      .sort((a, b) => b.totalPoints - a.totalPoints);
 
     // Add rank
     return leaderboard.map((entry, index) => ({
@@ -62,10 +64,13 @@ export class LeaderboardService {
   }
 
   // Get subject-specific leaderboard
-  async getSubjectLeaderboard(subjectName: string, period: 'weekly' | 'monthly' | 'allTime' = 'allTime') {
+  async getSubjectLeaderboard(
+    subjectName: string,
+    period: 'weekly' | 'monthly' | 'allTime' = 'allTime'
+  ) {
     let dateFilter = {};
     const now = new Date();
-    
+
     if (period === 'weekly') {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       dateFilter = { completedAt: { gte: weekAgo } };
@@ -84,7 +89,7 @@ export class LeaderboardService {
       return [];
     }
 
-    const topicIds = subject.topics.map(t => t.id);
+    const topicIds = subject.topics.map((t) => t.id);
 
     // Get scores for this subject
     const userScores = await this.prisma.quizAttempt.groupBy({
@@ -106,26 +111,28 @@ export class LeaderboardService {
     });
 
     // Get user details
-    const userIds = userScores.map(score => score.userId);
+    const userIds = userScores.map((score) => score.userId);
     const users = await this.prisma.user.findMany({
       where: { id: { in: userIds } },
     });
 
     // Combine and sort
-    const leaderboard = userScores.map(score => {
-      const user = users.find(u => u.id === score.userId);
-      return {
-        userId: score.userId,
-        userName: user?.name || 'Anonymous',
-        userEmail: user?.email,
-        userAvatar: user?.avatar,
-        subject: subjectName,
-        totalQuizzes: score._count.id,
-        averageScore: score._avg.percentage || 0,
-        totalPoints: score._sum.score || 0,
-        totalCorrect: score._sum.correctAnswers || 0,
-      };
-    }).sort((a, b) => b.totalPoints - a.totalPoints);
+    const leaderboard = userScores
+      .map((score) => {
+        const user = users.find((u) => u.id === score.userId);
+        return {
+          userId: score.userId,
+          userName: user?.name || 'Anonymous',
+          userEmail: user?.email,
+          userAvatar: user?.avatar,
+          subject: subjectName,
+          totalQuizzes: score._count.id,
+          averageScore: score._avg.percentage || 0,
+          totalPoints: score._sum.score || 0,
+          totalCorrect: score._sum.correctAnswers || 0,
+        };
+      })
+      .sort((a, b) => b.totalPoints - a.totalPoints);
 
     // Add rank
     return leaderboard.map((entry, index) => ({
@@ -137,7 +144,7 @@ export class LeaderboardService {
   // Get user's rank
   async getUserRank(userId: string) {
     const leaderboard = await this.getGlobalLeaderboard('allTime');
-    const userEntry = leaderboard.find(entry => entry.userId === userId);
+    const userEntry = leaderboard.find((entry) => entry.userId === userId);
     return userEntry || null;
   }
 }

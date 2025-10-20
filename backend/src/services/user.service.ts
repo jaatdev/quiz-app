@@ -5,12 +5,7 @@ export class UserService {
   constructor(private prisma: PrismaClient) {}
 
   // Create or update user from Clerk
-  async syncUser(userData: {
-    clerkId: string;
-    email: string;
-    name?: string;
-    avatar?: string;
-  }) {
+  async syncUser(userData: { clerkId: string; email: string; name?: string; avatar?: string }) {
     try {
       const user = await this.prisma.user.upsert({
         where: { clerkId: userData.clerkId },
@@ -26,7 +21,7 @@ export class UserService {
           avatar: userData.avatar,
         },
       });
-      
+
       return user;
     } catch (error) {
       console.error('Error syncing user:', error);
@@ -92,7 +87,7 @@ export class UserService {
       },
     });
 
-  let achievements: Awaited<ReturnType<AchievementService['checkAchievements']>> = [];
+    let achievements: Awaited<ReturnType<AchievementService['checkAchievements']>> = [];
 
     try {
       const achievementService = new AchievementService(this.prisma);
@@ -150,12 +145,19 @@ export class UserService {
 
     const totalQuizzes = user.quizAttempts.length;
     const totalScore = user.quizAttempts.reduce((sum, attempt) => sum + attempt.score, 0);
-    const totalQuestions = user.quizAttempts.reduce((sum, attempt) => sum + attempt.totalQuestions, 0);
-    const correctAnswers = user.quizAttempts.reduce((sum, attempt) => sum + attempt.correctAnswers, 0);
-    const averageScore = totalQuizzes > 0 ? (totalScore / totalQuizzes) : 0;
-    const averagePercentage = totalQuizzes > 0 
-      ? user.quizAttempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalQuizzes 
-      : 0;
+    const totalQuestions = user.quizAttempts.reduce(
+      (sum, attempt) => sum + attempt.totalQuestions,
+      0
+    );
+    const correctAnswers = user.quizAttempts.reduce(
+      (sum, attempt) => sum + attempt.correctAnswers,
+      0
+    );
+    const averageScore = totalQuizzes > 0 ? totalScore / totalQuizzes : 0;
+    const averagePercentage =
+      totalQuizzes > 0
+        ? user.quizAttempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalQuizzes
+        : 0;
 
     return {
       user: {

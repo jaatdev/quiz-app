@@ -63,13 +63,14 @@ export class AchievementService {
     }
 
     // Subject Master Achievement
-    const subjectName = typeof quizData.subjectName === 'string' && quizData.subjectName.trim().length > 0
-      ? quizData.subjectName.trim()
-      : null;
+    const subjectName =
+      typeof quizData.subjectName === 'string' && quizData.subjectName.trim().length > 0
+        ? quizData.subjectName.trim()
+        : null;
 
     if (subjectName) {
       const subjectQuizzes = await this.prisma.quizAttempt.findMany({
-        where: { 
+        where: {
           userId,
           topic: {
             subject: {

@@ -56,8 +56,10 @@ export async function handleClerkWebhook(req: Request, res: Response) {
       case 'user.created':
       case 'user.updated':
         // Sync user to database
-        const primaryEmail = email_addresses?.find((e: any) => e.id === evt.data.primary_email_address_id);
-        
+        const primaryEmail = email_addresses?.find(
+          (e: any) => e.id === evt.data.primary_email_address_id
+        );
+
         await prisma.user.upsert({
           where: { clerkId: id },
           update: {
@@ -73,7 +75,7 @@ export async function handleClerkWebhook(req: Request, res: Response) {
             role: 'user',
           },
         });
-        
+
         console.log(`✅ User ${id} synced to database`);
         break;
 
