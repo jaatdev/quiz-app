@@ -1,9 +1,13 @@
 import '@testing-library/jest-dom'
 
+// Extend the global Jest interface instead of using namespace
 declare global {
-  namespace NodeJS {
-    interface Global {
-      jest: any
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace jest {
+    interface Matchers<R> {
+      toBeInTheDocument(): R;
+      toHaveClass(className: string): R;
+      toHaveAttribute(attr: string, value?: string): R;
     }
   }
 }
