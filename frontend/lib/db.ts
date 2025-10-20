@@ -1,7 +1,4 @@
-import { PrismaClient } from '@prisma/client';
 import { NormalizedQuiz } from './quiz/normalize';
-
-const prisma = new PrismaClient();
 
 export async function getQuizByTopicId(topicId: string): Promise<NormalizedQuiz | null> {
   try {
