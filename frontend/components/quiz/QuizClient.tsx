@@ -17,13 +17,14 @@ export default function QuizClient({ quiz }: QuizClientProps) {
   // const { setExamMode } = useExamMode(); // Uncomment if you have this context
 
   const [quizStarted, setQuizStarted] = useState(false);
-  const [lang, setLang] = useState<Lang>(quiz.defaultLanguage || 'en');
+  const [lang, setLang] = useState<Lang>(quiz.defaultLanguage);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>(new Array(quiz.questions.length).fill(null));
   const [revealed, setRevealed] = useState<boolean[]>(new Array(quiz.questions.length).fill(false));
   const [score, setScore] = useState(0);
 
-  const currentQuestion = quiz.questions[currentIdx];
+  // This is the key change: derive `isMultilingual` directly from the quiz prop.
+  const isMultilingual = quiz.isMultilingual;
 
   const handleStartQuiz = () => {
     document.documentElement.requestFullscreen?.();
@@ -83,7 +84,9 @@ export default function QuizClient({ quiz }: QuizClientProps) {
             {quiz.title[lang] || quiz.title.en}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mb-8">{quiz.description[lang] || quiz.description.en}</p>
-          {quiz.isMultilingual && (
+          
+          {/* CRITICAL FIX: Only show language selector if the quiz is truly multilingual */}
+          {isMultilingual && (
             <div className="mb-8">
               <LanguageSelector
                 availableLanguages={quiz.availableLanguages}
@@ -105,9 +108,18 @@ export default function QuizClient({ quiz }: QuizClientProps) {
     );
   }
 
+  // 2. Main Quiz Runner Screen
+  const currentQuestion = quiz.questions[currentIdx];
+
+  // This check prevents the "no options" error for single-language quizzes
+  const optionsToShow = currentQuestion.options[lang]?.length > 0 
+    ? currentQuestion.options[lang]
+    : currentQuestion.options.en; // Fallback to English if current lang options are empty
+
   return (
     <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
-      {quiz.isMultilingual && (
+      {/* CRITICAL FIX: Only show the language toggle if the quiz is multilingual */}
+      {isMultilingual && (
         <LanguageToggle
           currentLanguage={lang}
           onToggle={() => handleLanguageSelect(lang === 'en' ? 'hi' : 'en')}
@@ -130,7 +142,7 @@ export default function QuizClient({ quiz }: QuizClientProps) {
             {currentQuestion.question[lang]}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(currentQuestion.options[lang] || []).map((optionText, index) => {
+            {optionsToShow.map((optionText, index) => {
               const isRevealed = revealed[currentIdx];
               const isCorrect = index === currentQuestion.correctIndex;
               const isSelected = index === userAnswers[currentIdx];

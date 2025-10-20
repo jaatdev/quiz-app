@@ -1,78 +1,144 @@
-// frontend/lib/quiz/normalize.ts
+// lib/quiz/normalize.ts
 
 export type Lang = 'en' | 'hi';
 
+// Define the shape of a perfectly structured question
 export type NormalizedQuestion = {
-  question: Record<Lang, string>;
-  options: Record<Lang, string[]>;
+  id?: string;
+  questionId: string;
+  question: { en: string; hi: string };
+  options: { en: string[]; hi: string[] };
   correctIndex: number;
-  explanation: Record<Lang, string>;
-  points?: number;
-  difficulty?: string;
+  explanation: { en: string; hi: string };
+  points: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
 };
 
+// Define the shape of a perfectly structured quiz
 export type NormalizedQuiz = {
-  quizId: string;
+  id?: string;
+  quizId?: string;
+  title: { en: string; hi: string };
+  description: { en: string; hi: string };
   subjectId: string;
   topicId: string;
   subTopicId: string;
-  title: Record<Lang, string>;
-  description: Record<Lang, string>;
   availableLanguages: Lang[];
   defaultLanguage: Lang;
   isMultilingual: boolean;
-  questions: NormalizedQuestion[];
-  timeLimit?: number;
-  totalPoints?: number;
-  settings?: {
-    instantFeedback?: boolean;
-    shuffleQuestions?: boolean;
-    shuffleOptions?: boolean;
-    showCorrectAnswers?: boolean;
+  timeLimit: number;
+  totalPoints: number;
+  settings: {
+    instantFeedback: boolean;
+    // ... other settings
   };
+  questions: NormalizedQuestion[];
 };
 
-// Normalizes any incoming quiz JSON (array or object) into a full NormalizedQuiz
+// --- Helper Functions ---
+const isStr = (v: any): v is string => typeof v === 'string' && v.trim().length > 0;
+const hasHi = (s = '') => /[\u0900-\u097F]/.test(s);
+const letterToIndex: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
+
+// This function is the core of the fix. It ensures that even single-language text
+// is duplicated into both `en` and `hi` fields, preventing null/undefined errors on the frontend.
+const normalizeText = (text: any): { en: string; hi: string } => {
+  if (typeof text === 'object' && text !== null) {
+    return { en: text.en || '', hi: text.hi || '' };
+  }
+  if (isStr(text)) {
+    // If it's a single string, check if it's Hindi. If so, use it for both. Otherwise, use it for both.
+    // This prevents one language field from being empty.
+    const parts = text.split(' / ').map(p => p.trim());
+    if (parts.length === 2) {
+      return hasHi(parts[0]) ? { hi: parts[0], en: parts[1] } : { en: parts[0], hi: parts[1] };
+    }
+    return { en: text, hi: text }; // Duplicate for consistency
+  }
+  return { en: '', hi: '' };
+};
+
+const normalizeOptions = (options: any): { en: string[]; hi: string[] } => {
+    if (typeof options === 'object' && options !== null) {
+        if (Array.isArray(options)) { // Old format: [{id, text}]
+            const en: string[] = [];
+            const hi: string[] = [];
+            options.forEach(opt => {
+                const normalizedOptText = normalizeText(opt.text);
+                en.push(normalizedOptText.en);
+                hi.push(normalizedOptText.hi);
+            });
+            return { en, hi };
+        } else { // New format: {en: [], hi: []}
+            const en = Array.isArray(options.en) ? options.en : [];
+            const hi = Array.isArray(options.hi) ? options.hi : [];
+            return { en, hi };
+        }
+    }
+    return { en: [], hi: [] };
+};
+
+
+// --- The Main Normalizer Function ---
 export function normalizeIncomingQuiz(
-  quizJson: any,
+  payload: any,
   subjectId: string,
   topicId: string,
   subTopicId: string
-): NormalizedQuiz {
-  // If it's an array, wrap it
-  const isArray = Array.isArray(quizJson);
-  const questions = isArray ? quizJson : quizJson.questions || [];
-  const quizId = quizJson.quizId || `quiz_${Date.now()}`;
-  const title = quizJson.title || { en: 'Imported Quiz', hi: 'इम्पोर्टेड क्विज़' };
-  const description = quizJson.description || { en: 'Imported quiz', hi: 'इम्पोर्टेड क्विज़' };
-  const availableLanguages = quizJson.availableLanguages || ['en', 'hi'];
-  const defaultLanguage = quizJson.defaultLanguage || 'en';
-  const isMultilingual = quizJson.isMultilingual ?? true;
-  const timeLimit = quizJson.timeLimit || 30;
+): Omit<NormalizedQuiz, 'id'> {
+  const raw = Array.isArray(payload)
+    ? { title: 'Imported Quiz', description: '', questions: payload }
+    : payload;
 
-  // Normalize questions
-  const normalizedQuestions: NormalizedQuestion[] = questions.map((q: any) => ({
-    question: q.question || { en: q.text || '', hi: '' },
-    options: q.options || { en: q.options || [], hi: [] },
-    correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : 0,
-    explanation: q.explanation || { en: '', hi: '' },
-    points: q.points || 10,
-    difficulty: q.difficulty || 'medium',
-  }));
+  const title = normalizeText(raw.title);
+  const description = normalizeText(raw.description);
+
+  const questions: NormalizedQuestion[] = (raw.questions || []).map((q: any, idx: number): NormalizedQuestion => {
+    return {
+      questionId: q.questionId || `q${idx + 1}`,
+      question: normalizeText(q.question ?? q.text),
+      options: normalizeOptions(q.options),
+      correctIndex: typeof q.correctAnswer === 'number' ? q.correctAnswer : letterToIndex[q.correctAnswerId?.toLowerCase()] ?? 0,
+      explanation: normalizeText(q.explanation),
+      points: typeof q.points === 'number' ? q.points : 10,
+      difficulty: q.difficulty || 'medium',
+    };
+  });
+
+  // Robust language detection
+  const contentStrings = [
+    title.en, title.hi,
+    description.en, description.hi,
+    ...questions.flatMap(q => [
+        q.question.en, q.question.hi,
+        ...q.options.en, ...q.options.hi,
+        q.explanation.en, q.explanation.hi
+    ])
+  ];
+
+  const hasEnglishContent = contentStrings.some(s => isStr(s) && !hasHi(s));
+  const hasHindiContent = contentStrings.some(s => isStr(s) && hasHi(s));
+
+  let availableLanguages: Lang[] = [];
+  if (hasEnglishContent) availableLanguages.push('en');
+  if (hasHindiContent) availableLanguages.push('hi');
+  if (availableLanguages.length === 0) availableLanguages.push('en'); // Fallback
 
   return {
-    quizId,
+    title,
+    description,
     subjectId,
     topicId,
     subTopicId,
-    title,
-    description,
     availableLanguages,
-    defaultLanguage,
-    isMultilingual,
-    questions: normalizedQuestions,
-    timeLimit,
-    totalPoints: normalizedQuestions.reduce((sum, q) => sum + (q.points || 10), 0),
-    settings: quizJson.settings || {},
+    defaultLanguage: availableLanguages.includes('en') ? 'en' : 'hi',
+    isMultilingual: availableLanguages.length === 2,
+    timeLimit: raw.timeLimit || 600,
+    totalPoints: questions.reduce((sum, q) => sum + q.points, 0),
+    settings: {
+      instantFeedback: true,
+      //... other settings
+    },
+    questions,
   };
 }

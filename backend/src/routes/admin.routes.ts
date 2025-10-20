@@ -1295,47 +1295,39 @@ router.post('/import-quiz', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Sub-topic not found' });
     }
 
-    // Validate quiz structure
-    if (!quizJson || typeof quizJson !== 'object') {
-      return res.status(400).json({ error: 'Invalid quiz data' });
-    }
-
-    const { questions, title, description, timeLimit, totalPoints, settings } = quizJson;
-
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({ error: 'Quiz must contain at least one question' });
-    }
+    // Normalize the incoming quiz data using similar logic to the frontend normalizer
+    const normalizedQuiz = normalizeIncomingQuizData(quizJson, subjectId, topicId, subTopicId);
 
     // Create questions in a transaction
     const createdQuestions = await prisma.$transaction(async (tx) => {
       const results = [];
 
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
+      for (let i = 0; i < normalizedQuiz.questions.length; i++) {
+        const q = normalizedQuiz.questions[i];
 
-        // Validate question structure
-        if (!q.question || !Array.isArray(q.options) || q.options.length < 2) {
-          throw new Error(`Question ${i + 1}: Invalid question structure`);
-        }
+        // Get options for the default language, fallback to English
+        const options = q.options[normalizedQuiz.defaultLanguage]?.length > 0
+          ? q.options[normalizedQuiz.defaultLanguage]
+          : q.options.en || [];
 
-        if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
-          throw new Error(`Question ${i + 1}: Invalid correct answer index`);
+        if (options.length < 2) {
+          throw new Error(`Question ${i + 1}: Not enough options available`);
         }
 
         // Create the question
         const question = await tx.question.create({
           data: {
-            text: String(q.question),
-            options: q.options.map((opt: any) => ({
-              id: typeof opt.id === 'string' ? opt.id : `option_${Date.now()}_${Math.random()}`,
-              text: String(opt.text || opt)
+            text: q.question[normalizedQuiz.defaultLanguage] || q.question.en || '',
+            options: options.map((optText: string, idx: number) => ({
+              id: `option_${Date.now()}_${i}_${idx}`,
+              text: String(optText)
             })),
-            correctAnswerId: q.options[q.correctIndex]?.id || `option_${Date.now()}_${Math.random()}`,
-            explanation: q.explanation ? String(q.explanation) : null,
-            difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
+            correctAnswerId: `option_${Date.now()}_${i}_${q.correctIndex}`,
+            explanation: q.explanation[normalizedQuiz.defaultLanguage] || q.explanation.en || null,
+            difficulty: q.difficulty || 'medium',
             topicId,
             subTopicId,
-            pyq: q.pyq ? String(q.pyq) : null,
+            pyq: null,
           }
         });
 
@@ -1366,6 +1358,101 @@ router.post('/import-quiz', async (req: Request, res: Response) => {
     });
   }
 });
+
+// Helper function to normalize quiz data (similar to frontend normalizer)
+function normalizeIncomingQuizData(payload: any, subjectId: string, topicId: string, subTopicId: string) {
+  // Helper functions
+  const isStr = (v: any): v is string => typeof v === 'string' && v.trim().length > 0;
+  const hasHi = (s = '') => /[\u0900-\u097F]/.test(s);
+  const letterToIndex: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
+
+  const normalizeText = (text: any): { en: string; hi: string } => {
+    if (typeof text === 'object' && text !== null) {
+      return { en: text.en || '', hi: text.hi || '' };
+    }
+    if (isStr(text)) {
+      const parts = text.split(' / ').map(p => p.trim());
+      if (parts.length === 2) {
+        return hasHi(parts[0]) ? { hi: parts[0], en: parts[1] } : { en: parts[0], hi: parts[1] };
+      }
+      return { en: text, hi: text };
+    }
+    return { en: '', hi: '' };
+  };
+
+  const normalizeOptions = (options: any): { en: string[]; hi: string[] } => {
+    if (typeof options === 'object' && options !== null) {
+      if (Array.isArray(options)) {
+        const en: string[] = [];
+        const hi: string[] = [];
+        options.forEach(opt => {
+          const normalizedOptText = normalizeText(opt.text || opt);
+          en.push(normalizedOptText.en);
+          hi.push(normalizedOptText.hi);
+        });
+        return { en, hi };
+      } else {
+        const en = Array.isArray(options.en) ? options.en : [];
+        const hi = Array.isArray(options.hi) ? options.hi : [];
+        return { en, hi };
+      }
+    }
+    return { en: [], hi: [] };
+  };
+
+  const raw = Array.isArray(payload)
+    ? { title: 'Imported Quiz', description: '', questions: payload }
+    : payload;
+
+  const title = normalizeText(raw.title);
+  const description = normalizeText(raw.description);
+
+  const questions = (raw.questions || []).map((q: any, idx: number) => {
+    return {
+      questionId: q.questionId || `q${idx + 1}`,
+      question: normalizeText(q.question ?? q.text),
+      options: normalizeOptions(q.options),
+      correctIndex: typeof q.correctAnswer === 'number' ? q.correctAnswer : letterToIndex[q.correctAnswerId?.toLowerCase()] ?? 0,
+      explanation: normalizeText(q.explanation),
+      points: typeof q.points === 'number' ? q.points : 10,
+      difficulty: q.difficulty || 'medium',
+    };
+  });
+
+  // Language detection
+  const contentStrings = [
+    title.en, title.hi,
+    description.en, description.hi,
+    ...questions.flatMap((q: any) => [
+        q.question.en, q.question.hi,
+        ...q.options.en, ...q.options.hi,
+        q.explanation.en, q.explanation.hi
+    ])
+  ];
+
+  const hasEnglishContent = contentStrings.some(s => isStr(s) && !hasHi(s));
+  const hasHindiContent = contentStrings.some(s => isStr(s) && hasHi(s));
+
+  let availableLanguages: string[] = [];
+  if (hasEnglishContent) availableLanguages.push('en');
+  if (hasHindiContent) availableLanguages.push('hi');
+  if (availableLanguages.length === 0) availableLanguages.push('en');
+
+  return {
+    title,
+    description,
+    subjectId,
+    topicId,
+    subTopicId,
+    availableLanguages,
+    defaultLanguage: availableLanguages.includes('en') ? 'en' : 'hi',
+    isMultilingual: availableLanguages.length === 2,
+    timeLimit: raw.timeLimit || 600,
+    totalPoints: questions.reduce((sum: number, q: any) => sum + q.points, 0),
+    settings: { instantFeedback: true },
+    questions,
+  };
+}
 
 // ==========================
 // Multilingual Quiz Import
