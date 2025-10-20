@@ -1326,7 +1326,7 @@ router.post('/import-quiz', async (req: Request, res: Response) => {
         const question = await tx.question.create({
           data: {
             text: String(q.question),
-            options: q.options.map(opt => ({
+            options: q.options.map((opt: any) => ({
               id: typeof opt.id === 'string' ? opt.id : `option_${Date.now()}_${Math.random()}`,
               text: String(opt.text || opt)
             })),
