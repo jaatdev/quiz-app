@@ -119,10 +119,11 @@ export function normalizeIncomingQuiz(
   const hasEnglishContent = contentStrings.some(s => isStr(s) && !hasHi(s));
   const hasHindiContent = contentStrings.some(s => isStr(s) && hasHi(s));
 
-  let availableLanguages: Lang[] = [];
-  if (hasEnglishContent) availableLanguages.push('en');
-  if (hasHindiContent) availableLanguages.push('hi');
-  if (availableLanguages.length === 0) availableLanguages.push('en'); // Fallback
+  const availableLanguages: Lang[] = [
+    ...(hasEnglishContent ? ['en' as Lang] : []),
+    ...(hasHindiContent ? ['hi' as Lang] : []),
+    ...((!hasEnglishContent && !hasHindiContent) ? ['en' as Lang] : [])
+  ];
 
   return {
     title,
