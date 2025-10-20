@@ -1266,6 +1266,108 @@ router.put('/users/:id/role', async (req: Request, res: Response) => {
 
 export default router;
 // ==========================
+// Quiz Import
+// ==========================
+// POST /admin/import-quiz
+// Accepts a normalized quiz payload and stores it as questions in the database
+router.post('/import-quiz', async (req: Request, res: Response) => {
+  try {
+    const body = req.body ?? {};
+    const { subjectId, topicId, subTopicId, quizJson } = body;
+
+    if (!subjectId || !topicId || !subTopicId) {
+      return res.status(400).json({ error: 'Subject, Topic, and Sub-topic are required fields.' });
+    }
+
+    // Validate that subject, topic, and subtopic exist
+    const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
+    if (!subject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+
+    const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    const subTopic = await prisma.subTopic.findUnique({ where: { id: subTopicId } });
+    if (!subTopic) {
+      return res.status(404).json({ error: 'Sub-topic not found' });
+    }
+
+    // Validate quiz structure
+    if (!quizJson || typeof quizJson !== 'object') {
+      return res.status(400).json({ error: 'Invalid quiz data' });
+    }
+
+    const { questions, title, description, timeLimit, totalPoints, settings } = quizJson;
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ error: 'Quiz must contain at least one question' });
+    }
+
+    // Create questions in a transaction
+    const createdQuestions = await prisma.$transaction(async (tx) => {
+      const results = [];
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+
+        // Validate question structure
+        if (!q.question || !Array.isArray(q.options) || q.options.length < 2) {
+          throw new Error(`Question ${i + 1}: Invalid question structure`);
+        }
+
+        if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+          throw new Error(`Question ${i + 1}: Invalid correct answer index`);
+        }
+
+        // Create the question
+        const question = await tx.question.create({
+          data: {
+            text: String(q.question),
+            options: q.options.map(opt => ({
+              id: typeof opt.id === 'string' ? opt.id : `option_${Date.now()}_${Math.random()}`,
+              text: String(opt.text || opt)
+            })),
+            correctAnswerId: q.options[q.correctIndex]?.id || `option_${Date.now()}_${Math.random()}`,
+            explanation: q.explanation ? String(q.explanation) : null,
+            difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
+            topicId,
+            subTopicId,
+            pyq: q.pyq ? String(q.pyq) : null,
+          }
+        });
+
+        results.push(question);
+      }
+
+      return results;
+    });
+
+    // Generate a quiz ID for reference
+    const quizId = `quiz_${subjectId}_${topicId}_${subTopicId}_${Date.now()}`;
+
+    console.log(`✅ Successfully imported quiz with ${createdQuestions.length} questions`);
+
+    return res.json({
+      success: true,
+      quizId,
+      questionsCreated: createdQuestions.length,
+      subject: subject.name,
+      topic: topic.name,
+      subTopic: subTopic.name
+    });
+
+  } catch (error) {
+    console.error('❌ Quiz Import Error:', error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Import failed'
+    });
+  }
+});
+
+// ==========================
 // Multilingual Quiz Import
 // ==========================
 // POST /admin/multilingual/import
