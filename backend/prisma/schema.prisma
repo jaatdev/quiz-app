@@ -70,10 +70,10 @@ model SubTopic {
 
 model Question {
   id              String    @id @default(cuid())
-  text            String
-  options         Json      // Will store array of {id: string, text: string}
+  text            Json      // { en: string, hi: string }
+  options         Json      // { en: [{id: string, text: string}], hi: [{id: string, text: string}] }
   correctAnswerId String
-  explanation     String?
+  explanation     Json?     // { en: string, hi: string }
   difficulty      String    @default("medium") // easy, medium, hard
   topicId         String
   topic           Topic     @relation(fields: [topicId], references: [id])

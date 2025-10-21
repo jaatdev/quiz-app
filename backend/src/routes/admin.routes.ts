@@ -495,7 +495,7 @@ router.post('/questions', async (req: Request, res: Response) => {
         text,
         options,
         correctAnswerId,
-        explanation: sanitizedExplanation && sanitizedExplanation.length > 0 ? sanitizedExplanation : null,
+        explanation: sanitizedExplanation && sanitizedExplanation.length > 0 ? sanitizedExplanation : undefined,
         difficulty: normalizedDifficulty,
         topicId,
         subTopicId: subTopicId || null,
@@ -528,7 +528,7 @@ router.put('/questions/:id', async (req: Request, res: Response) => {
         text,
         options,
         correctAnswerId,
-        explanation: sanitizedExplanation !== null && sanitizedExplanation.length === 0 ? null : sanitizedExplanation ?? undefined,
+        explanation: sanitizedExplanation !== null && sanitizedExplanation.length === 0 ? undefined : sanitizedExplanation ?? undefined,
         difficulty: normalizedDifficulty,
         topicId,
         subTopicId: subTopicId !== undefined ? (subTopicId || null) : undefined,
@@ -916,12 +916,25 @@ router.post('/questions/bulk', async (req: Request, res: Response) => {
         const difficulty = normalizeDifficulty(question?.difficulty);
         const pyqLabel = normalizePyq(question?.pyq);
 
+        // Convert to JSON format for multilingual support
+        const textJson = typeof question?.text === 'object' && question.text !== null
+          ? question.text
+          : { en: text, hi: text };
+
+        const optionsJson = typeof question?.options === 'object' && question.options !== null && !Array.isArray(question.options)
+          ? question.options
+          : { en: options.map(opt => opt.text), hi: options.map(opt => opt.text) };
+
+        const explanationJson = typeof question?.explanation === 'object' && question.explanation !== null
+          ? question.explanation
+          : explanation !== null ? { en: explanation, hi: explanation } : null;
+
         await tx.question.create({
           data: {
-            text,
-            options,
+            text: textJson,
+            options: optionsJson,
             correctAnswerId: suppliedAnswer,
-            explanation,
+            explanation: explanationJson,
             difficulty,
             topicId: topicId!,
             subTopicId: subTopicId,
@@ -960,11 +973,9 @@ router.get('/topics/:id/questions', async (req: Request, res: Response) => {
     const where: Prisma.QuestionWhereInput = { topicId };
 
     if (search) {
-      where.OR = [
-        { text: { contains: search, mode: 'insensitive' } },
-        { explanation: { contains: search, mode: 'insensitive' } },
-        { pyq: { contains: search, mode: 'insensitive' } },
-      ];
+      // Note: JSON fields (text, explanation) don't support contains operator
+      // For now, only search in pyq field. Full JSON search requires custom implementation
+      where.pyq = { contains: search, mode: 'insensitive' };
     }
 
     const skip = (page - 1) * pageSize;

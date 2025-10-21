@@ -4,6 +4,48 @@ import { QuizSession, QuizSubmission, QuizResult, QuestionWithAnswer, Option } f
 export class QuizService {
   constructor(private prisma: PrismaClient) {}
 
+  // Helper method to extract text from JSON format
+  private extractText(textJson: any): string {
+    if (typeof textJson === 'string') {
+      return textJson; // Legacy format
+    }
+    if (textJson && typeof textJson === 'object') {
+      // New JSON format - prefer English, fallback to first available
+      return textJson.en || textJson.hi || Object.values(textJson)[0] || '';
+    }
+    return '';
+  }
+
+  // Helper method to extract options from JSON format
+  private extractOptions(optionsJson: any): Option[] {
+    if (Array.isArray(optionsJson)) {
+      return optionsJson; // Legacy format
+    }
+    if (optionsJson && typeof optionsJson === 'object') {
+      // New JSON format - prefer English, fallback to first available
+      const options = optionsJson.en || optionsJson.hi || Object.values(optionsJson)[0];
+      if (Array.isArray(options)) {
+        return options.map((text: string, index: number) => ({
+          id: `option_${index}`,
+          text: String(text || '')
+        }));
+      }
+    }
+    return [];
+  }
+
+  // Helper method to extract explanation from JSON format
+  private extractExplanation(explanationJson: any): string | undefined {
+    if (typeof explanationJson === 'string') {
+      return explanationJson; // Legacy format
+    }
+    if (explanationJson && typeof explanationJson === 'object') {
+      // New JSON format - prefer English, fallback to first available
+      return explanationJson.en || explanationJson.hi || Object.values(explanationJson)[0];
+    }
+    return undefined;
+  }
+
   // Get all subjects with their topics
   async getSubjectsWithTopics() {
     return await this.prisma.subject.findMany({
@@ -68,8 +110,8 @@ export class QuizService {
       subTopicIds,
       questions: selected.map((q) => ({
         id: q.id,
-        text: q.text,
-        options: this.shuffleArray(q.options as unknown as Option[]),
+        text: this.extractText(q.text),
+        options: this.shuffleArray(this.extractOptions(q.options)),
         pyq: q.pyq ?? null,
       })),
     };
@@ -147,8 +189,8 @@ export class QuizService {
 
     const formattedQuestions = selectedQuestions.map((q) => ({
       id: q.id,
-      text: q.text,
-      options: this.shuffleArray(q.options as unknown as Option[]),
+      text: this.extractText(q.text),
+      options: this.shuffleArray(this.extractOptions(q.options)),
       pyq: q.pyq ?? null,
     }));
 
@@ -236,10 +278,10 @@ export class QuizService {
 
     return questions.map((q) => ({
       id: q.id,
-      text: q.text,
-      options: q.options as unknown as Option[],
+      text: this.extractText(q.text),
+      options: this.extractOptions(q.options),
       correctAnswerId: q.correctAnswerId,
-      explanation: q.explanation || undefined,
+      explanation: this.extractExplanation(q.explanation),
       pyq: q.pyq ?? null,
     }));
   }
