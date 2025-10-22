@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileJson, FileText, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_URL } from '@/lib/config';
+import { importQuizAction } from '@/app/admin/actions';
 import { useToast } from '@/providers/toast-provider';
 
 type ImportMode = 'override' | 'perRow';
@@ -396,27 +397,20 @@ export default function BulkImportPage() {
         }
       }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user.id,
-        },
-        body: JSON.stringify(useMultilingual ? bodyData : payload),
-      });
+      // Call server action which will attach Clerk token and call backend safely
+      const actionEndpoint = endpoint.replace(API_URL, ''); // make it a relative path for the server helper
+      const actionBody = useMultilingual ? bodyData : payload;
 
-      const data = await response.json().catch(() => null);
+      const actionResp = await importQuizAction({ endpoint: actionEndpoint, body: actionBody } as any);
 
-      if (!response.ok) {
-        throw new Error(data?.error || 'Import failed');
+      if (!actionResp || !actionResp.success) {
+        throw new Error(actionResp?.error || 'Import failed');
       }
 
+      const data = actionResp.data;
+
       const successMessage = data?.message || `Imported ${data?.created ?? records.length} ${useMultilingual ? 'multilingual ' : ''}questions`;
-      setResult({
-        success: true,
-        created: data?.created,
-        message: successMessage,
-      });
+      setResult({ success: true, created: data?.created, message: successMessage });
       setSelectedFile(null);
       setPreviewData([]);
       setDetectedMultilingual(null);
