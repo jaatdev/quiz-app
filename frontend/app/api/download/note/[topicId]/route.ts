@@ -4,28 +4,28 @@ import { API_URL } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest, context: { params: Promise<{ topicId: string }> }) {
+function errorJson(message: string, status = 500) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function GET(req: NextRequest, context: { params: Promise<{ topicId: string }> }) {
   const { topicId } = await context.params;
   const { userId } = await auth();
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  if (!topicId) {
-    return NextResponse.json({ error: 'Topic ID is required' }, { status: 400 });
-  }
-
-  if (!API_URL) {
-    return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
-  }
+  if (!userId) return errorJson('Unauthorized', 401);
+  if (!topicId) return errorJson('Topic ID is required', 400);
+  if (!API_URL) return errorJson('API URL not configured', 500);
 
   const backendUrl = `${API_URL}/notes/${encodeURIComponent(topicId)}/download`;
 
   try {
+    // Forward Authorization header from the incoming request when present
+    const incomingAuth = req.headers.get('authorization') || undefined;
+
     const backendResponse = await fetch(backendUrl, {
       method: 'GET',
       headers: {
+        ...(incomingAuth ? { Authorization: incomingAuth } : {}),
         'X-Clerk-User-Id': userId,
         'X-Requested-With': 'Next.js Route',
       },
@@ -34,10 +34,8 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ topicI
 
     if (!backendResponse.ok || !backendResponse.body) {
       const errorText = await backendResponse.text().catch(() => 'Failed to download notes');
-      return NextResponse.json(
-        { error: errorText || 'Failed to download notes' },
-        { status: backendResponse.status || 502 }
-      );
+      console.error('Download proxy error:', backendResponse.status, errorText);
+      return errorJson(errorText || 'Failed to download notes', backendResponse.status || 502);
     }
 
     const headers = new Headers(backendResponse.headers);
@@ -52,6 +50,6 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ topicI
     });
   } catch (error) {
     console.error('Proxy download error:', error);
-    return NextResponse.json({ error: 'Failed to download notes' }, { status: 502 });
+    return errorJson('Failed to download notes', 502);
   }
 }
