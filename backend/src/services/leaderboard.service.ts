@@ -79,9 +79,9 @@ export class LeaderboardService {
       dateFilter = { completedAt: { gte: monthAgo } };
     }
 
-    // Get subject
-    const subject = await this.prisma.subject.findUnique({
-      where: { name: subjectName },
+    // Get subject by slug (since name is now JSON)
+    const subject = await this.prisma.subject.findFirst({
+      where: { slug: subjectName },
       include: { topics: true },
     });
 
@@ -89,7 +89,7 @@ export class LeaderboardService {
       return [];
     }
 
-    const topicIds = subject.topics.map((t) => t.id);
+    const topicIds = subject.topics.map((t: any) => t.id);
 
     // Get scores for this subject
     const userScores = await this.prisma.quizAttempt.groupBy({

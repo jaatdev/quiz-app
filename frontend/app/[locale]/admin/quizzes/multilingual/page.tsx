@@ -4,36 +4,114 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ProtectedPageLayout } from '@/components/ProtectedPageLayout';
 import { AdminQuizForm } from '@/src/components/i18n/AdminQuizForm';
-import { multilingualQuizzes } from '@/lib/data/multilingualQuizzes';
 import { Button } from '@/components/ui/button';
 import { Edit2, Trash2, Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
-import type { MultilingualQuiz } from '@/lib/data/multilingualQuizzes';
+import type { LanguageCode } from '@/lib/i18n/config';
+import type { MultilingualQuiz, MultilingualQuestion } from '@/lib/data/multilingualQuizzes';
+import { useAuth } from '@clerk/nextjs';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export default function AdminQuizzesPage() {
-  const [quizzes, setQuizzes] = useState<MultilingualQuiz[]>(multilingualQuizzes);
+  const [quizzes, setQuizzes] = useState<MultilingualQuiz[]>([]);
   const [editingQuiz, setEditingQuiz] = useState<MultilingualQuiz | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { getToken } = useAuth();
 
-  // Handle save quiz
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        const token = await getToken();
+        const response = await fetch(`${API_BASE_URL}/quizzes/multilingual`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch quizzes');
+        }
+
+        const result = await response.json();
+        setQuizzes(result.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuizzes();
+  }, [getToken]);
+
   const handleSaveQuiz = async (quiz: MultilingualQuiz) => {
-    if (editingQuiz) {
-      // Update existing
-      setQuizzes(quizzes.map(q => q.quizId === quiz.quizId ? quiz : q));
-    } else {
-      // Create new
-      setQuizzes([...quizzes, quiz]);
+    try {
+      const token = await getToken();
+      const method = editingQuiz ? 'PUT' : 'POST';
+      const url = editingQuiz
+        ? `${API_BASE_URL}/quizzes/multilingual/${editingQuiz.id}`
+        : `${API_BASE_URL}/quizzes/multilingual`;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(quiz),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save quiz');
+      }
+
+      const savedQuiz = await response.json();
+
+      if (editingQuiz) {
+        setQuizzes(quizzes.map(q => (q.id === savedQuiz.data.id ? savedQuiz.data : q)));
+      } else {
+        setQuizzes([...quizzes, savedQuiz.data]);
+      }
+
+      setEditingQuiz(null);
+      setIsCreating(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     }
-    setEditingQuiz(null);
-    setIsCreating(false);
   };
 
-  // Handle delete quiz
-  const handleDeleteQuiz = (quizId: string) => {
+  const handleDeleteQuiz = async (quizId: string) => {
     if (confirm('Are you sure you want to delete this quiz?')) {
-      setQuizzes(quizzes.filter(q => q.quizId !== quizId));
+      try {
+        const token = await getToken();
+        const response = await fetch(`${API_BASE_URL}/quizzes/multilingual/${quizId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete quiz');
+        }
+
+        setQuizzes(quizzes.filter(q => q.id !== quizId));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      }
     }
   };
+  
+  if (loading) {
+    return <ProtectedPageLayout><p>Loading...</p></ProtectedPageLayout>;
+  }
+
+  if (error) {
+    return <ProtectedPageLayout><p>Error: {error}</p></ProtectedPageLayout>;
+  }
 
   if (editingQuiz || isCreating) {
     return (
@@ -94,7 +172,7 @@ export default function AdminQuizzesPage() {
           >
             {quizzes.map((quiz) => (
               <motion.div
-                key={quiz.quizId}
+                key={quiz.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
@@ -170,7 +248,7 @@ export default function AdminQuizzesPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteQuiz(quiz.quizId)}
+                      onClick={() => quiz.id && handleDeleteQuiz(quiz.id)}
                       className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -8,8 +8,8 @@ import { LanguageSelector } from '@/src/components/i18n/LanguageSelector';
 import { LanguageToggle } from '@/src/components/i18n/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronRight, RotateCcw } from 'lucide-react';
-import type { MultilingualQuiz } from '@/lib/data/multilingualQuizzes';
 import type { LanguageCode } from '@/lib/i18n/config';
+import type { MultilingualQuiz, MultilingualQuestion } from '@/lib/data/multilingualQuizzes';
 
 interface MultilingualQuizPageProps {
   quiz: MultilingualQuiz;
@@ -129,7 +129,7 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
               </div>
               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl text-center">
                 <div className="text-3xl font-bold text-green-600">
-                  {quiz.questions.reduce((acc, q) => acc + q.points, 0)}
+                  {quiz.questions.reduce((acc, q) => acc + (q.points || 10), 0)}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {selectedLanguageForQuiz === 'hi' ? 'अंक' : selectedLanguageForQuiz === 'es' ? 'Puntos' : selectedLanguageForQuiz === 'fr' ? 'Points' : 'Points'}
@@ -165,7 +165,7 @@ export function MultilingualQuizPage({ quiz }: MultilingualQuizPageProps) {
   if (showResults) {
     const score = calculateScore();
     const percentage = Math.round((score / quiz.questions.length) * 100);
-    const maxPoints = quiz.questions.reduce((acc, q) => acc + q.points, 0);
+    const maxPoints = quiz.questions.reduce((acc, q) => acc + (q.points || 10), 0);
     const earnedPoints = Math.round((score / quiz.questions.length) * maxPoints);
 
     return (

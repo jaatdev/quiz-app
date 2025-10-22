@@ -1,17 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedPageLayout } from '@/components/ProtectedPageLayout';
 import { MultilingualQuizPage } from '@/src/components/quiz/MultilingualQuizPage';
-import { multilingualQuizzes } from '@/lib/data/multilingualQuizzes';
 import type { MultilingualQuiz } from '@/lib/data/multilingualQuizzes';
 import type { LanguageCode } from '@/lib/i18n/config';
+import { useAuth } from '@clerk/nextjs';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 export default function MultilingualQuizListPage() {
   const [selectedQuiz, setSelectedQuiz] = useState<MultilingualQuiz | null>(null);
+  const [quizzes, setQuizzes] = useState<MultilingualQuiz[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        const token = await getToken();
+        const response = await fetch(`${API_BASE_URL}/quizzes/multilingual`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch quizzes');
+        }
+
+        const result = await response.json();
+        setQuizzes(result.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuizzes();
+  }, [getToken]);
 
   if (selectedQuiz) {
     return <MultilingualQuizPage quiz={selectedQuiz} />;
+  }
+
+  if (loading) {
+    return (
+      <ProtectedPageLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Loading quizzes...</p>
+        </div>
+      </ProtectedPageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ProtectedPageLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Error: {error}</p>
+        </div>
+      </ProtectedPageLayout>
+    );
   }
 
   return (
@@ -26,9 +78,9 @@ export default function MultilingualQuizListPage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {multilingualQuizzes.map((quiz: MultilingualQuiz) => (
+            {quizzes.map((quiz: MultilingualQuiz) => (
               <div
-                key={quiz.quizId}
+                key={quiz.id}
                 onClick={() => setSelectedQuiz(quiz)}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden"
               >

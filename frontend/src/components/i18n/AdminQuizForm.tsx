@@ -7,7 +7,7 @@ import { getLocalizedContent, validateMultilingualQuiz, type ValidationError } f
 import { LANGUAGES, type LanguageCode } from '@/lib/i18n/config';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Eye, Save, AlertCircle, Check } from 'lucide-react';
-import type { MultilingualQuiz, MultilingualQuestion } from '@/lib/data/multilingualQuizzes';
+import type { MultilingualQuiz, MultilingualQuestion } from '@/src/lib/data/multilingualQuizzes';
 
 interface AdminQuizFormProps {
   initialQuiz?: MultilingualQuiz;
@@ -44,7 +44,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
     value: string,
     lang: LanguageCode
   ) => {
-    setQuiz(prev => ({
+    setQuiz((prev: MultilingualQuiz) => ({
       ...prev,
       [field]: {
         ...prev[field],
@@ -53,17 +53,19 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
     }));
   };
 
-  // Handle adding a new question
+  // Add a new question
   const addQuestion = () => {
     const newQuestion: MultilingualQuestion = {
+      id: `q${quiz.questions.length + 1}`,
       questionId: `q${quiz.questions.length + 1}`,
       question: { en: '', hi: '', es: '', fr: '' },
       options: { en: ['', '', '', ''], hi: ['', '', '', ''], es: ['', '', '', ''], fr: ['', '', '', ''] },
       correctAnswer: 0,
       explanation: { en: '', hi: '', es: '', fr: '' },
+      difficulty: 'medium',
       points: 10,
     };
-    setQuiz(prev => ({
+    setQuiz((prev: MultilingualQuiz) => ({
       ...prev,
       questions: [...prev.questions, newQuestion]
     }));
@@ -76,9 +78,9 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
     value: string,
     lang: LanguageCode
   ) => {
-    setQuiz(prev => ({
+    setQuiz((prev: MultilingualQuiz) => ({
       ...prev,
-      questions: prev.questions.map((q, idx) =>
+      questions: prev.questions.map((q: MultilingualQuestion, idx: number) =>
         idx === qIndex
           ? {
               ...q,
@@ -96,15 +98,15 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
     value: string,
     lang: LanguageCode
   ) => {
-    setQuiz(prev => ({
+    setQuiz((prev: MultilingualQuiz) => ({
       ...prev,
-      questions: prev.questions.map((q, idx) =>
+      questions: prev.questions.map((q: MultilingualQuestion, idx: number) =>
         idx === qIndex
           ? {
               ...q,
               options: {
                 ...q.options,
-                [lang]: q.options[lang].map((opt, oIdx) =>
+                [lang]: q.options[lang].map((opt: string, oIdx: number) =>
                   oIdx === optionIndex ? value : opt
                 )
               }
@@ -116,9 +118,9 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
 
   // Handle correct answer change
   const updateCorrectAnswer = (qIndex: number, answerIndex: number) => {
-    setQuiz(prev => ({
+    setQuiz((prev: MultilingualQuiz) => ({
       ...prev,
-      questions: prev.questions.map((q, idx) =>
+      questions: prev.questions.map((q: MultilingualQuestion, idx: number) =>
         idx === qIndex ? { ...q, correctAnswer: answerIndex } : q
       )
     }));
@@ -126,9 +128,9 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
 
   // Handle delete question
   const deleteQuestion = (qIndex: number) => {
-    setQuiz(prev => ({
+    setQuiz((prev: MultilingualQuiz) => ({
       ...prev,
-      questions: prev.questions.filter((_, idx) => idx !== qIndex)
+      questions: prev.questions.filter((_: MultilingualQuestion, idx: number) => idx !== qIndex)
     }));
   };
 
@@ -230,7 +232,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
                 <input
                   type="text"
                   value={quiz.category || ''}
-                  onChange={(e) => setQuiz(prev => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) => setQuiz((prev: MultilingualQuiz) => ({ ...prev, category: e.target.value }))}
                   placeholder="e.g., Geography, History"
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -242,7 +244,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
                 </label>
                 <select
                   value={quiz.difficulty}
-                  onChange={(e) => setQuiz(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                  onChange={(e) => setQuiz((prev: MultilingualQuiz) => ({ ...prev, difficulty: e.target.value as 'easy' | 'medium' | 'hard' }))}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="easy">Easy</option>
@@ -260,7 +262,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
               <input
                 type="number"
                 value={quiz.timeLimit}
-                onChange={(e) => setQuiz(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                onChange={(e) => setQuiz((prev: MultilingualQuiz) => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -289,7 +291,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
 
           {/* Questions List */}
           <AnimatePresence>
-            {quiz.questions.map((question, qIndex) => (
+            {quiz.questions.map((question: MultilingualQuestion, qIndex: number) => (
               <motion.div
                 key={question.questionId}
                 initial={{ opacity: 0, x: -20 }}
@@ -333,7 +335,7 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Options ({LANGUAGES[selectedLanguage].nativeName})
                   </label>
-                  {question.options[selectedLanguage].map((option, oIndex) => (
+                  {question.options[selectedLanguage].map((option: string, oIndex: number) => (
                     <div key={oIndex} className="flex items-center gap-3">
                       <input
                         type="radio"
@@ -475,13 +477,13 @@ export function AdminQuizForm({ initialQuiz, onSave, onCancel }: AdminQuizFormPr
                   </p>
 
                   <div className="space-y-4">
-                    {quiz.questions.slice(0, 2).map((q, idx) => (
+                    {quiz.questions.slice(0, 2).map((q: MultilingualQuestion, idx: number) => (
                       <div key={idx} className="border-t border-gray-200 dark:border-gray-700 pt-4">
                         <p className="font-medium text-gray-900 dark:text-white mb-2">
                           {getLocalizedContent(q.question, selectedLanguage)}
                         </p>
                         <div className="space-y-2">
-                          {(q.options[selectedLanguage] || []).map((opt, oIdx) => (
+                          {(q.options[selectedLanguage] || []).map((opt: string, oIdx: number) => (
                             <div
                               key={oIdx}
                               className={`p-2 rounded ${

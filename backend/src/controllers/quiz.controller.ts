@@ -5,13 +5,13 @@ import { QuizService } from '../services/quiz.service';
 import { resolveAbsoluteFromUrl } from '../utils/uploads';
 
 const prisma = new PrismaClient();
-const quizService = new QuizService(prisma);
 
 export class QuizController {
   // GET /api/subjects
   async getSubjects(req: Request, res: Response) {
     try {
-      const subjects = await quizService.getSubjectsWithTopics();
+      const language = (req.query.language as string) || 'en';
+      const subjects = await QuizService.getSubjectsWithTopics(language as any);
       res.json(subjects);
     } catch (error) {
       console.error('Error fetching subjects:', error);
@@ -23,7 +23,8 @@ export class QuizController {
   async getTopic(req: Request, res: Response) {
     try {
       const { topicId } = req.params;
-      const topic = await quizService.getTopicById(topicId);
+      const language = (req.query.language as string) || 'en';
+      const topic = await QuizService.getTopicById(topicId, language as any);
 
       if (!topic) {
         return res.status(404).json({ error: 'Topic not found' });
@@ -40,12 +41,13 @@ export class QuizController {
     try {
       const raw = req.params.name || '';
       const name = decodeURIComponent(raw);
+      const language = (req.query.language as string) || 'en';
 
       if (!name.trim()) {
         return res.status(400).json({ error: 'Subject name is required' });
       }
 
-      const subject = await quizService.getSubjectByName(name);
+      const subject = await QuizService.getSubjectByName(name, language as any);
       if (!subject) {
         return res.status(404).json({ error: 'Subject not found' });
       }
@@ -61,11 +63,12 @@ export class QuizController {
     try {
       const { topicId } = req.params;
       const clerkUserId = (req.headers['x-clerk-user-id'] ?? '') as string;
+      const language = (req.query.language as string) || 'en';
 
       if (!clerkUserId.trim()) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      const topic = await quizService.getTopicById(topicId);
+      const topic = await QuizService.getTopicById(topicId, language as any);
 
       if (!topic || !topic.notesUrl) {
         return res.status(404).json({ error: 'Notes not found for this topic' });
@@ -111,56 +114,18 @@ export class QuizController {
   async startQuizSession(req: Request, res: Response) {
     try {
       const { topicId } = req.params;
+      const language = (req.query.language as string) || 'en';
 
       const countParam = req.query.count;
-      let questionCount: number | 'all' = 10;
+      let questionCount = 10;
       if (typeof countParam === 'string') {
-        if (countParam.toLowerCase() === 'all') {
-          questionCount = 'all';
-        } else {
-          const parsed = parseInt(countParam, 10);
-          if (!Number.isNaN(parsed) && parsed > 0) {
-            questionCount = parsed;
-          }
-        }
-      }
-
-      const durationParam = (req.query.durationMinutes ?? req.query.duration) as string | undefined;
-      let durationSeconds: number | null = null;
-      if (typeof durationParam === 'string' && durationParam.trim().length > 0) {
-        const parsed = Number(durationParam);
+        const parsed = parseInt(countParam, 10);
         if (!Number.isNaN(parsed) && parsed > 0) {
-          durationSeconds = Math.round(parsed * 60);
+          questionCount = parsed;
         }
       }
 
-      const topicIdsParam = req.query.topicIds;
-      const additionalTopicIds: string[] = [];
-      if (typeof topicIdsParam === 'string') {
-        additionalTopicIds.push(
-          ...topicIdsParam
-            .split(',')
-            .map((id: string) => id.trim())
-            .filter(Boolean)
-        );
-      } else if (Array.isArray(topicIdsParam)) {
-        topicIdsParam.forEach((value) => {
-          if (typeof value === 'string') {
-            additionalTopicIds.push(
-              ...value
-                .split(',')
-                .map((id: string) => id.trim())
-                .filter(Boolean)
-            );
-          }
-        });
-      }
-
-      const session = await quizService.getQuizSession(topicId, {
-        questionCount,
-        includeTopicIds: additionalTopicIds,
-        durationSeconds,
-      });
+      const session = await QuizService.getQuizSession(topicId, 'medium', language as any);
 
       if (session.questions.length === 0) {
         return res.status(404).json({ error: 'No questions found for this topic' });
@@ -168,7 +133,7 @@ export class QuizController {
 
       res.json(session);
     } catch (error) {
-      if (error instanceof Error && error.message === 'TOPIC_NOT_FOUND') {
+      if (error instanceof Error && error.message === 'Topic not found') {
         return res.status(404).json({ error: 'Topic not found' });
       }
       console.error('Error starting quiz session:', error);
@@ -184,8 +149,9 @@ export class QuizController {
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+      const language = (req.query.language as string) || 'en';
       if (!ids.length) return res.json([]);
-      const subs = await quizService.getSubTopicsByIds(ids);
+      const subs = await QuizService.getSubTopicsByIds(ids, language as any);
       res.json(subs);
     } catch (e) {
       console.error('getSubTopicsByIds error:', e);
@@ -201,11 +167,13 @@ export class QuizController {
         .map((s) => s.trim())
         .filter(Boolean);
       const count = parseInt(String(req.query.count || '10'));
+      const language = (req.query.language as string) || 'en';
 
       if (subTopicIds.length) {
-        const session = await quizService.getQuizBySubTopics(
+        const session = await QuizService.getQuizBySubTopics(
           subTopicIds,
-          isNaN(count) ? 10 : count
+          isNaN(count) ? 10 : count,
+          language as any
         );
         if (session.questions.length === 0) {
           return res.status(404).json({ error: 'No questions for these sub-topics' });
@@ -224,13 +192,28 @@ export class QuizController {
   async submitQuiz(req: Request, res: Response) {
     try {
       const submission = req.body;
+      const clerkUserId = (req.headers['x-clerk-user-id'] ?? '') as string;
+      const language = (req.query.language as string) || 'en';
 
       // Validate submission
       if (!submission.topicId || !submission.answers || !Array.isArray(submission.answers)) {
         return res.status(400).json({ error: 'Invalid submission format' });
       }
 
-      const result = await quizService.submitQuiz(submission);
+      if (!clerkUserId.trim()) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const result = await QuizService.submitQuiz(
+        clerkUserId,
+        submission.topicId,
+        submission.answers.reduce((acc: any, ans: any) => {
+          acc[ans.questionId] = ans.answerId;
+          return acc;
+        }, {}),
+        submission.timeSpent || 0,
+        language as any
+      );
       res.json(result);
     } catch (error) {
       console.error('Error submitting quiz:', error);
@@ -242,12 +225,13 @@ export class QuizController {
   async getReviewQuestions(req: Request, res: Response) {
     try {
       const { questionIds } = req.body;
+      const language = (req.query.language as string) || 'en';
 
       if (!Array.isArray(questionIds) || questionIds.length === 0) {
         return res.status(400).json({ error: 'Invalid question IDs' });
       }
 
-      const questions = await quizService.getQuestionsForReview(questionIds);
+      const questions = await QuizService.getQuestionsForReview(questionIds, language as any);
       res.json(questions);
     } catch (error) {
       console.error('Error fetching review questions:', error);

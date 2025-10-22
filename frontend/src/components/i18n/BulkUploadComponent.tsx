@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Download, AlertCircle, CheckCircle, X, ChevronDown } from 'lucide-react';
 import { LANGUAGES } from '@/lib/i18n/config';
 import { validateMultilingualQuiz, type ValidationError } from '@/lib/i18n/utils';
-import type { MultilingualQuiz } from '@/lib/data/multilingualQuizzes';
+import type { MultilingualQuiz } from '@/src/lib/data/multilingualQuizzes';
 import type { LanguageCode } from '@/lib/i18n/config';
 
 interface ParsedQuestion {
@@ -16,6 +16,8 @@ interface ParsedQuestion {
   explanation: Record<LanguageCode, string>;
   points: number;
   category?: string;
+  id?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 interface ParsedQuiz {
@@ -278,7 +280,17 @@ const BulkUploadComponent: React.FC<{
           timeLimit: quiz.timeLimit,
           availableLanguages: ['en', 'hi', 'es', 'fr'],
           defaultLanguage: 'en',
-          questions: quiz.questions,
+          questions: quiz.questions.map((q, qIndex) => ({
+            id: `q_${index}_${qIndex}`,
+            questionId: q.questionId,
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation,
+            difficulty: q.difficulty || 'medium',
+            points: q.points,
+          })),
+          tags: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

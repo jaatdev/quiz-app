@@ -1,298 +1,437 @@
 import { PrismaClient } from '@prisma/client';
-import { QuizSession, QuizSubmission, QuizResult, QuestionWithAnswer, Option } from '../types';
+import { I18nService, SupportedLanguage } from './i18n.service';
+
+const prisma = new PrismaClient();
+
+export interface QuizQuestion {
+  id: string;
+  text: string;
+  options: Array<{ id: string; text: string }>;
+  explanation?: string;
+  difficulty: string;
+}
+
+export interface QuizSession {
+  topicId: string;
+  topicName: string;
+  difficulty: string;
+  totalQuestions: number;
+  questions: QuizQuestion[];
+  language: SupportedLanguage;
+}
 
 export class QuizService {
-  constructor(private prisma: PrismaClient) {}
-
-  // Helper method to extract text from JSON format
-  private extractText(textJson: any): string {
-    if (typeof textJson === 'string') {
-      return textJson; // Legacy format
-    }
-    if (textJson && typeof textJson === 'object') {
-      // New JSON format - prefer English, fallback to first available
-      return textJson.en || textJson.hi || Object.values(textJson)[0] || '';
-    }
-    return '';
-  }
-
-  // Helper method to extract options from JSON format
-  private extractOptions(optionsJson: any): Option[] {
-    if (Array.isArray(optionsJson)) {
-      return optionsJson; // Legacy format
-    }
-    if (optionsJson && typeof optionsJson === 'object') {
-      // New JSON format - prefer English, fallback to first available
-      const options = optionsJson.en || optionsJson.hi || Object.values(optionsJson)[0];
-      if (Array.isArray(options)) {
-        return options.map((text: string, index: number) => ({
-          id: `option_${index}`,
-          text: String(text || '')
-        }));
-      }
-    }
-    return [];
-  }
-
-  // Helper method to extract explanation from JSON format
-  private extractExplanation(explanationJson: any): string | undefined {
-    if (typeof explanationJson === 'string') {
-      return explanationJson; // Legacy format
-    }
-    if (explanationJson && typeof explanationJson === 'object') {
-      // New JSON format - prefer English, fallback to first available
-      return explanationJson.en || explanationJson.hi || Object.values(explanationJson)[0];
-    }
-    return undefined;
-  }
-
-  // Get all subjects with their topics
-  async getSubjectsWithTopics() {
-    return await this.prisma.subject.findMany({
-      include: {
-        topics: {
-          select: {
-            id: true,
-            name: true,
-            notesUrl: true,
-            _count: {
-              select: { questions: true },
-            },
-          },
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  async getSubjectByName(name: string) {
-    return await this.prisma.subject.findUnique({
-      where: { name },
-      include: {
-        topics: {
-          select: {
-            id: true,
-            name: true,
-            _count: { select: { questions: true } },
-            subTopics: {
-              orderBy: { name: 'asc' },
-              include: { _count: { select: { questions: true } } },
-            },
-          },
-          orderBy: { name: 'asc' },
-        },
-      },
-    });
-  }
-
-  // Get subtopics metadata by IDs (public endpoint)
-  async getSubTopicsByIds(ids: string[]) {
-    if (!ids.length) return [];
-    return this.prisma.subTopic.findMany({
-      where: { id: { in: ids } },
-      include: {
-        topic: {
-          include: { subject: true },
-        },
-      },
-    });
-  }
-
-  // Get quiz session by multiple subTopicIds
-  async getQuizBySubTopics(subTopicIds: string[], count = 10) {
-    const questions = await this.prisma.question.findMany({
-      where: { subTopicId: { in: subTopicIds } },
-      select: { id: true, text: true, options: true, difficulty: true, pyq: true },
-    });
-    const selected = this.shuffleArray(questions).slice(0, Math.min(count, questions.length));
-
-    return {
-      subTopicIds,
-      questions: selected.map((q) => ({
-        id: q.id,
-        text: this.extractText(q.text),
-        options: this.shuffleArray(this.extractOptions(q.options)),
-        pyq: q.pyq ?? null,
-      })),
-    };
-  }
-
-  // Get a single topic with subject info
-  async getTopicById(topicId: string) {
-    return await this.prisma.topic.findUnique({
-      where: { id: topicId },
-      include: {
-        subject: true,
-        _count: {
-          select: { questions: true },
-        },
-      },
-    });
-  }
-
-  // Get random questions for a quiz session
-  async getQuizSession(
+  /**
+   * Get a quiz session with questions in specified language
+   */
+  static async getQuizSession(
     topicId: string,
-    options?: {
-      questionCount?: number | 'all';
-      includeTopicIds?: string[];
-      durationSeconds?: number | null;
-    }
+    difficulty: string = 'medium',
+    language: SupportedLanguage = 'en'
   ): Promise<QuizSession> {
-    const primaryTopic = await this.prisma.topic.findUnique({
+    // Fetch topic details
+    const topic = await prisma.topic.findUnique({
       where: { id: topicId },
-      include: { subject: true },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: { questions: true }
+        }
+      }
     });
 
-    if (!primaryTopic) {
-      throw new Error('TOPIC_NOT_FOUND');
+    if (!topic) {
+      throw new Error('Topic not found');
     }
 
-    const extraTopicIds = Array.isArray(options?.includeTopicIds)
-      ? options.includeTopicIds.filter((id) => id && id !== topicId)
-      : [];
-
-    const topicIds = Array.from(new Set([topicId, ...extraTopicIds]));
-
-    const topics = await this.prisma.topic.findMany({
-      where: { id: { in: topicIds } },
-      include: { subject: true },
-    });
-
-    if (!topics.length) {
-      throw new Error('TOPIC_NOT_FOUND');
-    }
-
-    const topicLookup = new Map(topics.map((t) => [t.id, t] as const));
-
-    const questions = await this.prisma.question.findMany({
-      where: { topicId: { in: topicIds } },
+    // Fetch questions for this topic and difficulty
+    const questions = await prisma.question.findMany({
+      where: {
+        topicId,
+        difficulty
+      },
       select: {
         id: true,
         text: true,
         options: true,
-        difficulty: true,
-        topicId: true,
-        pyq: true,
+        explanation: true,
+        correctAnswerId: true,
+        difficulty: true
       },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
 
-    const shuffledQuestions = this.shuffleArray(questions);
+    if (questions.length === 0) {
+      throw new Error('No questions available for this topic and difficulty');
+    }
 
-    const requestedCount = options?.questionCount ?? 10;
-    const limit =
-      requestedCount === 'all'
-        ? shuffledQuestions.length
-        : Math.min(requestedCount, shuffledQuestions.length);
+    // Select 10 random questions (or all if less than 10)
+    const selectedQuestions = this.selectRandomQuestions(questions, 10);
 
-    const selectedQuestions = shuffledQuestions.slice(0, limit);
+    // Transform questions to user's language
+    const localizedQuestions: QuizQuestion[] = selectedQuestions.map(question => {
+      const text = I18nService.extractContent(question.text, language);
+      const options = I18nService.extractContent(question.options, language);
+      const explanation = question.explanation
+        ? I18nService.extractContent(question.explanation, language)
+        : undefined;
 
-    const formattedQuestions = selectedQuestions.map((q) => ({
-      id: q.id,
-      text: this.extractText(q.text),
-      options: this.shuffleArray(this.extractOptions(q.options)),
-      pyq: q.pyq ?? null,
-    }));
+      return {
+        id: question.id,
+        text,
+        options,
+        explanation,
+        difficulty: question.difficulty
+      };
+    });
 
-    const resolvedTopicNames = topicIds
-      .map((id) => topicLookup.get(id)?.name)
-      .filter((name): name is string => Boolean(name));
-
-    const derivedDurationSeconds =
-      options?.durationSeconds && options.durationSeconds > 0
-        ? options.durationSeconds
-        : Math.max(1, limit) * 30;
-
-    const primary = topicLookup.get(topicId) ?? topics[0];
+    // Shuffle questions and their options
+    const shuffledQuestions = this.shuffleQuestions(localizedQuestions);
 
     return {
-      topicId,
-      topicName:
-        resolvedTopicNames.length === 1 ? resolvedTopicNames[0] : resolvedTopicNames.join(', '),
-      subjectName: primary.subject.name,
-      notesUrl: resolvedTopicNames.length === 1 ? primary.notesUrl : null,
-      durationSeconds: derivedDurationSeconds,
-      questionCount: formattedQuestions.length,
-      includedTopicIds: topicIds,
-      includedTopicNames: resolvedTopicNames,
-      questions: formattedQuestions,
+      topicId: topic.id,
+      topicName: I18nService.extractContent(topic.name, language),
+      difficulty,
+      totalQuestions: shuffledQuestions.length,
+      questions: shuffledQuestions,
+      language
     };
   }
 
-  // Submit quiz and calculate results
-  async submitQuiz(submission: QuizSubmission): Promise<QuizResult> {
-    // Get all questions with correct answers
-    const questionIds = submission.answers.map((a) => a.questionId);
-    const questions = await this.prisma.question.findMany({
+  /**
+   * Select random questions from array
+   */
+  private static selectRandomQuestions<T>(questions: T[], count: number): T[] {
+    const shuffled = [...questions].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, questions.length));
+  }
+
+  /**
+   * Shuffle questions and their options
+   */
+  private static shuffleQuestions(questions: QuizQuestion[]): QuizQuestion[] {
+    return questions.map(question => ({
+      ...question,
+      options: [...question.options].sort(() => Math.random() - 0.5)
+    }));
+  }
+
+  /**
+   * Submit quiz and calculate results
+   */
+  static async submitQuiz(
+    userId: string,
+    topicId: string,
+    answers: Record<string, string>,
+    timeSpent: number,
+    language: SupportedLanguage
+  ) {
+    // Fetch questions with correct answers
+    const questionIds = Object.keys(answers);
+    const questions = await prisma.question.findMany({
       where: {
-        id: { in: questionIds },
+        id: { in: questionIds }
       },
       select: {
         id: true,
         correctAnswerId: true,
-        explanation: true,
-      },
-    });
-
-    // Create a map for quick lookup
-    const correctAnswersMap = new Map(questions.map((q) => [q.id, q.correctAnswerId]));
-
-    // Calculate score
-    let correctCount = 0;
-    const incorrectAnswers: any[] = [];
-
-    submission.answers.forEach((answer) => {
-      const correctAnswerId = correctAnswersMap.get(answer.questionId);
-      if (answer.selectedOptionId === correctAnswerId) {
-        correctCount++;
-      } else {
-        incorrectAnswers.push({
-          questionId: answer.questionId,
-          selectedOptionId: answer.selectedOptionId,
-          correctAnswerId,
-        });
+        difficulty: true
       }
     });
 
-    // Calculate score with negative marking
-    const incorrectCount = submission.answers.length - correctCount;
-    const score = correctCount - incorrectCount * 0.25;
-    const percentage = (score / submission.answers.length) * 100;
+    // Calculate score
+    let correctCount = 0;
+    let incorrectCount = 0;
+
+    questions.forEach(question => {
+      const userAnswer = answers[question.id];
+      if (userAnswer === question.correctAnswerId) {
+        correctCount++;
+      } else {
+        incorrectCount++;
+      }
+    });
+
+    const totalQuestions = questions.length;
+    const score = correctCount - (incorrectCount * 0.25); // Negative marking
+    const percentage = (correctCount / totalQuestions) * 100;
+
+    // Save quiz attempt
+    const quizAttempt = await prisma.quizAttempt.create({
+      data: {
+        userId,
+        topicId,
+        score,
+        totalQuestions,
+        correctAnswers: correctCount,
+        percentage,
+        timeSpent,
+        difficulty: questions[0]?.difficulty || 'medium',
+        language
+      }
+    });
 
     return {
-      score: Math.max(0, score),
-      totalQuestions: submission.answers.length,
+      attemptId: quizAttempt.id,
+      score,
       correctAnswers: correctCount,
-      incorrectAnswers,
-      percentage: Math.max(0, percentage),
+      incorrectAnswers: incorrectCount,
+      totalQuestions,
+      percentage,
+      timeSpent
     };
   }
 
-  // Get questions with answers for review
-  async getQuestionsForReview(questionIds: string[]): Promise<QuestionWithAnswer[]> {
-    const questions = await this.prisma.question.findMany({
-      where: {
-        id: { in: questionIds },
+  /**
+   * Get all subjects with topics in specified language
+   */
+  static async getSubjects(language: SupportedLanguage = 'en') {
+    const subjects = await prisma.subject.findMany({
+      include: {
+        topics: {
+          include: {
+            _count: {
+              select: { questions: true }
+            }
+          }
+        }
       },
+      orderBy: {
+        createdAt: 'asc'
+      }
     });
 
-    return questions.map((q) => ({
-      id: q.id,
-      text: this.extractText(q.text),
-      options: this.extractOptions(q.options),
-      correctAnswerId: q.correctAnswerId,
-      explanation: this.extractExplanation(q.explanation),
-      pyq: q.pyq ?? null,
+    return subjects.map(subject => ({
+      id: subject.id,
+      name: I18nService.extractContent(subject.name, language),
+      description: I18nService.extractContent(subject.description, language),
+      slug: subject.slug,
+      topics: subject.topics.map(topic => ({
+        id: topic.id,
+        name: I18nService.extractContent(topic.name, language),
+        description: I18nService.extractContent(topic.description, language),
+        slug: topic.slug,
+        questionCount: topic._count.questions
+      }))
     }));
   }
 
-  // Utility function to shuffle array
-  private shuffleArray<T>(array: T[]): T[] {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  /**
+   * Get all subjects with topics (alias for getSubjects)
+   */
+  static async getSubjectsWithTopics(language: SupportedLanguage = 'en') {
+    return this.getSubjects(language);
+  }
+
+  /**
+   * Get topic by ID
+   */
+  static async getTopicById(topicId: string, language: SupportedLanguage = 'en') {
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      include: {
+        subject: true,
+        _count: {
+          select: { questions: true }
+        }
+      }
+    });
+
+    if (!topic) return null;
+
+    return {
+      id: topic.id,
+      name: I18nService.extractContent(topic.name, language),
+      description: I18nService.extractContent(topic.description, language),
+      slug: topic.slug,
+      subjectId: topic.subjectId,
+      subjectName: I18nService.extractContent(topic.subject.name, language),
+      questionCount: topic._count.questions,
+      notesUrl: topic.notesUrl
+    };
+  }
+
+  /**
+   * Get subject by name
+   */
+  static async getSubjectByName(name: string, language: SupportedLanguage = 'en') {
+    const subject = await prisma.subject.findFirst({
+      where: {
+        OR: [
+          { name: { equals: name } },
+          { slug: { equals: name } }
+        ]
+      },
+      include: {
+        topics: {
+          include: {
+            _count: {
+              select: { questions: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!subject) return null;
+
+    return {
+      id: subject.id,
+      name: I18nService.extractContent(subject.name, language),
+      description: I18nService.extractContent(subject.description, language),
+      slug: subject.slug,
+      topics: subject.topics.map(topic => ({
+        id: topic.id,
+        name: I18nService.extractContent(topic.name, language),
+        description: I18nService.extractContent(topic.description, language),
+        slug: topic.slug,
+        questionCount: topic._count.questions
+      }))
+    };
+  }
+
+  /**
+   * Get subtopics by IDs
+   */
+  static async getSubTopicsByIds(ids: string[], language: SupportedLanguage = 'en') {
+    const topics = await prisma.topic.findMany({
+      where: {
+        id: { in: ids }
+      },
+      include: {
+        subject: true,
+        _count: {
+          select: { questions: true }
+        }
+      }
+    });
+
+    return topics.map(topic => ({
+      id: topic.id,
+      name: I18nService.extractContent(topic.name, language),
+      description: I18nService.extractContent(topic.description, language),
+      slug: topic.slug,
+      subjectId: topic.subjectId,
+      subjectName: I18nService.extractContent(topic.subject.name, language),
+      questionCount: topic._count.questions
+    }));
+  }
+
+  /**
+   * Get quiz by subtopics
+   */
+  static async getQuizBySubTopics(subTopicIds: string[], count: number = 10, language: SupportedLanguage = 'en') {
+    // Fetch questions from multiple topics
+    const questions = await prisma.question.findMany({
+      where: {
+        topicId: { in: subTopicIds }
+      },
+      select: {
+        id: true,
+        text: true,
+        options: true,
+        explanation: true,
+        correctAnswerId: true,
+        difficulty: true,
+        topic: {
+          select: {
+            id: true,
+            name: true,
+            subject: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (questions.length === 0) {
+      throw new Error('No questions available for these sub-topics');
     }
-    return shuffled;
+
+    // Select random questions
+    const selectedQuestions = this.selectRandomQuestions(questions, count);
+
+    // Transform questions to user's language
+    const localizedQuestions: QuizQuestion[] = selectedQuestions.map(question => {
+      const text = I18nService.extractContent(question.text, language);
+      const options = I18nService.extractContent(question.options, language);
+      const explanation = question.explanation
+        ? I18nService.extractContent(question.explanation, language)
+        : undefined;
+
+      return {
+        id: question.id,
+        text,
+        options,
+        explanation,
+        difficulty: question.difficulty
+      };
+    });
+
+    // Shuffle questions and their options
+    const shuffledQuestions = this.shuffleQuestions(localizedQuestions);
+
+    return {
+      topicId: subTopicIds[0], // Use first topic ID as primary
+      topicName: I18nService.extractContent(selectedQuestions[0].topic.name, language),
+      difficulty: 'mixed',
+      totalQuestions: shuffledQuestions.length,
+      questions: shuffledQuestions,
+      language
+    };
+  }
+
+  /**
+   * Get questions for review
+   */
+  static async getQuestionsForReview(questionIds: string[], language: SupportedLanguage = 'en') {
+    const questions = await prisma.question.findMany({
+      where: {
+        id: { in: questionIds }
+      },
+      select: {
+        id: true,
+        text: true,
+        options: true,
+        explanation: true,
+        correctAnswerId: true,
+        difficulty: true,
+        topic: {
+          select: {
+            id: true,
+            name: true,
+            subject: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return questions.map(question => ({
+      id: question.id,
+      text: I18nService.extractContent(question.text, language),
+      options: I18nService.extractContent(question.options, language),
+      explanation: question.explanation
+        ? I18nService.extractContent(question.explanation, language)
+        : undefined,
+      correctAnswerId: question.correctAnswerId,
+      difficulty: question.difficulty,
+      topicName: I18nService.extractContent(question.topic.name, language),
+      subjectName: I18nService.extractContent(question.topic.subject.name, language)
+    }));
   }
 }

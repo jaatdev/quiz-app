@@ -1,5 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
+
+// Create the intl middleware
+const intlMiddleware = createIntlMiddleware(routing);
 
 // Public routes - accessible to everyone
 const isPublicRoute = createRouteMatcher([
@@ -29,6 +34,12 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
   const path = req.nextUrl.pathname;
 
+  // First, handle internationalization routing
+  const intlResponse = intlMiddleware(req);
+  if (intlResponse && intlResponse !== NextResponse.next()) {
+    return intlResponse;
+  }
+
   // Check if route is admin-only
   if (isAdminRoute(req)) {
     if (!userId) {
@@ -54,10 +65,9 @@ export default clerkMiddleware(async (auth, req) => {
 });
 
 export const config = {
-  matcher: [
-    // Run middleware for all routes except static files and _next
-    '/((?!.+\\.[\\w]+$|_next).*)',
-    '/',
-    '/(api|trpc)(.*)',
-  ],
+  // Match all pathnames except for
+  // - API routes (/api/*)
+  // - Static files (/_next/*, /images/*, etc.)
+  // - Files in public folder with extensions
+  matcher: ['/', '/(hi|en)/:path*', '/((?!api|_next|_vercel|.*\\..*).*)']
 };

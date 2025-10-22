@@ -8,6 +8,8 @@ import { Brain, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useState } from 'react';
 import { AuthModal } from '@/components/AuthModal';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
+import { Link as IntlLink } from '@/i18n/routing';
 
 interface NavItem {
   label: string;
@@ -46,8 +48,8 @@ export function SiteHeader() {
       <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur dark:bg-gray-900/80">
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/')}
+            <IntlLink
+              href="/"
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
               aria-label="QuizMaster Pro"
             >
@@ -55,46 +57,52 @@ export function SiteHeader() {
               <span className="text-sm font-bold tracking-wide text-gray-900 dark:text-gray-100">
                 QuizMaster Pro
               </span>
-            </button>
+            </IntlLink>
 
             <nav className="hidden md:flex items-center gap-1 ml-6">
               {nav.map((item) => {
                 const active =
                   item.href === '/'
-                    ? pathname === '/'
+                    ? pathname === '/' || pathname === ''
                     : pathname.startsWith(item.href);
                 const isProtected = item.protected && !isSignedIn;
 
+                if (isProtected) {
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={(e) => handleProtectedClick(e, item)}
+                      className={cn(
+                        'rounded-md px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 relative',
+                        'text-gray-400 dark:text-gray-600 cursor-not-allowed hover:text-gray-400'
+                      )}
+                      disabled={true}
+                    >
+                      {item.label}
+                      <Lock className="w-3.5 h-3.5 text-red-500" />
+                    </button>
+                  );
+                }
+
                 return (
-                  <button
+                  <IntlLink
                     key={item.href}
-                    onClick={(e) => {
-                      if (item.protected && !isSignedIn) {
-                        handleProtectedClick(e, item);
-                      } else {
-                        router.push(item.href);
-                      }
-                    }}
+                    href={item.href}
                     className={cn(
                       'rounded-md px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 relative',
-                      isProtected
-                        ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed hover:text-gray-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
-                      active && !isProtected && 'text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800'
+                      'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
+                      active && 'text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800'
                     )}
-                    disabled={isProtected}
                   >
                     {item.label}
-                    {isProtected && (
-                      <Lock className="w-3.5 h-3.5 text-red-500" />
-                    )}
-                  </button>
+                  </IntlLink>
                 );
               })}
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             {!isLoaded && (
               <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
             )}

@@ -21,18 +21,24 @@ model User {
   name                String?
   avatar              String?
   role                String                @default("user") // "user" or "admin"
+  preferredLang       String                @default("en") // NEW: Store user's language preference
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
-  
+
   quizAttempts        QuizAttempt[]
   achievements        Achievement[]
   achievementProgress AchievementProgress?
 }
 
 model Subject {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  topics Topic[]
+  id          String   @id @default(cuid())
+
+  // CHANGED: From String to Json for multilingual support
+  name        Json     // { "en": "Mathematics", "hi": "गणित" }
+  description Json?    // { "en": "Study of numbers...", "hi": "संख्याओं का अध्ययन..." }
+
+  slug        String   @unique // NEW: URL-friendly identifier
+  topics      Topic[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -40,7 +46,12 @@ model Subject {
 
 model Topic {
   id           String        @id @default(cuid())
-  name         String
+
+  // CHANGED: From String to Json for multilingual support
+  name         Json          // { "en": "Algebra", "hi": "बीजगणित" }
+  description  Json?         // { "en": "Study of symbols...", "hi": "प्रतीकों का अध्ययन..." }
+
+  slug         String        @unique // NEW: URL-friendly identifier
   subjectId    String
   subject      Subject       @relation(fields: [subjectId], references: [id])
   questions    Question[]
@@ -104,6 +115,7 @@ model QuizAttempt {
   percentage       Float
   timeSpent        Int      // in seconds
   difficulty       String   @default("medium")
+  language         String   @default("en") // NEW: Track which language quiz was taken in
   
   completedAt      DateTime @default(now())
   
@@ -118,8 +130,11 @@ model Achievement {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        String   // first_quiz, perfect_score, streak_7, speed_demon, subject_master
-  title       String
-  description String
+
+  // CHANGED: From String to Json for multilingual support
+  title       Json     // { "en": "First Quiz Master", "hi": "प्रथम क्विज़ मास्टर" }
+  description Json     // { "en": "Complete your first quiz", "hi": "अपनी पहली क्विज़ पूरी करें" }
+
   icon        String
   unlockedAt  DateTime @default(now())
   

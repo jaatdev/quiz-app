@@ -6,7 +6,8 @@ import { ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import BulkUploadComponent from '@/src/components/i18n/BulkUploadComponent';
 import { ProtectedPageLayout } from '@/components/ProtectedPageLayout';
-import type { MultilingualQuiz } from '@/lib/data/multilingualQuizzes';
+import type { LanguageCode } from '@/lib/i18n/config';
+import type { MultilingualQuiz, MultilingualQuestion } from '@/src/lib/data/multilingualQuizzes';
 
 export default function BulkUploadPage() {
   const [importedQuizzes, setImportedQuizzes] = useState<MultilingualQuiz[]>([]);
