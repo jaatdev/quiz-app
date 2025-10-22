@@ -36,15 +36,10 @@ export function TranslationTopicsList({ onUpdate }: TranslationTopicsListProps) 
   const fetchTopics = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/translations/topics`,
-        { credentials: 'include' }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch topics');
-
-      const data = await response.json();
-      setTopics(data.data);
+      const { fetchTranslationTopicsAction } = await import('@/app/admin/actions');
+      const resp = await fetchTranslationTopicsAction();
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to fetch topics'));
+      setTopics(resp.data || []);
     } catch (error) {
       console.error('Error fetching topics:', error);
     } finally {
@@ -69,29 +64,13 @@ export function TranslationTopicsList({ onUpdate }: TranslationTopicsListProps) 
     try {
       setIsSaving(true);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/translations/topics/${editingTopic.id}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: {
-              en: editingTopic.name.en,
-              hi: hindiName
-            },
-            description: editingTopic.description ? {
-              en: editingTopic.description.en,
-              hi: hindiDescription
-            } : null
-          })
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to save translation');
-
+      const { saveTopicTranslationAction } = await import('@/app/admin/actions');
+      const resp = await saveTopicTranslationAction(editingTopic.id, {
+        name: { en: editingTopic.name.en, hi: hindiName },
+        description: editingTopic.description ? { en: editingTopic.description.en, hi: hindiDescription } : null
+      });
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to save translation'));
       alert('Topic translation saved successfully');
-
       setEditingTopic(null);
       fetchTopics();
       onUpdate();

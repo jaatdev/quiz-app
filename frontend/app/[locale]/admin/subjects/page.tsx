@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
 import { Plus, Edit, Trash2, BookOpen, FileText, X, Download, Loader2, Upload } from 'lucide-react';
 import { API_URL } from '@/lib/config';
+import {
+  deleteSubjectAction,
+  deleteTopicAction,
+  saveSubjectAction,
+  saveTopicAction,
+  importSubjectsAction,
+  importTopicsAction,
+} from '@/app/admin/actions';
+import { uploadTopicNotesAction, deleteTopicNotesAction } from '@/app/admin/actions';
 import { useToast } from '@/providers/toast-provider';
 
 interface Subject {
@@ -47,18 +56,10 @@ export default function SubjectManagementPage() {
 
   const fetchSubjects = async () => {
     if (!user) return;
-
     try {
-      const response = await fetch(`${API_URL}/admin/subjects`, {
-        headers: {
-          'x-clerk-user-id': user.id,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubjects(data);
-      }
+      const { fetchSubjectsWithTopicsAction } = await import('@/app/admin/actions');
+      const resp = await fetchSubjectsWithTopicsAction();
+      if (resp?.success) setSubjects(resp.data || []);
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
     } finally {
@@ -116,24 +117,12 @@ export default function SubjectManagementPage() {
     if (!confirm('Are you sure? This will delete all topics and questions under this subject.')) return;
 
     try {
-      const response = await fetch(`${API_URL}/admin/subjects/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'x-clerk-user-id': user!.id,
-        },
-      });
-
-      if (response.ok) {
+      const resp = await deleteSubjectAction(id);
+      if (resp?.success) {
         setSubjects(prev => prev.filter(s => s.id !== id));
         showToast({ variant: 'success', title: 'Subject deleted successfully.' });
       } else {
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-        showToast({ variant: 'error', title: data?.error || 'Failed to delete subject.' });
+        showToast({ variant: 'error', title: resp?.error || 'Failed to delete subject.' });
       }
     } catch (error) {
       console.error('Failed to delete subject:', error);
@@ -145,24 +134,12 @@ export default function SubjectManagementPage() {
     if (!confirm('Are you sure? This will delete all questions under this topic.')) return;
 
     try {
-      const response = await fetch(`${API_URL}/admin/topics/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'x-clerk-user-id': user!.id,
-        },
-      });
-
-      if (response.ok) {
+      const resp = await deleteTopicAction(id);
+      if (resp?.success) {
         await fetchSubjects();
         showToast({ variant: 'success', title: 'Topic deleted successfully.' });
       } else {
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-        showToast({ variant: 'error', title: data?.error || 'Failed to delete topic.' });
+        showToast({ variant: 'error', title: resp?.error || 'Failed to delete topic.' });
       }
     } catch (error) {
       console.error('Failed to delete topic:', error);
@@ -212,25 +189,13 @@ export default function SubjectManagementPage() {
           return;
         }
 
-        const response = await fetch(`${API_URL}/admin/subjects/bulk`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-clerk-user-id': user!.id,
-          },
-          body: JSON.stringify({ names }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        // Use server action to import subjects
+        const resp = await importSubjectsAction(names);
+        if (resp?.success) {
           await fetchSubjects();
-          showToast({ 
-            variant: 'success', 
-            title: `Imported ${data.created} subjects. ${data.duplicates?.length || 0} duplicates skipped.` 
-          });
+          showToast({ variant: 'success', title: `Imported ${resp.data?.created} subjects. ${resp.data?.duplicates?.length || 0} duplicates skipped.` });
         } else {
-          const data = await response.json();
-          showToast({ variant: 'error', title: data?.error || 'Failed to import subjects.' });
+          showToast({ variant: 'error', title: resp?.error || 'Failed to import subjects.' });
         }
       } catch (error) {
         console.error('Failed to import subjects:', error);
@@ -274,41 +239,10 @@ export default function SubjectManagementPage() {
   // CSV Export for ALL Sub-Topics across ALL subjects
   const handleExportAllSubTopics = async () => {
     try {
-      const res = await fetch(`${API_URL}/admin/subjects-with-topics`, {
-        headers: { 'x-clerk-user-id': user!.id },
-        cache: 'no-store',
-      });
-      if (!res.ok) throw new Error('Failed to fetch subjects');
-      const subjects = await res.json();
-
-      const rows: Array<{ subjectName: string; topicName: string; subTopicId: string; subTopicName: string; questionsCount: number }>= [];
-      for (const s of subjects || []) {
-        for (const t of (s.topics || [])) {
-          let page = 1;
-          const pageSize = 200;
-          let totalPages = 1;
-          while (page <= totalPages) {
-            const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-            const stRes = await fetch(`${API_URL}/admin/topics/${t.id}/subtopics?` + params.toString(), {
-              headers: { 'x-clerk-user-id': user!.id },
-              cache: 'no-store',
-            });
-            if (!stRes.ok) break;
-            const stData = await stRes.json();
-            totalPages = stData.totalPages || 1;
-            (stData.items || []).forEach((st: any) => {
-              rows.push({
-                subjectName: s.name,
-                topicName: t.name,
-                subTopicId: st.id,
-                subTopicName: st.name,
-                questionsCount: st._count?.questions || 0,
-              });
-            });
-            page++;
-          }
-        }
-      }
+      const { exportAllSubTopicsAction } = await import('@/app/admin/actions');
+      const resp = await exportAllSubTopicsAction();
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to export sub-topics'));
+      const rows = resp.data || [];
 
       if (!rows.length) {
         showToast({ variant: 'info', title: 'No sub-topics to export.' });
@@ -316,7 +250,7 @@ export default function SubjectManagementPage() {
       }
 
       const headers = ['subjectName','topicName','subTopicId','subTopicName','questionsCount'];
-      const esc = (s: any) => s == null ? '' : /[",\n]/.test(String(s)) ? `"${String(s).replace(/"/g, '""')}"` : String(s);
+      const esc = (s: any) => s == null ? '' : /[",\n]/.test(String(s)) ? `"${String(s).replace(/"/g, '""') }"` : String(s);
       const csv = [headers.join(','), ...rows.map(r => headers.map(h => esc((r as any)[h])).join(','))].join('\n');
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -356,25 +290,12 @@ export default function SubjectManagementPage() {
           return;
         }
 
-        const response = await fetch(`${API_URL}/admin/topics/bulk`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-clerk-user-id': user!.id,
-          },
-          body: JSON.stringify({ rows }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        const resp = await importTopicsAction(rows);
+        if (resp?.success) {
           await fetchSubjects();
-          showToast({ 
-            variant: 'success', 
-            title: `Imported ${data.created} topics. ${data.duplicates?.length || 0} duplicates skipped.` 
-          });
+          showToast({ variant: 'success', title: `Imported ${resp.data?.created} topics. ${resp.data?.duplicates?.length || 0} duplicates skipped.` });
         } else {
-          const data = await response.json();
-          showToast({ variant: 'error', title: data?.error || 'Failed to import topics.' });
+          showToast({ variant: 'error', title: resp?.error || 'Failed to import topics.' });
         }
       } catch (error) {
         console.error('Failed to import topics:', error);
@@ -625,36 +546,14 @@ function SubjectForm({ subject, onClose, onSave }: any) {
     setErrorMessage(null);
 
     try {
-      const url = subject
-        ? `${API_URL}/admin/subjects/${subject.id}`
-        : `${API_URL}/admin/subjects`;
-      
-      const method = subject ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user!.id,
-        },
-        body: JSON.stringify({ name }),
-      });
-
-      if (response.ok) {
-        showToast({
-          variant: 'success',
-          title: subject ? 'Subject updated successfully.' : 'Subject created successfully.',
-        });
+      // Use server action to save subject
+      const resp = await saveSubjectAction({ id: subject?.id, name });
+      if (resp?.success) {
+        showToast({ variant: 'success', title: subject ? 'Subject updated successfully.' : 'Subject created successfully.' });
         onSave();
       } else {
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-        setErrorMessage(data?.error || 'Failed to save subject');
-        showToast({ variant: 'error', title: data?.error || 'Failed to save subject' });
+        setErrorMessage(resp?.error || 'Failed to save subject');
+        showToast({ variant: 'error', title: resp?.error || 'Failed to save subject' });
       }
     } catch (error) {
       console.error('Failed to save subject:', error);
@@ -738,46 +637,19 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
       
       const method = topic ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user!.id,
-        },
-        body: JSON.stringify({ name, subjectId }),
-      });
+      // Save topic via server action
+      const resp = await saveTopicAction({ id: topic?.id, name, subjectId });
 
-      if (response.ok) {
-        let savedTopic: any = null;
-        try {
-          savedTopic = await response.json();
-        } catch {
-          savedTopic = null;
-        }
+      let savedTopic: any = null;
+      if (resp?.success) savedTopic = resp.data;
 
-        let uploadError: string | null = null;
+      let uploadError: string | null = null;
 
         if (notesFile && savedTopic?.id) {
           try {
-            const formData = new FormData();
-            formData.append('notes', notesFile);
-
-            const uploadResponse = await fetch(`${API_URL}/admin/topics/${savedTopic.id}/notes`, {
-              method: 'POST',
-              headers: {
-                'x-clerk-user-id': user!.id,
-              },
-              body: formData,
-            });
-
-            if (!uploadResponse.ok) {
-              let uploadData: any = null;
-              try {
-                uploadData = await uploadResponse.json();
-              } catch {
-                uploadData = null;
-              }
-              uploadError = uploadData?.error || 'Topic saved, but uploading notes failed. Please try again.';
+            const resp = await uploadTopicNotesAction(savedTopic.id, notesFile as any);
+            if (!resp?.success) {
+              uploadError = resp?.error || 'Topic saved, but uploading notes failed. Please try again.';
             }
           } catch (uploadErr) {
             console.error('Failed to upload notes:', uploadErr);
@@ -785,29 +657,19 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
           }
         }
 
-        setNotesFile(null);
-        setErrorMessage(null);
+      setNotesFile(null);
+      setErrorMessage(null);
 
-        showToast({
-          variant: 'success',
-          title: topic ? 'Topic updated successfully.' : 'Topic created successfully.',
-        });
-
+      if (resp?.success) {
+        showToast({ variant: 'success', title: topic ? 'Topic updated successfully.' : 'Topic created successfully.' });
         if (uploadError) {
           setErrorMessage(uploadError);
           showToast({ variant: 'error', title: uploadError });
         }
-
         onSave();
       } else {
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-        setErrorMessage(data?.error || 'Failed to save topic');
-        showToast({ variant: 'error', title: data?.error || 'Failed to save topic' });
+        setErrorMessage(resp?.error || 'Failed to save topic');
+        showToast({ variant: 'error', title: resp?.error || 'Failed to save topic' });
       }
     } catch (error) {
       console.error('Failed to save topic:', error);
@@ -825,24 +687,12 @@ function TopicForm({ topic, subjectId, onClose, onSave }: any) {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(`${API_URL}/admin/topics/${topic.id}/notes`, {
-        method: 'DELETE',
-        headers: {
-          'x-clerk-user-id': user!.id,
-        },
-      });
-
-      if (response.ok) {
+      const resp = await deleteTopicNotesAction(topic.id);
+      if (resp?.success) {
         showToast({ variant: 'success', title: 'Notes removed successfully.' });
         onSave();
       } else {
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-        const message = data?.error || 'Failed to remove notes';
+        const message = resp?.error || 'Failed to remove notes';
         setErrorMessage(message);
         showToast({ variant: 'error', title: message });
       }

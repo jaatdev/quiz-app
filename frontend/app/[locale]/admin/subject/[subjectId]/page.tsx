@@ -49,17 +49,10 @@ export default function AdminSubjectPage() {
   const subjectQuery = useQuery<Subject, Error>({
     queryKey: ['admin-subject-meta', subjectId],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/admin/subjects/${subjectId}`, {
-        headers: {
-          'x-clerk-user-id': user?.id || '',
-        },
-        cache: 'no-store',
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || 'Failed to load subject');
-      }
-  return (await res.json()) as Subject;
+      const { fetchSubjectByIdAction } = await import('@/app/admin/actions');
+      const resp = await fetchSubjectByIdAction(subjectId as string);
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to load subject'));
+      return resp.data as Subject;
     },
     enabled: Boolean(user && subjectId),
   });
@@ -73,27 +66,9 @@ export default function AdminSubjectPage() {
   const topicsQuery = useQuery<PaginatedTopics, Error>({
     queryKey: ['admin-subject-topics', subjectId, page, pageSize, search],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
-      });
-      if (search) {
-        params.set('q', search);
-      }
-
-      const res = await fetch(`${API_URL}/admin/subjects/${subjectId}/topics?${params.toString()}`, {
-        headers: {
-          'x-clerk-user-id': user?.id || '',
-        },
-        cache: 'no-store',
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || 'Failed to load topics');
-      }
-
-  return (await res.json()) as PaginatedTopics;
+      const resp = await (await import('@/app/admin/actions')).fetchTopicsForSubjectAction(subjectId as string, page, pageSize, search || undefined);
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to load topics'));
+      return resp.data as PaginatedTopics;
     },
     enabled: Boolean(user && subjectId),
   });
@@ -102,19 +77,10 @@ export default function AdminSubjectPage() {
 
   const renameSubject = useMutation<Subject, Error, string>({
     mutationFn: async (name: string) => {
-      const res = await fetch(`${API_URL}/admin/subjects/${subjectId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user?.id || '',
-        },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to rename subject');
-      }
-      return data as Subject;
+      const { saveSubjectAction } = await import('@/app/admin/actions');
+      const resp = await saveSubjectAction({ id: subjectId, name });
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to rename subject'));
+      return resp.data as Subject;
     },
     onSuccess: (data) => {
       showToast({ variant: 'success', title: 'Subject renamed.' });
@@ -129,19 +95,10 @@ export default function AdminSubjectPage() {
 
   const createTopic = useMutation<Topic, Error, string>({
     mutationFn: async (name: string) => {
-      const res = await fetch(`${API_URL}/admin/topics`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user?.id || '',
-        },
-        body: JSON.stringify({ name, subjectId }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to create topic');
-      }
-      return data as Topic;
+      const { saveTopicAction } = await import('@/app/admin/actions');
+      const resp = await saveTopicAction({ name, subjectId: subjectId as string });
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to create topic'));
+      return resp.data as Topic;
     },
     onSuccess: () => {
       setNewTopicName('');
@@ -155,19 +112,10 @@ export default function AdminSubjectPage() {
 
   const updateTopic = useMutation<Topic, Error, { id: string; name: string }>({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const res = await fetch(`${API_URL}/admin/topics/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user?.id || '',
-        },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to update topic');
-      }
-      return data as Topic;
+      const { saveTopicAction } = await import('@/app/admin/actions');
+      const resp = await saveTopicAction({ id, name, subjectId: subjectId as string });
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to update topic'));
+      return resp.data as Topic;
     },
     onSuccess: () => {
       showToast({ variant: 'success', title: 'Topic updated.' });
@@ -182,17 +130,10 @@ export default function AdminSubjectPage() {
 
   const deleteTopic = useMutation<unknown, Error, string>({
     mutationFn: async (topicId: string) => {
-      const res = await fetch(`${API_URL}/admin/topics/${topicId}`, {
-        method: 'DELETE',
-        headers: {
-          'x-clerk-user-id': user?.id || '',
-        },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to delete topic');
-      }
-      return data;
+      const { deleteTopicAction } = await import('@/app/admin/actions');
+      const resp = await deleteTopicAction(topicId);
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to delete topic'));
+      return resp.data;
     },
     onSuccess: () => {
       showToast({ variant: 'success', title: 'Topic deleted.' });
@@ -206,19 +147,10 @@ export default function AdminSubjectPage() {
 
   const bulkCreateTopics = useMutation<{ created: number; duplicates: string[] }, Error, string[]>({
     mutationFn: async (names: string[]) => {
-      const res = await fetch(`${API_URL}/admin/subjects/${subjectId}/topics/bulk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user?.id || '',
-        },
-        body: JSON.stringify({ topics: names }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to bulk create topics');
-      }
-      return data as { created: number; duplicates: string[] };
+      const { bulkCreateTopicsAction } = await import('@/app/admin/actions');
+      const resp = await bulkCreateTopicsAction(subjectId as string, names);
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to bulk create topics'));
+      return resp.data as { created: number; duplicates: string[] };
     },
     onSuccess: (data) => {
       showToast({ variant: 'success', title: `Created ${data.created} topics` });

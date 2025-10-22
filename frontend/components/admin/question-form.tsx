@@ -7,6 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { API_URL } from '@/lib/config';
+import {
+  fetchTopicsAction,
+  fetchSubTopicsAction,
+  saveQuestionAction,
+} from '@/app/admin/actions';
 import { useToast } from '@/providers/toast-provider';
 
 interface QuestionFormProps {
@@ -102,14 +107,9 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
     if (!user) return;
 
     try {
-      const response = await fetch(`${API_URL}/admin/topics`, {
-        headers: {
-          'x-clerk-user-id': user.id,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTopics(data);
+      const resp = await fetchTopicsAction();
+      if (resp?.success) {
+        setTopics(resp.data || []);
       }
     } catch (error) {
       console.error('Failed to fetch topics:', error);
@@ -120,14 +120,9 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
     if (!user || !topicId) return;
 
     try {
-      const response = await fetch(`${API_URL}/admin/topics/${topicId}/subtopics`, {
-        headers: {
-          'x-clerk-user-id': user.id,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Support both array payloads and paginated { items } payloads
+      const resp = await fetchSubTopicsAction(topicId);
+      if (resp?.success) {
+        const data = resp.data;
         const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
         setSubTopics(items);
       }
@@ -142,39 +137,18 @@ export function QuestionForm({ question, defaultTopicId, onClose, onSave }: Ques
     setLoading(true);
 
     try {
-      const url = question
-        ? `${API_URL}/admin/questions/${question.id}`
-        : `${API_URL}/admin/questions`;
+      const payload = {
+        ...formData,
+        subTopicId: formData.subTopicId || null,
+        pyq: formData.pyq.trim() || null,
+      };
 
-      const method = question ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user!.id,
-        },
-        body: JSON.stringify({
-          ...formData,
-          subTopicId: formData.subTopicId || null,
-          pyq: formData.pyq.trim() || null,
-        }),
-      });
-
-      if (response.ok) {
-        showToast({
-          variant: 'success',
-          title: question ? 'Question updated successfully.' : 'Question created successfully.',
-        });
+      const resp = await saveQuestionAction({ id: question?.id, body: payload });
+      if (resp?.success) {
+        showToast({ variant: 'success', title: question ? 'Question updated successfully.' : 'Question created successfully.' });
         onSave();
       } else {
-        let message = 'Failed to save question';
-        try {
-          const data = await response.json();
-          message = data?.error || message;
-        } catch {
-          // ignore JSON parsing errors
-        }
+        const message = resp?.error || 'Failed to save question';
         showToast({ variant: 'error', title: message });
       }
     } catch (error) {

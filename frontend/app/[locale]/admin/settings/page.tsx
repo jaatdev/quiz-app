@@ -5,8 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Settings, Database, Shield, Save, RefreshCw } from 'lucide-react';
 import { useToast } from '@/providers/toast-provider';
+import { useUser } from '@clerk/nextjs';
+import { useEffect } from 'react';
 
 export default function AdminSettingsPage() {
+  const { user } = useUser();
+
   const [settings, setSettings] = useState({
     quizTimeLimit: 600,
     questionsPerQuiz: 10,
@@ -23,12 +27,39 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    // Save settings to backend
-    setTimeout(() => {
+    try {
+      const { saveSettingsAction } = await import('@/app/admin/actions');
+      const resp = await saveSettingsAction(settings);
+      if (resp?.success) {
+        showToast({ variant: 'success', title: 'Settings saved successfully!' });
+      } else {
+        showToast({ variant: 'error', title: resp?.error || 'Failed to save settings' });
+      }
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+      showToast({ variant: 'error', title: 'Failed to save settings' });
+    } finally {
       setSaving(false);
-      showToast({ variant: 'success', title: 'Settings saved successfully!' });
-    }, 1000);
+    }
   };
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!user) return;
+      try {
+        const { fetchSettingsAction } = await import('@/app/admin/actions');
+        const resp = await fetchSettingsAction();
+        if (mounted && resp?.success && resp.data) {
+          setSettings(prev => ({ ...prev, ...resp.data }));
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [user]);
 
   return (
     <div>

@@ -17,6 +17,12 @@ import { Loading } from '@/components/ui/loading';
 import { QuestionForm } from '@/components/admin/question-form';
 import { useToast } from '@/providers/toast-provider';
 import { API_URL } from '@/lib/config';
+import {
+  fetchSubjectByIdAction,
+  fetchQuestionsAction,
+  deleteQuestionAction,
+  bulkImportQuestionsAction,
+} from '@/app/admin/actions';
 import { cn } from '@/lib/utils';
 
 interface SubjectWithTopics {
@@ -136,20 +142,10 @@ export default function TopicQuestionManager() {
     const fetchSubjectAndTopic = async () => {
       setSubjectLoading(true);
       try {
-        const response = await fetch(`${API_URL}/admin/subjects/${subjectId}`, {
-          headers: {
-            'x-clerk-user-id': user.id,
-          },
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          throw new Error(data?.error || 'Unable to load subject');
-        }
-
-        const payload = (await response.json()) as SubjectWithTopics;
+        const resp = await fetchSubjectByIdAction(subjectId);
+        if (!resp?.success) throw new Error(resp?.error || 'Unable to load subject');
+        const payload = resp.data as SubjectWithTopics;
         setSubject(payload);
-
         const foundTopic = payload.topics?.find((entry) => entry.id === topicId);
         setTopicName(foundTopic?.name ?? '');
       } catch (error) {
@@ -176,29 +172,9 @@ export default function TopicQuestionManager() {
     const fetchQuestions = async () => {
       setQuestionsLoading(true);
       try {
-        const params = new URLSearchParams({
-          page: String(page),
-          pageSize: String(QUESTIONS_PAGE_SIZE),
-        });
-        if (searchTerm.trim()) {
-          params.set('q', searchTerm.trim());
-        }
-
-        const response = await fetch(
-          `${API_URL}/admin/topics/${topicId}/questions?${params.toString()}`,
-          {
-            headers: {
-              'x-clerk-user-id': user.id,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          throw new Error(data?.error || 'Unable to load questions');
-        }
-
-        const payload = (await response.json()) as PaginatedQuestionsResponse;
+        const resp = await fetchQuestionsAction(topicId, page, QUESTIONS_PAGE_SIZE, searchTerm.trim() || undefined);
+        if (!resp?.success) throw new Error(resp?.error || 'Unable to load questions');
+        const payload = resp.data as PaginatedQuestionsResponse;
         const normalizedItems = payload.items.map((item) => {
           const explanation =
             typeof item.explanation === 'string' && item.explanation.trim().length > 0
@@ -265,17 +241,8 @@ export default function TopicQuestionManager() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/admin/questions/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'x-clerk-user-id': user.id,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to delete question');
-      }
+      const resp = await deleteQuestionAction(id);
+      if (!resp?.success) throw new Error(resp?.error || 'Failed to delete question');
 
       showToast({ variant: 'success', title: 'Question deleted successfully.' });
       setQuestionsResponse((previous) => {
@@ -338,27 +305,10 @@ export default function TopicQuestionManager() {
       }
 
       setBulkImporting(true);
-
-      const response = await fetch(`${API_URL}/admin/topics/${topicId}/questions/bulk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user.id,
-        },
-        body: JSON.stringify({ questions }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to import questions');
-      }
-
-      const result = await response.json();
-      showToast({
-        variant: 'success',
-        title: `Successfully imported ${result.created || 0} questions. ${result.skipped || 0} skipped.`,
-      });
-
+      const resp = await bulkImportQuestionsAction(topicId, questions);
+      if (!resp?.success) throw new Error(resp?.error || 'Failed to import questions');
+      const result = resp.data;
+      showToast({ variant: 'success', title: `Successfully imported ${result.created || 0} questions. ${result.skipped || 0} skipped.` });
       setShowBulkImport(false);
       setBulkJsonInput('');
       refreshQuestions();

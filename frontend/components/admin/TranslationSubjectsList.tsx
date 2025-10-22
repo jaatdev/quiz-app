@@ -32,15 +32,10 @@ export function TranslationSubjectsList({ onUpdate }: TranslationSubjectsListPro
   const fetchSubjects = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/translations/subjects`,
-        { credentials: 'include' }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch subjects');
-
-      const data = await response.json();
-      setSubjects(data.data);
+      const { fetchTranslationSubjectsAction } = await import('@/app/admin/actions');
+      const resp = await fetchTranslationSubjectsAction();
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to fetch subjects'));
+      setSubjects(resp.data || []);
     } catch (error) {
       console.error('Error fetching subjects:', error);
     } finally {
@@ -65,29 +60,13 @@ export function TranslationSubjectsList({ onUpdate }: TranslationSubjectsListPro
     try {
       setIsSaving(true);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/translations/subjects/${editingSubject.id}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: {
-              en: editingSubject.name.en,
-              hi: hindiName
-            },
-            description: editingSubject.description ? {
-              en: editingSubject.description.en,
-              hi: hindiDescription
-            } : null
-          })
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to save translation');
-
+      const { saveSubjectTranslationAction } = await import('@/app/admin/actions');
+      const resp = await saveSubjectTranslationAction(editingSubject.id, {
+        name: { en: editingSubject.name.en, hi: hindiName },
+        description: editingSubject.description ? { en: editingSubject.description.en, hi: hindiDescription } : null
+      });
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to save translation'));
       alert('Subject translation saved successfully');
-
       setEditingSubject(null);
       fetchSubjects();
       onUpdate();

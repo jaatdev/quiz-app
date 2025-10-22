@@ -1,0 +1,10 @@
+{
+  "quizTimeLimit": 600,
+  "questionsPerQuiz": 10,
+  "negativeMarking": true,
+  "negativeMarkingValue": 0.25,
+  "showExplanations": true,
+  "allowRetake": true,
+  "leaderboardEnabled": true,
+  "achievementsEnabled": true
+}

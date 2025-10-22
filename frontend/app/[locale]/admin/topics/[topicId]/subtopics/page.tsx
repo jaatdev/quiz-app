@@ -1,14 +1,13 @@
-'use client';
+ 'use client';
 
 import { useUser } from '@clerk/nextjs';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/providers/toast-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
-import { Error } from '@/components/ui/error';
+import { Error as UIError } from '@/components/ui/error';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ArrowLeft, Search, Plus, Edit3, Save, Trash2, Target } from 'lucide-react';
 
@@ -31,91 +30,45 @@ export default function AdminSubTopicsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Topic meta (name + subject)
-  const { data: topicMeta, isLoading: loadingTopic } = useQuery({
-    queryKey: ['admin-topic-meta', topicId],
-    queryFn: async () => {
-      const res = await fetch(`${API}/admin/topics/${topicId}`, {
-        headers: { 'x-clerk-user-id': user?.id || '' },
-        cache: 'no-store'
-      });
-      if (!res.ok) throw new window.Error('Failed to load topic');
-      return res.json() as Promise<{ id: string; name: string; subject: { id: string; name: string } }>;
-    },
-    enabled: !!user && !!topicId
-  });
+  const [topicMeta, setTopicMeta] = useState<any | null>(null);
+  const [loadingTopic, setLoadingTopic] = useState(true);
 
   // Sub-topics list with pagination
-  const { data, isLoading, error: queryError, refetch } = useQuery({
-    queryKey: ['admin-subtopics', topicId, page, pageSize, q],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), q });
-      const res = await fetch(`${API}/admin/topics/${topicId}/subtopics?` + params.toString(), {
-        headers: { 'x-clerk-user-id': user?.id || '' },
-        cache: 'no-store'
-      });
-      if (!res.ok) throw new window.Error('Failed to load sub-topics');
-      return res.json() as Promise<{ items: any[]; total: number; totalPages: number; page: number; pageSize: number }>;
-    },
-    enabled: !!user && !!topicId
-  });
+  const [data, setData] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [queryError, setQueryError] = useState<any | null>(null);
 
   const items = data?.items || [];
   const totalPages = data?.totalPages || 1;
 
-  const createSubTopic = useMutation({
-    mutationFn: async (name: string) => {
-      const res = await fetch(`${API}/admin/subtopics`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-clerk-user-id': user?.id || '' },
-        body: JSON.stringify({ name, topicId })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new window.Error(data?.error || 'Create failed');
-      return data;
-    },
-    onSuccess: () => { setCreateName(''); refetch(); }
-  });
+  // Local mutation helpers that call server actions
+  const createSubTopic = async (name: string) => {
+    const { createSubTopicAction } = await import('@/app/admin/actions');
+    const resp = await createSubTopicAction(name, topicId);
+    if (resp?.success) { setCreateName(''); await loadPage(); }
+    return resp;
+  };
 
-  const updateSubTopic = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const res = await fetch(`${API}/admin/subtopics/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-clerk-user-id': user?.id || '' },
-        body: JSON.stringify({ name })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new window.Error(data?.error || 'Update failed');
-      return data;
-    },
-    onSuccess: () => { setEditingId(null); setEditingName(''); refetch(); }
-  });
+  const updateSubTopic = async (payload: { id: string; name: string }) => {
+    const { updateSubTopicAction } = await import('@/app/admin/actions');
+    const resp = await updateSubTopicAction(payload.id, payload.name);
+    if (resp?.success) { setEditingId(null); setEditingName(''); await loadPage(); }
+    return resp;
+  };
 
-  const deleteSubTopic = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`${API}/admin/subtopics/${id}`, {
-        method: 'DELETE',
-        headers: { 'x-clerk-user-id': user?.id || '' }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new window.Error(data?.error || 'Delete failed');
-      return data;
-    },
-    onSuccess: () => { setDeleteId(null); refetch(); }
-  });
+  const deleteSubTopic = async (id: string) => {
+    const { deleteSubTopicAction } = await import('@/app/admin/actions');
+    const resp = await deleteSubTopicAction(id);
+    if (resp?.success) { setDeleteId(null); await loadPage(); }
+    return resp;
+  };
 
-  const bulkCreate = useMutation({
-    mutationFn: async (names: string[]) => {
-      const res = await fetch(`${API}/admin/topics/${topicId}/subtopics/bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-clerk-user-id': user?.id || '' },
-        body: JSON.stringify({ names })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new window.Error(data?.error || 'Bulk create failed');
-      return data as { success: boolean; created: number; duplicates: string[] };
-    },
-    onSuccess: () => { setBulkText(''); setPage(1); refetch(); }
-  });
+  const bulkCreate = async (names: string[]) => {
+    const { bulkCreateSubTopicsAction } = await import('@/app/admin/actions');
+    const resp = await bulkCreateSubTopicsAction(topicId, names);
+    if (resp?.success) { setBulkText(''); setPage(1); await loadPage(); }
+    return resp;
+  };
 
   // CSV Export/Import helpers
   const toCSV = (rows: any[]) => {
@@ -133,12 +86,10 @@ export default function AdminSubTopicsPage() {
     const pageSize = 200;
     let page = 1;
     let all: any[] = [];
+    const base = process.env.NEXT_PUBLIC_API_URL || API || '';
     while (true) {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-      const res = await fetch(`${API}/admin/topics/${topicId}/subtopics?` + params.toString(), {
-        headers: { 'x-clerk-user-id': user?.id || '' },
-        cache: 'no-store'
-      });
+      const res = await fetch(`${base}/admin/topics/${topicId}/subtopics?` + params.toString(), { cache: 'no-store' });
       if (!res.ok) break;
       const data = await res.json();
       const items = (data.items || []).map((st: any) => ({
@@ -154,11 +105,39 @@ export default function AdminSubTopicsPage() {
     return all;
   };
 
+  // Loads current page of subtopics and topic meta
+  const loadPage = async () => {
+    setIsLoading(true); setQueryError(null);
+    try {
+      const { fetchSubTopicsAction, fetchTopicByIdAction } = await import('@/app/admin/actions');
+      const [subRes, topicRes] = await Promise.all([
+        fetchSubTopicsAction(topicId + `?page=${page}&pageSize=${pageSize}&q=${encodeURIComponent(q)}`),
+        fetchTopicByIdAction(topicId)
+      ]);
+
+  if (!subRes?.success) throw new Error(String(subRes?.error || 'Failed to load sub-topics'));
+  if (!topicRes?.success) throw new Error(String(topicRes?.error || 'Failed to load topic'));
+
+      setData(subRes.data);
+      setTopicMeta(topicRes.data);
+    } catch (err: any) {
+      setQueryError(err);
+    } finally {
+      setIsLoading(false); setLoadingTopic(false);
+    }
+  };
+
+  // Effect to load data when params change
+  useEffect(() => {
+    if (user && topicId) loadPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, topicId, page, pageSize, q]);
+
   if (!user || isLoading || loadingTopic) {
     return <div className="min-h-screen flex items-center justify-center"><Loading /></div>;
   }
   if (queryError) {
-    return <div className="min-h-screen flex items-center justify-center"><Error onRetry={()=>refetch()} /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><UIError onRetry={()=>loadPage()} /></div>;
   }
 
   return (
@@ -168,16 +147,17 @@ export default function AdminSubTopicsPage() {
           <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={()=>router.back()} aria-label="Back">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Sub-Topics • {topicMeta?.name} <span className="text-sm text-gray-700 dark:text-gray-400">({topicMeta?.subject?.name})</span>
-            </h1>
-            <p className="text-sm text-gray-700 dark:text-gray-300">Manage sub-topics, edit names, and bulk create</p>
-          </div>
+          <Button
+            variant="outline"
+            onClick={async ()=>{
+              const names = Array.from(new Set(bulkText.split('\n').map(s=>s.trim()).filter(Boolean)));
+              if (names.length) await bulkCreate(names);
+            }}
+            disabled={!bulkText.trim()}
+          >
+            Bulk Create
+          </Button>
         </div>
-        <Button variant="outline" onClick={()=>router.push(`/admin/questions/${topicMeta?.subject?.id}/${topicId}`)}>
-          Manage Questions
-        </Button>
       </div>
 
       {/* Controls */}
@@ -204,13 +184,13 @@ export default function AdminSubTopicsPage() {
                 placeholder="New sub-topic name"
                 className="p-2 border rounded-lg text-gray-900 dark:text-gray-100 dark:bg-gray-800"
               />
-              <Button onClick={()=>createName.trim() && createSubTopic.mutate(createName.trim())}>
+              <Button onClick={async ()=>{ if (!createName.trim()) return; await createSubTopic(createName.trim()); }}>
                 <Plus className="w-4 h-4 mr-1" /> Add
               </Button>
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg border p-4">
+            <div className="mt-4 rounded-lg border p-4">
             <div className="text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Bulk create (one per line)</div>
             <textarea
               value={bulkText}
@@ -222,9 +202,9 @@ export default function AdminSubTopicsPage() {
             <div className="mt-2">
               <Button
                 variant="outline"
-                onClick={()=>{
+                onClick={async ()=>{
                   const names = Array.from(new Set(bulkText.split('\n').map(s=>s.trim()).filter(Boolean)));
-                  if (names.length) bulkCreate.mutate(names);
+                  if (names.length) await bulkCreate(names);
                 }}
                 disabled={!bulkText.trim()}
               >
@@ -274,16 +254,11 @@ export default function AdminSubTopicsPage() {
                       return (cols[nameIdx] || '').replace(/^"|"$/g, '').trim();
                     }).filter(Boolean)));
                     if (!names.length) { showToast({ variant: 'error', title: 'No valid names in CSV' }); return; }
-                    const res = await fetch(`${API}/admin/topics/${topicId}/subtopics/bulk`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', 'x-clerk-user-id': user?.id || '' },
-                      body: JSON.stringify({ names })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new window.Error(data?.error || 'Import failed');
+                    const resp = await bulkCreate(names);
+                    if (!resp?.success) throw new window.Error(resp?.error || 'Import failed');
                     setPage(1);
-                    refetch();
-                    showToast({ variant: 'success', title: `Created: ${data.created}${data.duplicates?.length ? ` • Duplicates: ${data.duplicates.length}` : ''}` });
+                    await loadPage();
+                    showToast({ variant: 'success', title: `Created: ${resp.data?.created}${resp.data?.duplicates?.length ? ` • Duplicates: ${resp.data.duplicates.length}` : ''}` });
                   } catch (err: any) {
                     showToast({ variant: 'error', title: err?.message || 'Failed to import CSV' });
                   } finally {
@@ -331,7 +306,7 @@ export default function AdminSubTopicsPage() {
                         onChange={(e)=>setEditingName(e.target.value)}
                         className="flex-1 p-2 border rounded-lg text-gray-900 dark:text-gray-100 dark:bg-gray-800"
                       />
-                      <Button size="sm" onClick={()=>editingName.trim() && updateSubTopic.mutate({ id: st.id, name: editingName.trim() })}>
+                      <Button size="sm" onClick={async ()=>{ if (!editingName.trim()) return; await updateSubTopic({ id: st.id, name: editingName.trim() }); }}>
                         <Save className="w-4 h-4 mr-1" /> Save
                       </Button>
                       <Button size="sm" variant="outline" onClick={()=>{ setEditingId(null); setEditingName(''); }}>
@@ -360,7 +335,7 @@ export default function AdminSubTopicsPage() {
         message="This will remove the sub-topic. Questions may be affected based on cascade setup."
         confirmText="Delete"
         cancelText="Cancel"
-        onConfirm={()=>deleteId && deleteSubTopic.mutate(deleteId)}
+  onConfirm={async ()=>{ if (deleteId) await deleteSubTopic(deleteId); }}
         onCancel={()=>setDeleteId(null)}
         variant="danger"
       />

@@ -10,6 +10,8 @@ import {
   resolveAbsoluteFromUrl,
 } from '../utils/uploads';
 import translationRoutes from './admin/translation.routes';
+import path from 'path';
+// fs already imported above; avoid duplicate import
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -1347,6 +1349,51 @@ router.put('/users/:id/role', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating user role:', error);
     res.status(500).json({ error: 'Failed to update user role' });
+  }
+});
+
+// Settings: read/write simple JSON file for platform settings
+const SETTINGS_PATH = path.join(__dirname, '..', 'config', 'settings.json');
+
+function readSettings(): any {
+  try {
+    const raw = fs.readFileSync(SETTINGS_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to read settings file, returning defaults', e);
+    return {};
+  }
+}
+
+function writeSettings(obj: any) {
+  try {
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(obj, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to write settings file', e);
+    throw e;
+  }
+}
+
+router.get('/settings', async (_req: Request, res: Response) => {
+  try {
+    const settings = readSettings();
+    res.json({ success: true, data: settings });
+  } catch (e) {
+    console.error('Failed to read settings', e);
+    res.status(500).json({ success: false, error: 'Failed to read settings' });
+  }
+});
+
+router.put('/settings', async (req: Request, res: Response) => {
+  try {
+    const payload = req.body ?? {};
+    const current = readSettings();
+    const merged = { ...current, ...payload };
+    writeSettings(merged);
+    res.json({ success: true, data: merged });
+  } catch (e) {
+    console.error('Failed to update settings', e);
+    res.status(500).json({ success: false, error: 'Failed to update settings' });
   }
 });
 

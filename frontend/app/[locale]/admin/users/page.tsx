@@ -44,24 +44,12 @@ export default function UserManagementPage() {
     if (!user) return;
 
     try {
-  const response = await fetch(`${API_URL}/admin/users`, {
-        headers: {
-          'x-clerk-user-id': user.id,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
+      const { fetchUsersAction } = await import('@/app/admin/actions');
+      const resp = await fetchUsersAction();
+      if (resp?.success) {
+        setUsers(resp.data || []);
       } else {
-        let message = 'Failed to fetch users.';
-        try {
-          const data = await response.json();
-          message = data?.error || message;
-        } catch {
-          // ignore JSON parse errors
-        }
-        showToast({ variant: 'error', title: message });
+        showToast({ variant: 'error', title: String(resp?.error || 'Failed to fetch users.') });
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -75,16 +63,9 @@ export default function UserManagementPage() {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     
     try {
-      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-clerk-user-id': user!.id,
-        },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      if (response.ok) {
+      const { updateUserRoleAction } = await import('@/app/admin/actions');
+      const resp = await updateUserRoleAction(userId, newRole);
+      if (resp?.success) {
         setUsers(prevUsers => 
           prevUsers.map(u => 
             u.id === userId ? { ...u, role: newRole } : u
@@ -98,14 +79,7 @@ export default function UserManagementPage() {
             : 'Admin access has been removed from the user.',
         });
       } else {
-        let message = 'Failed to update user role.';
-        try {
-          const data = await response.json();
-          message = data?.error || message;
-        } catch {
-          // ignore JSON parse errors
-        }
-        showToast({ variant: 'error', title: message });
+        showToast({ variant: 'error', title: String(resp?.error || 'Failed to update user role.') });
       }
     } catch (error) {
       console.error('Failed to update user role:', error);

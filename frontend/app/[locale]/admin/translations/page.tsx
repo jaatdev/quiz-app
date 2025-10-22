@@ -50,17 +50,10 @@ export default function AdminTranslationsPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/translations/stats`,
-        {
-          credentials: 'include'
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch stats');
-
-      const data = await response.json();
-      setStats(data.data);
+      const { fetchTranslationStatsAction } = await import('@/app/admin/actions');
+      const resp = await fetchTranslationStatsAction();
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to fetch stats'));
+      setStats(resp.data || null);
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {

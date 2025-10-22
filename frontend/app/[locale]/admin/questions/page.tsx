@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { API_URL } from '@/lib/config';
+import { fetchSubjectsWithTopicsAction } from '@/app/admin/actions';
 import { useToast } from '@/providers/toast-provider';
 import { buttonVariants } from '@/components/ui/button';
 
@@ -60,19 +61,11 @@ export default function AdminSubjectOverview() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/admin/subjects-with-topics`, {
-        headers: {
-          'x-clerk-user-id': user.id,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to load subjects');
+      const resp = await fetchSubjectsWithTopicsAction();
+      if (!resp?.success) {
+        throw new Error(resp?.error || 'Failed to load subjects');
       }
-
-      const payload = (await response.json()) as SubjectResponse[];
-      setSubjects(payload);
+      setSubjects(resp.data || []);
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
       showToast({ variant: 'error', title: error instanceof Error ? error.message : 'Failed to load subjects' });

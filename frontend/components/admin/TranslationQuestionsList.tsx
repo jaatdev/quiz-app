@@ -64,19 +64,12 @@ export function TranslationQuestionsList({ onUpdate }: TranslationQuestionsListP
       if (search) {
         params.append('search', search);
       }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/translations/questions?${params}`,
-        {
-          credentials: 'include'
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch questions');
-
-      const data = await response.json();
-      setQuestions(data.data.questions);
-      setTotalPages(data.data.pagination.totalPages);
+      const { fetchTranslationQuestionsAction } = await import('@/app/admin/actions');
+      const hasHindi = filter === 'translated' ? true : filter === 'untranslated' ? false : undefined;
+      const resp = await fetchTranslationQuestionsAction(page, 20, search || undefined, hasHindi as any);
+      if (!resp?.success) throw new Error(String(resp?.error || 'Failed to fetch questions'));
+      setQuestions(resp.data?.questions || []);
+      setTotalPages(resp.data?.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error fetching questions:', error);
     } finally {

@@ -6,6 +6,7 @@ import { Upload, Download, AlertCircle, CheckCircle, X, ChevronDown } from 'luci
 import { LANGUAGES } from '@/lib/i18n/config';
 import { validateMultilingualQuiz, type ValidationError } from '@/lib/i18n/utils';
 import type { MultilingualQuiz } from '@/src/lib/data/multilingualQuizzes';
+import { importQuizAction } from '@/app/admin/actions';
 import type { LanguageCode } from '@/lib/i18n/config';
 
 interface ParsedQuestion {
@@ -312,7 +313,31 @@ const BulkUploadComponent: React.FC<{
       setUploadResult(result);
 
       if (validQuizzes.length > 0) {
-        onQuizzesImported(validQuizzes);
+        // Persist quizzes via server action in small batches to avoid huge payloads
+        const created: MultilingualQuiz[] = [];
+        for (const q of validQuizzes) {
+          try {
+            const payload = { endpoint: '/admin/questions/bulk', body: { quizzes: [q] } };
+            const res = await importQuizAction(payload as any);
+            if (res?.success) {
+              // backend returns created quiz(s) or a success marker
+              if (Array.isArray(res.data?.createdQuizzes)) {
+                created.push(...res.data.createdQuizzes);
+              } else if (res.data) {
+                created.push(q as any);
+              } else {
+                created.push(q as any);
+              }
+            }
+          } catch (err) {
+            // ignore per-quiz errors; they were already validated
+            console.error('Import quiz error', err);
+          }
+        }
+
+        if (created.length > 0) {
+          onQuizzesImported(created);
+        }
         setPreviewData([]);
       }
     } catch (error) {
