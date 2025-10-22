@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export function SiteFooter() {
   return (
     <footer className="mt-12 border-t bg-white/80 backdrop-blur dark:bg-gray-900/80">
@@ -12,16 +14,26 @@ export function SiteFooter() {
           <div>
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Explore</div>
             <ul className="mt-2 space-y-1 text-sm text-gray-700 dark:text-gray-300">
-              <li><a href="/leaderboard" className="hover:underline">Leaderboard</a></li>
-              <li><a href="/stats" className="hover:underline">Statistics</a></li>
-              <li><a href="/history" className="hover:underline">History</a></li>
+              <li>
+                <Link href="/leaderboard" className="hover:underline">Leaderboard</Link>
+              </li>
+              <li>
+                <Link href="/stats" className="hover:underline">Statistics</Link>
+              </li>
+              <li>
+                <Link href="/history" className="hover:underline">History</Link>
+              </li>
             </ul>
           </div>
           <div>
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resources</div>
             <ul className="mt-2 space-y-1 text-sm text-gray-700 dark:text-gray-300">
-              <li><a href="https://github.com/jaatdev/quiz-app" target="_blank" className="hover:underline">GitHub</a></li>
-              <li><a href="/admin" className="hover:underline">Admin</a></li>
+              <li>
+                <a href="https://github.com/jaatdev/quiz-app" target="_blank" rel="noreferrer" className="hover:underline">GitHub</a>
+              </li>
+              <li>
+                <Link href="/admin" className="hover:underline">Admin</Link>
+              </li>
             </ul>
           </div>
         </div>
