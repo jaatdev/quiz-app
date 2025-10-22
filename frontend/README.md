@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+---
+
+Frontend API client and DB access policy
+
+This project centralizes frontend → backend HTTP calls. Please follow these rules to avoid accidental database access during server-side rendering:
+
+- Use `frontend/lib/api-client.ts` (or `frontend/lib/api.ts`) for all calls to the backend API.
+- Do NOT import `@prisma/client` or any database client inside `frontend/`. All database work must run in the backend service only.
+- For admin operations that require authenticated server-to-server requests, use an app route under `app/api/*` that forwards the incoming auth header and `X-Clerk-User-Id` to the backend (see `app/api/admin/import-quiz/route.ts` for an example).
+
+If you want this enforced automatically, add an ESLint rule (no-restricted-imports) that forbids `@prisma/client` under `frontend/`.
+
